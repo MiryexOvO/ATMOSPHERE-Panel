@@ -269,6 +269,30 @@ def write_unit(instance_id: str, selected_core: str, java_version: str = '17', m
     path = unit_path(instance_id); path.parent.mkdir(parents=True, exist_ok=True); path.write_text(unit, encoding='utf-8'); return path
 
 
+def prepare_mcdr_environment(root: Path, system_python: str) -> str:
+    venv = (root / '.venv').resolve()
+    if root not in venv.parents:
+        raise ValueError('MCDR 虚拟环境路径非法')
+    subprocess.run([system_python, '-m', 'venv', str(venv)], check=True, capture_output=True, text=True, timeout=120)
+    python_path = venv / ('Scripts' if os.name == 'nt' else 'bin') / ('python.exe' if os.name == 'nt' else 'python')
+    if not python_path.is_file():
+        raise RuntimeError('Python 虚拟环境创建失败')
+    subprocess.run([str(python_path), '-m', 'pip', 'install', '--disable-pip-version-check', 'mcdreforged'], check=True, capture_output=True, text=True, timeout=180)
+    return str(python_path)
+
+
+def write_mcdr_unit(instance_id: str, python: str, memory: str = '4G') -> Path:
+    root = (SERVER_ROOT / instance_id).resolve()
+    script = (root / 'start_mcdr.py').resolve()
+    if root not in script.parents or not script.is_file():
+        raise ValueError('MCDR 启动脚本不存在或路径非法')
+    unit = f'''[Unit]\nDescription=Atmosphere MCDR Server {instance_id}\nAfter=network.target\n\n[Service]\nType=simple\nUser=mcserver\nWorkingDirectory={root}\nExecStart={python} {script}\nRestart=always\nRestartSec=10\nMemoryMax={memory}\nStandardOutput=journal\nStandardError=journal\n\n[Install]\nWantedBy=multi-user.target\n'''
+    path = unit_path(instance_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(unit, encoding='utf-8')
+    return path
+
+
 @app.post('/api/instances/{instance_id}/deploy')
 def deploy_instance(request: Request, instance_id: str, selected_core: str = Form(...), java_version: str = Form('17'), memory: str = Form('4G')):
     if isinstance((user := require_user(request)), JSONResponse): return user
@@ -450,6 +474,10 @@ async def upload_package(request: Request, instance_id: str = Form(...), name: s
         (target / 'eula.txt').write_text('eula=true\n'); (target / 'server.properties').write_text(f'online-mode=false\nserver-port={port}\n')
         recommended = next((x['path'] for x in candidates if x.get('recommended')), None)
         conn.execute('INSERT INTO instances VALUES(?,?,?,?,?,?,?,?)', (instance_id, name.strip(), port, package.filename, 'stopped', int(time.time()), json.dumps(candidates), recommended)); conn.commit()
+        if recommended and recommended.endswith('.jar') and shutil.which('java'):
+            write_unit(instance_id, recommended, '21', '4G')
+            run_systemctl('daemon-reload')
+            run_systemctl('enable', f'mc-{instance_id}.service')
     except Exception as exc:
         shutil.rmtree(target, ignore_errors=True); conn.close(); archive.unlink(missing_ok=True); return JSONResponse({'ok': False, 'message': str(exc)}, status_code=400)
     archive.unlink(missing_ok=True); conn.close(); return {'ok': True, 'message': '正在解压并分析核心', 'needs_core_selection': not bool(candidates), 'core_candidates': candidates, 'instance': {'id': instance_id}}
@@ -584,6 +612,218 @@ def instance_players(request: Request, instance_id: str):
     return {'ok': True, 'players': []}
 
 
+@app.get('/api/instances/{instance_id}/monitor')
+def instance_monitor(request: Request, instance_id: str):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    if not instance_row(instance_id):
+        return JSONResponse({'ok': False, 'message': '实例不存在'}, status_code=404)
+    code, output = run_systemctl('show', f'mc-{instance_id}.service', '--property=MainPID')
+    values = dict(line.split('=', 1) for line in output.splitlines() if '=' in line)
+    pid = int(values.get('MainPID', '0') or 0)
+    cpu = memory = 0.0
+    try:
+        import psutil
+        if pid:
+            process = psutil.Process(pid)
+            cpu = process.cpu_percent(interval=0.05)
+            memory = process.memory_percent()
+    except (ImportError, ValueError):
+        pass
+    return {'ok': code == 0, 'cpu_percent': round(cpu, 2), 'memory_percent': round(memory, 2), 'pid': pid}
+
+
+def safe_instance_path(instance_id: str, requested: str) -> tuple[Path, Path]:
+    root = instance_root(instance_id)
+    candidate = (root / requested.lstrip('/')).resolve()
+    if candidate != root and root not in candidate.parents:
+        raise ValueError('路径超出实例目录')
+    return root, candidate
+
+
+@app.get('/api/instances/{instance_id}/files')
+def list_instance_files(request: Request, instance_id: str, path: str = '/'):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    try:
+        root, directory = safe_instance_path(instance_id, path)
+        if not directory.is_dir():
+            return JSONResponse({'ok': False, 'message': '目录不存在'}, status_code=404)
+        entries = []
+        for item in sorted(directory.iterdir(), key=lambda entry: (not entry.is_dir(), entry.name.lower())):
+            relative = '/' + str(item.relative_to(root)).replace('\\', '/')
+            entries.append({'name': item.name, 'path': relative, 'type': 'directory' if item.is_dir() else 'file', 'size': item.stat().st_size if item.is_file() else None})
+        return {'ok': True, 'path': path, 'entries': entries}
+    except ValueError as exc:
+        return JSONResponse({'ok': False, 'message': str(exc)}, status_code=400)
+
+
+@app.get('/api/instances/{instance_id}/files/content')
+def read_instance_file(request: Request, instance_id: str, path: str):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    try:
+        _, target = safe_instance_path(instance_id, path)
+        if not target.is_file() or target.stat().st_size > 5 * 1024 * 1024:
+            return JSONResponse({'ok': False, 'message': '文件不存在或超过 5MB'}, status_code=400)
+        return {'ok': True, 'path': path, 'content': target.read_text(encoding='utf-8')}
+    except (ValueError, UnicodeDecodeError, OSError) as exc:
+        return JSONResponse({'ok': False, 'message': f'文件读取失败: {exc}'}, status_code=400)
+
+
+class FileSavePayload(BaseModel):
+    path: str = Field(min_length=1, max_length=512)
+    content: str = Field(max_length=5 * 1024 * 1024)
+
+
+@app.post('/api/instances/{instance_id}/files/save')
+def save_instance_file(request: Request, instance_id: str, payload: FileSavePayload):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    try:
+        _, target = safe_instance_path(instance_id, payload.path)
+        if target.exists() and target.is_dir():
+            return JSONResponse({'ok': False, 'message': '不能覆盖目录'}, status_code=400)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(payload.content, encoding='utf-8')
+        return {'ok': True, 'path': payload.path}
+    except (ValueError, OSError) as exc:
+        return JSONResponse({'ok': False, 'message': f'文件保存失败: {exc}'}, status_code=400)
+
+
+@app.get('/api/instances/{instance_id}/backups')
+def list_backups(request: Request, instance_id: str):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    try:
+        root = instance_root(instance_id)
+        backup_dir = root / 'backups'
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        return {'ok': True, 'backups': [{'name': item.name, 'size': item.stat().st_size, 'created_at': item.stat().st_mtime} for item in sorted(backup_dir.glob('*.tar.gz'), key=lambda item: item.stat().st_mtime, reverse=True)]}
+    except ValueError as exc:
+        return JSONResponse({'ok': False, 'message': str(exc)}, status_code=400)
+
+
+@app.post('/api/instances/{instance_id}/backups')
+def create_backup(request: Request, instance_id: str):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    try:
+        root = instance_root(instance_id)
+        if not root.is_dir():
+            return JSONResponse({'ok': False, 'message': '实例目录不存在'}, status_code=404)
+        backup_dir = root / 'backups'
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        filename = f"backup-{time.strftime('%Y%m%d-%H%M%S')}.tar.gz"
+        archive = shutil.make_archive(str(backup_dir / filename[:-7]), 'gztar', root=str(root), base_dir='.', logger=None)
+        return {'ok': True, 'name': Path(archive).name}
+    except (ValueError, OSError) as exc:
+        return JSONResponse({'ok': False, 'message': f'备份失败: {exc}'}, status_code=400)
+
+
+@app.post('/api/instances/package/inspect')
+async def inspect_package(request: Request, instance_id: str = Form(...), name: str = Form(...), port: int = Form(25565), eula: bool = Form(False), package: UploadFile = File(...)):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    filename = (package.filename or '').lower()
+    if not (filename.endswith('.zip') or filename.endswith('.tar.gz') or filename.endswith('.tgz')):
+        return JSONResponse({'ok': False, 'message': '仅支持 ZIP、TAR.GZ 或 TGZ'}, status_code=400)
+    temp = ROOT / 'tmp-packages'; temp.mkdir(exist_ok=True)
+    archive = temp / f'{secrets.token_hex(12)}-{Path(filename).name}'
+    target = temp / f'inspect-{secrets.token_hex(8)}'
+    try:
+        total = 0
+        with archive.open('wb') as output:
+            while chunk := await package.read(1024 * 1024):
+                total += len(chunk)
+                if total > MAX_PACKAGE_BYTES:
+                    raise ValueError('整合包超过 500MB 限制')
+                output.write(chunk)
+        extract_archive(archive, target)
+        candidates = find_core_candidates(target)
+        return {'ok': True, 'core_candidates': candidates, 'members': total}
+    except Exception as exc:
+        return JSONResponse({'ok': False, 'message': f'整合包分析失败: {exc}'}, status_code=400)
+    finally:
+        archive.unlink(missing_ok=True)
+        shutil.rmtree(target, ignore_errors=True)
+
+
+class ModeDeployPayload(BaseModel):
+    mode: str
+    instance_id: str
+    port: int = Field(ge=1, le=65535)
+    version: str = ''
+    resource: str = ''
+    java_version: str = '21'
+    memory: int = Field(default=4096, ge=512, le=131072)
+
+
+async def download_file(url: str, destination: Path):
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30.0, read=180.0), follow_redirects=True) as client:
+        async with client.stream('GET', url) as response:
+            response.raise_for_status()
+            with destination.open('wb') as output:
+                async for chunk in response.aiter_bytes(1024 * 1024):
+                    output.write(chunk)
+
+
+@app.post('/api/deploy/modes')
+async def deploy_mode(request: Request, payload: ModeDeployPayload):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    if payload.mode not in {'quick', 'bedrock', 'mcdr'}:
+        return JSONResponse({'ok': False, 'message': '部署模式无效'}, status_code=400)
+    instance_id = payload.instance_id.lower()
+    if not INSTANCE_RE.fullmatch(instance_id):
+        return JSONResponse({'ok': False, 'message': '实例 ID 无效'}, status_code=400)
+    java = shutil.which('java')
+    python = shutil.which('python3') or shutil.which('python')
+    if payload.mode == 'mcdr' and not python:
+        return JSONResponse({'ok': False, 'message': '当前主机未检测到 Python，请先安装 Python 3'}, status_code=503)
+    if payload.mode == 'quick' and not java:
+        return JSONResponse({'ok': False, 'message': '当前主机未检测到 Java，请先安装 Java 或配置 Java 环境'}, status_code=503)
+    conn = db()
+    if conn.execute('SELECT 1 FROM instances WHERE id=? OR port=?', (instance_id, payload.port)).fetchone():
+        conn.close()
+        return JSONResponse({'ok': False, 'message': '实例 ID 或端口已存在'}, status_code=409)
+    root = (SERVER_ROOT / instance_id).resolve()
+    root.mkdir(parents=True, exist_ok=False)
+    selected_core = None
+    try:
+        if payload.mode == 'quick':
+            if payload.resource not in {item['id'] for item in CORE_CATALOG} or not payload.version:
+                raise ValueError('快速部署缺少核心或版本')
+            urls = await core_download_urls(payload.resource, payload.version)
+            jar = root / 'server.jar'
+            await download_file(urls[0], jar)
+            selected_core = 'server.jar'
+        elif payload.mode == 'bedrock':
+            raise ValueError('基岩版下载源尚未配置，请先配置 Bedrock 官方镜像')
+        else:
+            python = prepare_mcdr_environment(root, python)
+            (root / 'start_mcdr.py').write_text("from mcdreforged.api.all import *\\n\\nserver = ServerInterface.get_instance()\\n", encoding='utf-8')
+            selected_core = 'start_mcdr.py'
+            write_mcdr_unit(instance_id, python, f'{payload.memory}M')
+            run_systemctl('daemon-reload')
+            run_systemctl('enable', f'mc-{instance_id}.service')
+        (root / 'eula.txt').write_text('eula=true\\n', encoding='utf-8')
+        (root / 'server.properties').write_text(f'server-port={payload.port}\\n', encoding='utf-8')
+        conn.execute('INSERT INTO instances(id,name,port,jar_name,status,created_at,core_candidates,selected_core) VALUES(?,?,?,?,?,?,?,?)', (instance_id, instance_id, payload.port, selected_core or payload.mode, 'stopped', int(time.time()), '[]', selected_core))
+        conn.commit()
+        if payload.mode == 'quick':
+            write_unit(instance_id, selected_core, payload.java_version, f'{payload.memory}M')
+            run_systemctl('daemon-reload')
+            run_systemctl('enable', f'mc-{instance_id}.service')
+        return {'ok': True, 'mode': payload.mode, 'instance': {'id': instance_id}, 'status': 'stopped', 'environment': {'java': java, 'python': python}, 'core': selected_core}
+    except Exception as exc:
+        conn.rollback()
+        shutil.rmtree(root, ignore_errors=True)
+        return JSONResponse({'ok': False, 'message': f'部署失败: {exc}'}, status_code=502)
+    finally:
+        conn.close()
+
+
 @app.get('/api/instances/{instance_id}/logs/stream')
 def instance_logs_live(request: Request, instance_id: str):
     if isinstance((user := require_user(request)), JSONResponse):
@@ -603,4 +843,3 @@ def instance_logs_live(request: Request, instance_id: str):
             yield f'data: {json.dumps({"line": f"[log stream unavailable] {exc}"}, ensure_ascii=False)}\\n\\n'
 
     return StreamingResponse(events(), media_type='text/event-stream', headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
-

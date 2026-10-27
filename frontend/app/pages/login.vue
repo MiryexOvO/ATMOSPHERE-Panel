@@ -15,6 +15,15 @@ const now = ref(new Date())
 const colorMode = useColorMode()
 const customColors = ref({ textPrimary: '#e9dfc6', textSecondary: '#a4aaa3', surface: '#1c252d', background: '#11151b' })
 const colorFields = [{ label: 'TEXT1', variable: 'text-primary', key: 'textPrimary' }, { label: 'TEXT2', variable: 'text-secondary', key: 'textSecondary' }, { label: 'UI COLOR', variable: 'surface', key: 'surface' }, { label: 'BACKGROUND', variable: 'background', key: 'background' }] as const
+const themeOptions = [{ label: 'SYSTEM', value: 'system' }, { label: 'DARK', value: 'dark' }, { label: 'LIGHT', value: 'light' }] as const
+function selectTheme(value: 'system' | 'dark' | 'light') {
+  colorMode.preference = value
+  localStorage.removeItem('custom-theme')
+  const colors = value === 'light' ? { textPrimary: '#17233a', textSecondary: '#59636b', surface: '#fffdf7', background: '#e9e4d8' } : { textPrimary: '#e9dfc6', textSecondary: '#a4aaa3', surface: '#1c252d', background: '#11151b' }
+  customColors.value = colors
+  for (const field of colorFields) document.documentElement.style.setProperty('--' + field.variable, colors[field.key])
+  document.documentElement.style.setProperty('--brand', colors.textPrimary)
+}
 const { t, locale, setLocale } = useI18n()
 const languages = [{ code: 'zh', label: '中文' }, { code: 'en', label: 'EN' }, { code: 'ja', label: 'JA' }]
 const languageOpen = ref(false)
@@ -31,9 +40,6 @@ function saveToLocalStorage() { localStorage.setItem('custom-theme', JSON.string
 function applyCustomColor(variable: string, key: keyof typeof customColors.value, value: string) { customColors.value[key] = value; document.documentElement.style.setProperty(`--${variable}`, value); if (key === 'textPrimary') document.documentElement.style.setProperty('--brand', value); saveToLocalStorage() }
 onUnmounted(() => { if (timer) clearInterval(timer) })
 
-function toggleTheme() {
-  colorMode.preference = colorMode.preference === 'system' ? 'dark' : colorMode.preference === 'dark' ? 'light' : 'system'
-}
 async function login() {
   loading.value = true
   error.value = ''
@@ -82,7 +88,12 @@ async function login() {
   <div class="fixed right-8 top-8 z-50 flex items-center gap-2"> <div class="relative"><button class="palette-trigger border border-border bg-background/50 px-3 py-2 font-mono text-[9px] tracking-widest text-text-secondary backdrop-blur hover:border-brand hover:text-brand" @click="languageOpen=!languageOpen">{{ locale.toUpperCase() }}</button><div v-if="languageOpen" class="palette-menu absolute right-0 top-12 w-28 border border-border bg-surface p-2 shadow-2xl"><button v-for="language in languages" :key="language.code" class="block w-full px-2 py-2 text-left font-mono text-[9px] text-text-secondary hover:text-brand" @click="setLocale(language.code);languageOpen=false">{{language.label}}</button></div></div>
     <button class="palette-trigger border border-border px-3 py-2 font-mono text-[9px] tracking-widest text-text-secondary hover:border-brand hover:text-brand" @click="paletteOpen = !paletteOpen">◒ PALETTE</button>
     <Transition name="palette-fade">
-      <div v-if="paletteOpen" class="palette-menu absolute right-0 top-12 w-56 border border-border bg-surface p-5 shadow-2xl">
+      <div v-if="paletteOpen" class="palette-menu absolute right-0 top-12 w-64 border border-border bg-surface p-5 shadow-2xl">
+        <p class="mb-3 font-mono text-[9px] tracking-[0.2em] text-text-secondary">APPEARANCE</p>
+        <div class="mb-4 space-y-1 border-b border-border pb-4">
+          <button v-for="theme in themeOptions" :key="theme.value" type="button" class="flex w-full items-center gap-2 border border-transparent px-3 py-2 text-left font-mono text-[10px] text-text-secondary hover:bg-background hover:text-text-primary" :class="colorMode.preference === theme.value ? 'border-brand text-text-primary' : ''" @click="selectTheme(theme.value)">◌ {{ theme.label }}</button>
+        </div>
+        <p class="mb-3 font-mono text-[9px] tracking-[0.2em] text-text-secondary">CUSTOM COLORS</p>
         <div class="accent-options"><label v-for="field in colorFields" :key="field.variable" class="relative h-8 w-8 cursor-pointer overflow-hidden rounded-full border border-white/20 shadow-lg transition-transform hover:scale-110"><input type="color" :value="customColors[field.key]" class="absolute inset-[-10px] h-12 w-12 cursor-pointer opacity-0" @input="applyCustomColor(field.variable, field.key, ($event.target as HTMLInputElement).value)"><span class="pointer-events-none block h-full w-full rounded-full" :style="{backgroundColor: customColors[field.key]}" /></label></div>
       </div>
     </Transition>
@@ -92,15 +103,15 @@ async function login() {
     <div class="mx-auto grid w-full max-w-7xl items-center gap-20 lg:grid-cols-[1fr_430px]">
       <section class="intro">
         <span class="font-mono text-xs tracking-[.2em] text-text-secondary">{{ t('authRequired') }}</span>
-        <h1 class="mt-8 font-serif text-6xl font-light leading-[.88] tracking-tight text-text-primary md:text-8xl"><span class="hand-title">ENTRT</span><br><em class="hand-title text-brand">{{ t('titleAtmosphere') }}</em></h1>
+        <h1 class="mt-8 font-serif text-6xl font-light leading-[.88] tracking-tight text-text-primary md:text-8xl"><span class="hand-title text-text-primary">{{ t('titleEnter') }}</span><br><em class="sf-title text-text-primary">{{ t('titleAtmosphere') }}</em></h1>
         <p class="mt-10 max-w-md text-sm leading-8 text-text-secondary">{{ t('desc1') }}<br>{{ t('desc2') }}</p>
       </section>
       <div class="relative w-full max-w-md">
         <div class="pointer-events-none absolute inset-0 translate-x-3 translate-y-3 border border-border bg-black/20 dark:bg-black/40" />
         <form class="auth-card relative border-l border-t border-border bg-surface/80 p-9 shadow-2xl" @submit.prevent="login">
           <div class="flex justify-between border-b border-border pb-5 font-mono text-xs tracking-[.16em] text-brand"><span>ACCESS / LOGIN</span><span>01</span></div>
-          <label class="mt-9 block field-label">{{ t('labelUsername') }}<input v-model="username" class="mt-3 w-full border-0 border-b border-border bg-transparent px-0 py-3 font-mono text-text-primary outline-none focus:border-brand" placeholder="Atmo7"></label>
-          <label class="mt-7 block field-label">{{ t('labelPassword') }}<div class="relative"><input v-model="password" :type="showPassword ? 'text' : 'password'" class="mt-3 w-full border-0 border-b border-border bg-transparent px-0 py-3 pr-8 font-mono text-text-primary outline-none focus:border-brand" placeholder="••••••••••••"><button type="button" class="absolute right-0 top-3 text-text-secondary hover:text-brand" @click="showPassword=!showPassword"><Icon :icon="showPassword ? 'line-md:sunny-filled-loop' : 'line-md:moon-filled-loop'" width="18" /></button></div></label>
+          <label class="mt-9 block text-text-secondary">{{ t('labelUsername') }}<input v-model="username" class="mt-3 w-full border-0 border-b border-border bg-transparent px-0 py-3 font-mono text-text-primary outline-none focus:border-brand" placeholder="Atmo7"></label>
+          <label class="mt-7 block text-text-secondary">{{ t('labelPassword') }}<div class="relative"><input v-model="password" :type="showPassword ? 'text' : 'password'" class="mt-3 w-full border-0 border-b border-border bg-transparent px-0 py-3 pr-8 font-mono text-text-primary outline-none focus:border-brand" placeholder="••••••••••••"><button type="button" class="absolute right-0 top-3 text-text-secondary hover:text-brand" @click="showPassword=!showPassword"><Icon :icon="showPassword ? 'line-md:sunny-filled-loop' : 'line-md:moon-filled-loop'" width="18" /></button></div></label>
           <p class="mt-5 font-mono text-xs" :class="apiOnline ? 'api-online' : 'api-offline'"><i />API {{ apiOnline ? t('apiConnected') : t('apiOffline') }}</p>
           <p v-if="error" class="mt-3 text-sm text-danger">! {{ error }}</p>
           <button class="mt-6 inline-flex w-full items-center justify-between border border-brand/30 bg-transparent px-5 py-4 text-brand transition hover:border-brand hover:bg-brand/10 active:scale-[.99] disabled:opacity-50" :disabled="loading">{{ loading ? t('btnLoading') : t('btnLogin') }}<span v-if="!loading">→</span><span v-else class="h-4 w-4 animate-spin rounded-full border border-brand border-t-transparent" /></button>
@@ -113,5 +124,5 @@ async function login() {
 
 <style scoped>
 .starfield-container{background:var(--background)}.nebula{position:absolute;width:48vw;height:48vw;border-radius:50%;filter:blur(80px);opacity:.08;animation:nebula-pulse 18s ease-in-out infinite}.nebula-1{left:5%;top:8%;background:var(--brand)}.nebula-2{right:2%;bottom:-15%;background:#243b68;animation-delay:-8s}.stars-layer{position:absolute;inset:0}.stars-sm{opacity:.5;background:radial-gradient(circle,#fff 0 1px,transparent 1.5px);background-size:83px 71px;animation:twinkle 9s ease-in-out infinite}.stars-lg{opacity:.55;background:radial-gradient(circle,var(--brand) 0 1.5px,transparent 2px);background-size:211px 193px;animation:twinkle 13s ease-in-out infinite reverse}.cross-star{position:absolute;width:22px;height:22px;color:var(--brand);opacity:.45;animation:float-cross 9s ease-in-out infinite}.cross-star::before,.cross-star::after{content:'';position:absolute;background:currentColor}.cross-star::before{width:100%;height:1px;top:50%;left:0}.cross-star::after{height:100%;width:1px;left:50%;top:0}.cross-1{left:12%;top:22%}.cross-2{right:21%;top:30%;animation-delay:-3s}.cross-3{left:46%;bottom:17%;animation-delay:-6s}.orbit-line{position:absolute;height:1px;width:70%;background:linear-gradient(90deg,transparent,var(--brand),transparent);opacity:.12;mask-image:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent);animation:line-drift 24s ease-in-out infinite}.line-1{left:-8%;top:38%;transform:rotate(-17deg)}.line-2{right:-10%;bottom:27%;transform:rotate(13deg);animation-delay:-10s}.palette-menu{backdrop-filter:none}.palette-heading{display:block;margin-bottom:10px;color:var(--text-secondary);font:9px monospace;letter-spacing:.16em}.theme-options{display:grid;gap:5px;margin-bottom:18px}.theme-options button{display:flex;align-items:center;gap:8px;border:1px solid transparent;background:transparent;padding:7px;color:var(--text-secondary);font:10px monospace;text-align:left}.theme-options button.selected,.theme-options button:hover{border-color:var(--brand);color:var(--brand)}.theme-options i{width:6px;height:6px;border-radius:50%;border:1px solid currentColor}.accent-options{display:flex;gap:11px}.accent-options button{width:23px;height:23px;border:2px solid transparent;border-radius:50%;opacity:.7}.accent-options button.selected{border-color:white;opacity:1;transform:scale(1.1)}.api-online,.api-offline{display:flex;align-items:center;gap:7px}.api-online{color:#4ade80}.api-offline{color:#ef4444}.api-online i,.api-offline i{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor;animation:holo-pulse 1.8s ease-in-out infinite}@keyframes nebula-pulse{50%{transform:scale(1.08);opacity:.12}}@keyframes twinkle{50%{opacity:.2}}@keyframes float-cross{50%{transform:translate(12px,-9px) rotate(15deg);opacity:.75}}@keyframes line-drift{50%{transform:translate(18px,-8px) rotate(-15deg);opacity:.22}}@keyframes holo-pulse{50%{opacity:.35;transform:scale(.72)}}.palette-fade-enter-active,.palette-fade-leave-active{transition:opacity .2s,transform .2s}.palette-fade-enter-from,.palette-fade-leave-to{opacity:0;transform:translateY(-8px)}
-.hand-title{font-family:'Segoe Script','Bradley Hand','Brush Script MT',cursive;font-style:italic;letter-spacing:-.04em;display:inline-block;clip-path:inset(0 100% 0 0);animation:hand-write 1.8s cubic-bezier(.65,0,.35,1) forwards}.hand-title.text-brand{animation-delay:.35s}@keyframes hand-write{to{clip-path:inset(0 0 0 0)}}
+.hand-title{font-style:italic;letter-spacing:-.04em;display:inline-block;clip-path:inset(0 100% 0 0);animation:hand-write 1.2s cubic-bezier(.65,0,.35,1) forwards}.sf-title{font-family:'SF Pro Display','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-style:italic;letter-spacing:-.05em;display:inline-block;clip-path:inset(0 100% 0 0);animation:hand-write 1.4s .2s cubic-bezier(.65,0,.35,1) forwards}@keyframes hand-write{to{clip-path:inset(0 0 0 0)}}
 </style>
