@@ -1,0 +1,16 @@
+{
+  "authRequired": "/ 需要身份验证",
+  "titleEnter": "ENTER",
+  "titleAtmosphere": "the atmosphere.",
+  "desc1": "一个克制、可靠的 Minecraft 服务端控制台。",
+  "desc2": "请使用管理员凭据继续。",
+  "labelUsername": "管理员账号",
+  "labelPassword": "访问密码",
+  "btnLogin": "进入控制台",
+  "btnLoading": "验证中...",
+  "apiConnected": "已连接",
+  "apiOffline": "离线",
+  "sessionInfo": "SESSION / HTTPONLY · SAME-SITE LAX",
+  "sessionDesc": "默认会话有效期 24 小时",
+  "language": "语言"
+}

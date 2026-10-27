@@ -1,0 +1,16 @@
+{
+  "authRequired": "/ 認証が必要です",
+  "titleEnter": "Enter",
+  "titleAtmosphere": "the atmosphere.",
+  "desc1": "抑制された、信頼性の高いMinecraftサーバーコンソール。",
+  "desc2": "管理者の資格情報で続行してください。",
+  "labelUsername": "管理者アカウント",
+  "labelPassword": "アクセスパスワード",
+  "btnLogin": "コンソールへ",
+  "btnLoading": "検証中...",
+  "apiConnected": "接続済み",
+  "apiOffline": "オフライン",
+  "sessionInfo": "SESSION / HTTPONLY · SAME-SITE LAX",
+  "sessionDesc": "セッション有効期間：24時間",
+  "language": "言語"
+}

@@ -312,6 +312,89 @@ def instance_logs_stream(request: Request, instance_id: str):
     return StreamingResponse(events(), media_type='text/event-stream', headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no'})
 
 
+
+
+@app.get('/api/instances/{instance_id}/monitor')
+def instance_monitor(request: Request, instance_id: str):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    if not instance_row(instance_id):
+        return JSONResponse({'ok': False, 'message': '实例不存在'}, status_code=404)
+    code, output = run_systemctl('show', f'mc-{instance_id}.service', '--property=MainPID')
+    values = dict(line.split('=', 1) for line in output.splitlines() if '=' in line)
+    pid = int(values.get('MainPID', '0') or 0)
+    cpu = 0.0
+    memory = 0.0
+    try:
+        import psutil
+        if pid:
+            process = psutil.Process(pid)
+            cpu = process.cpu_percent(interval=0.05)
+            memory = process.memory_percent()
+    except (ImportError, ValueError):
+        pass
+    return {'ok': code == 0, 'cpu_percent': round(cpu, 2), 'memory_percent': round(memory, 2), 'pid': pid}
+
+
+def safe_instance_path(instance_id: str, requested: str) -> tuple[Path, Path]:
+    root = instance_root(instance_id)
+    candidate = (root / requested.lstrip('/')).resolve()
+    if candidate != root and root not in candidate.parents:
+        raise ValueError('路径超出实例目录')
+    return root, candidate
+
+
+@app.get('/api/instances/{instance_id}/files')
+def list_instance_files(request: Request, instance_id: str, path: str = '/'):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    try:
+        _, directory = safe_instance_path(instance_id, path)
+        if not directory.is_dir():
+            return JSONResponse({'ok': False, 'message': '目录不存在'}, status_code=404)
+        root = instance_root(instance_id)
+        entries = []
+        for item in sorted(directory.iterdir(), key=lambda entry: (not entry.is_dir(), entry.name.lower())):
+            relative = '/' + str(item.relative_to(root)).replace('\\', '/')
+            entries.append({'name': item.name, 'path': relative, 'type': 'directory' if item.is_dir() else 'file', 'size': item.stat().st_size if item.is_file() else None})
+        return {'ok': True, 'path': path, 'entries': entries}
+    except ValueError as exc:
+        return JSONResponse({'ok': False, 'message': str(exc)}, status_code=400)
+
+
+@app.get('/api/instances/{instance_id}/files/content')
+def read_instance_file(request: Request, instance_id: str, path: str):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    try:
+        _, target = safe_instance_path(instance_id, path)
+        if not target.is_file() or target.stat().st_size > 5 * 1024 * 1024:
+            return JSONResponse({'ok': False, 'message': '文件不存在或超过 5MB'}, status_code=400)
+        return {'ok': True, 'path': path, 'content': target.read_text(encoding='utf-8')}
+    except (ValueError, UnicodeDecodeError, OSError) as exc:
+        return JSONResponse({'ok': False, 'message': f'文件读取失败: {exc}'}, status_code=400)
+
+
+class FileSavePayload(BaseModel):
+    path: str = Field(min_length=1, max_length=512)
+    content: str = Field(max_length=5 * 1024 * 1024)
+
+
+@app.post('/api/instances/{instance_id}/files/save')
+def save_instance_file(request: Request, instance_id: str, payload: FileSavePayload):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    try:
+        _, target = safe_instance_path(instance_id, payload.path)
+        if target.exists() and target.is_dir():
+            return JSONResponse({'ok': False, 'message': '不能覆盖目录'}, status_code=400)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(payload.content, encoding='utf-8')
+        return {'ok': True, 'path': payload.path}
+    except (ValueError, OSError) as exc:
+        return JSONResponse({'ok': False, 'message': f'文件保存失败: {exc}'}, status_code=400)
+
+
 @app.get('/api/instances/{instance_id}/metrics')
 def instance_metrics(request: Request, instance_id: str):
     if isinstance((user := require_user(request)), JSONResponse): return user
@@ -434,3 +517,90 @@ async def select_core(request: Request, instance_id: str = Form(...), selected_c
     target = (SERVER_ROOT / instance_id / selected_core).resolve(); root = (SERVER_ROOT / instance_id).resolve()
     if not target.is_file() or root not in target.parents: return JSONResponse({'ok': False, 'message': '核心文件不存在'}, status_code=400)
     conn = db(); conn.execute('UPDATE instances SET selected_core=? WHERE id=?', (selected_core, instance_id)); conn.commit(); conn.close(); return {'ok': True}
+
+class PowerPayload(BaseModel):
+    action: str
+
+
+class CommandPayload(BaseModel):
+    command: str = Field(min_length=1, max_length=512)
+
+
+def instance_row(instance_id: str):
+    if not INSTANCE_RE.fullmatch(instance_id):
+        return None
+    conn = db()
+    row = conn.execute('SELECT id,name,port,jar_name,status,created_at,selected_core FROM instances WHERE id=?', (instance_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def instance_root(instance_id: str) -> Path:
+    if not INSTANCE_RE.fullmatch(instance_id):
+        raise ValueError('实例 ID 无效')
+    return (SERVER_ROOT / instance_id).resolve()
+
+
+@app.get('/api/instances/{instance_id}')
+def get_instance(request: Request, instance_id: str):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    row = instance_row(instance_id)
+    return row or JSONResponse({'ok': False, 'message': '实例不存在'}, status_code=404)
+
+
+@app.post('/api/instances/{instance_id}/power')
+def power_instance(request: Request, instance_id: str, payload: PowerPayload):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    if payload.action not in {'start', 'stop', 'restart'}:
+        return JSONResponse({'ok': False, 'message': '不支持的电源操作'}, status_code=400)
+    if not instance_row(instance_id):
+        return JSONResponse({'ok': False, 'message': '实例不存在'}, status_code=404)
+    code, output = run_systemctl(payload.action, f'mc-{instance_id}.service')
+    status = 'running' if code == 0 and payload.action in {'start', 'restart'} else 'stopped' if code == 0 else 'failed'
+    conn = db()
+    conn.execute('UPDATE instances SET status=? WHERE id=?', (status, instance_id))
+    conn.commit()
+    conn.close()
+    return {'ok': code == 0, 'status': status, 'output': output}
+
+
+@app.post('/api/instances/{instance_id}/command')
+def instance_command(request: Request, instance_id: str, payload: CommandPayload):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    if not instance_row(instance_id):
+        return JSONResponse({'ok': False, 'message': '实例不存在'}, status_code=404)
+    return JSONResponse({'ok': False, 'message': 'RCON 尚未配置，请先在实例设置中配置 RCON'}, status_code=501)
+
+
+@app.get('/api/instances/{instance_id}/players')
+def instance_players(request: Request, instance_id: str):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    if not instance_row(instance_id):
+        return JSONResponse({'ok': False, 'message': '实例不存在'}, status_code=404)
+    return {'ok': True, 'players': []}
+
+
+@app.get('/api/instances/{instance_id}/logs/stream')
+def instance_logs_live(request: Request, instance_id: str):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    if not instance_row(instance_id):
+        return JSONResponse({'ok': False, 'message': '实例不存在'}, status_code=404)
+
+    def events():
+        command = ['journalctl', '-u', f'mc-{instance_id}', '-n', '50', '-f', '--output=cat']
+        try:
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+            assert process.stdout is not None
+            for line in iter(process.stdout.readline, ''):
+                if line:
+                    yield f'data: {json.dumps({"line": line.rstrip()}, ensure_ascii=False)}\\n\\n'
+        except (FileNotFoundError, OSError) as exc:
+            yield f'data: {json.dumps({"line": f"[log stream unavailable] {exc}"}, ensure_ascii=False)}\\n\\n'
+
+    return StreamingResponse(events(), media_type='text/event-stream', headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+

@@ -1,23 +1,28 @@
-import type { Config } from 'tailwindcss'
-
-export default <Partial<Config>>{
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   darkMode: 'class',
-  content: ['./app/**/*.{vue,ts,js}'],
+  content: [
+    "./app/components/**/*.{vue,js,ts}",
+    "./app/layouts/**/*.vue",
+    "./app/pages/**/*.vue",
+    "./app/app.vue",
+  ],
   theme: {
     extend: {
       colors: {
+        // 映射
         background: 'var(--background)',
         surface: 'var(--surface)',
-        border: 'var(--border)',
         brand: 'var(--brand)',
-        'text-main': 'var(--text-primary)',
-        'text-sub': 'var(--text-secondary)',
+        'text-primary': 'var(--text-primary)',
         'text-secondary': 'var(--text-secondary)',
-        primary: 'var(--primary)',
-        'primary-foreground': 'var(--primary-foreground)',
-        'data-live': 'var(--data-live)',
-        danger: 'var(--danger)'
+        border: 'var(--border)',
+      },
+      fontFamily: {
+        serif: ['Bodoni 72', 'Didot', 'Times New Roman', 'serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
       }
     }
-  }
+  },
+  plugins: [],
 }

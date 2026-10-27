@@ -1,31 +1,102 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-const props = defineProps<{ open: boolean; core: any; versions: string[]; loading?: boolean; error?: string }>()
-const emit = defineEmits<{ close: []; deploy: [version: string, build: string] }>()
-const wizardStep = ref(1)
-const selectedMcVersion = ref<string | null>(null)
-const builds = ref<string[]>([])
-const loadingBuilds = ref(false)
-watch(() => props.open, (open) => { if (open) { wizardStep.value = 1; selectedMcVersion.value = null; builds.value = [] } })
-async function chooseVersion(version: string) {
-  selectedMcVersion.value = version
-  wizardStep.value = 2
-  loadingBuilds.value = true
-  try {
-    const result: any = await $fetch(`/api/resources/cores/${props.core.id}/versions/${encodeURIComponent(version)}/builds`, { credentials: 'include' })
-    builds.value = result.builds || []
-  } catch { builds.value = [] }
-  finally { loadingBuilds.value = false }
+import { computed, ref, watch } from 'vue'
+
+type Core = { id: string; name: string }
+type Selection = { core: string; version: string; build: string }
+
+const props = defineProps<{
+  open: boolean
+  core: Core | null
+  versions: string[]
+  builds: Record<string, string[]>
+}>()
+
+const emit = defineEmits<{
+  close: []
+  select: [selection: Selection]
+}>()
+
+const step = ref(1)
+const selectedVersion = ref<string | null>(null)
+
+const selectedBuilds = computed(() => (selectedVersion.value ? props.builds[selectedVersion.value] || ['最新稳定版'] : []))
+
+watch(() => props.open, (open) => {
+  if (open) {
+    step.value = 1
+    selectedVersion.value = null
+  }
+})
+
+function chooseVersion(version: string) {
+  selectedVersion.value = version
+  step.value = 2
+}
+
+function chooseBuild(build: string) {
+  if (!props.core || !selectedVersion.value) return
+  emit('select', {
+    core: props.core.name,
+    version: selectedVersion.value,
+    build,
+  })
 }
 </script>
+
 <template>
   <Teleport to="body">
-    <div v-if="open" class="wizard-backdrop" @click.self="emit('close')">
-      <section class="wizard-modal">
-        <header class="wizard-header"><div><span>/ CORE LIBRARY / {{ core?.name }}</span><h2>{{ core?.name }} 选择构建版本</h2></div><button class="wizard-close" @click="emit('close')">×</button></header>
-        <div class="wizard-progress"><b :class="{active:wizardStep===1,done:wizardStep>1}">01 <span>游戏版本</span></b><i></i><b :class="{active:wizardStep===2}">02 <span>构建版本</span></b></div>
-        <div v-if="wizardStep===1" class="wizard-pane"><h3>选择 Minecraft 游戏版本</h3><p>选择版本后，将只加载该核心对应的构建分支。</p><div class="wizard-version-grid"><button v-for="version in versions" :key="version" @click="chooseVersion(version)">{{ version }}</button></div></div>
-        <div v-else class="wizard-pane"><button class="wizard-back" @click="wizardStep=1">← 返回游戏版本</button><h3>选择 {{ selectedMcVersion }} 的构建版本</h3><p v-if="loadingBuilds">正在读取官方构建列表...</p><p v-else-if="!builds.length" class="wizard-error">! 当前版本暂未获取到构建列表</p><div class="wizard-build-grid"><button v-for="build in builds" :key="build" @click="emit('deploy', selectedMcVersion!, build)"><span>{{ build }}</span><em v-if="build===builds[0]">推荐 / 最新</em></button></div></div>
+    <div
+      v-if="open"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      @click.self="emit('close')"
+    >
+      <section class="w-full max-w-lg border border-border bg-surface p-6 shadow-2xl">
+        <header class="mb-6 flex items-start justify-between gap-4 border-b border-border pb-5">
+          <div>
+            <p class="mb-2 font-mono text-[10px] tracking-[0.22em] text-text-secondary">/ DEPLOYMENT WIZARD / 0{{ step }}</p>
+            <h2 class="font-mono text-lg font-bold text-text-primary">
+              [ {{ core?.name }} ] {{ step === 1 ? '选择游戏版本' : '选择构建版本' }}
+            </h2>
+          </div>
+          <button type="button" class="font-mono text-xl text-text-secondary hover:text-text-primary" aria-label="关闭" @click="emit('close')">×</button>
+        </header>
+
+        <div v-if="step === 1">
+          <p class="mb-4 text-xs text-text-secondary">选择一个 Minecraft 游戏版本以继续。</p>
+          <div class="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
+            <button
+              v-for="version in versions"
+              :key="version"
+              type="button"
+              class="border border-border px-3 py-4 text-center font-mono text-xs text-text-secondary transition-colors hover:border-brand hover:text-text-primary"
+              :class="selectedVersion === version ? 'border-brand bg-brand/10 text-text-primary' : ''"
+              @click="chooseVersion(version)"
+            >
+              {{ version }}
+            </button>
+          </div>
+        </div>
+
+        <div v-else>
+          <button type="button" class="mb-5 font-mono text-[11px] text-text-secondary hover:text-text-primary" @click="step = 1">
+            ← 返回游戏版本
+          </button>
+          <p class="mb-4 text-xs text-text-secondary">{{ selectedVersion }} 的可用构建版本。</p>
+          <div class="space-y-2">
+            <button
+              v-for="(build, index) in selectedBuilds"
+              :key="build"
+              type="button"
+              class="flex w-full items-center justify-between border border-border px-4 py-3 text-left font-mono text-sm text-text-primary transition-colors hover:border-brand/60 hover:bg-background"
+              @click="chooseBuild(build)"
+            >
+              <span>{{ build }}</span>
+              <span v-if="index === 0" class="border border-emerald-500/50 px-2 py-0.5 text-[9px] tracking-[0.16em] text-emerald-400">NEW</span>
+            </button>
+          </div>
+        </div>
       </section>
     </div>
   </Teleport>
