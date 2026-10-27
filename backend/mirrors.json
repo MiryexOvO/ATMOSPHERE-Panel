@@ -1,0 +1,15 @@
+{
+  "java": {
+    "official": "https://api.adoptium.net/v3/assets/latest/{version}/hotspot?architecture=x64&image_type=jdk&os=linux",
+    "tuna": "https://mirrors.tuna.tsinghua.edu.cn/Adoptium/",
+    "huawei": "https://repo.huaweicloud.com/java/jdk/"
+  },
+  "vanilla": {
+    "official": "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json",
+    "bmclapi": "https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json"
+  },
+  "paper": {
+    "official": "https://api.papermc.io/v2/projects/paper",
+    "fastmirror": "https://s3.fastmirror.net/api/projects/paper"
+  }
+}
