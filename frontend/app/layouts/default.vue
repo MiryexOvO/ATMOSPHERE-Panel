@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+
 import StarfieldBackground from '~/components/ui/StarfieldBackground.vue'
 
 const now = ref(new Date())

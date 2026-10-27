@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+
 
 type Core = { id: string; name: string }
 type Selection = { core: string; version: string; build: string }

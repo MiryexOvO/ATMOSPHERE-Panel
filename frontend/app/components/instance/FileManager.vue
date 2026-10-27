@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+
 const props = defineProps<{ instanceId: string }>()
 type Entry = { name: string; path: string; type: 'file' | 'directory'; size?: number }
 const entries = ref<Entry[]>([])

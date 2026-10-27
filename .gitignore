@@ -2,7 +2,23 @@
 # 依赖包
 # =========================
 node_modules/
+
+# Python 缓存与虚拟环境
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
 .pnpm-store/
+
+# =========================
+# Database (绝对不提交本地状态)
+# =========================
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-journal
 
 # =========================
 # 前端 (Nuxt / Vite) 产物
@@ -15,7 +31,7 @@ dist/
 .vite/
 
 # =========================
-# 后端 (Node.js / 通用) 
+# 后端 (Node.js / Python) 
 # =========================
 build/
 logs/

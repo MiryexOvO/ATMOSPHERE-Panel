@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+
 const props = defineProps<{ instanceId: string }>()
 type Point = { time: string; cpu: number; memory: number }
 const points = ref<Point[]>([])

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+
 
 type Level = 'normal' | 'error' | 'warn' | 'system'
 type LogLine = { id: number; text: string; level: Level; time: string }
@@ -54,7 +54,7 @@ async function sendCommand() {
   const value = command.value.trim()
   if (!value || sending.value) return
   sending.value = true
-  try { await $fetch('/api/instances/' + encodeURIComponent(props.instanceId) + '/command', { method: 'POST', credentials: 'include', body: { command: value } }); append('> ' + value); command.value = '' } catch (error: any) { append('[command error] ' + (error?.data?.message || '指令发送失败')) } finally { sending.value = false }
+  try { await $fetch('/api/instances/' + encodeURIComponent(props.instanceId) + '/command', { method: 'POST', credentials: 'include', body: { command: value } }); append('> ' + value); command.value = '' } catch (error: unknown) { const err = error as { data?: { message?: string }; message?: string }; append('[command error] ' + (err.data?.message || err.message || '指令发送失败')) } finally { sending.value = false }
 }
 
 function clearLogs() { logs.value = [] }

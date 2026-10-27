@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+
 import Step2CoreSelector from '~/components/deploy/Step2CoreSelector.vue'
 
 definePageMeta({ middleware: 'auth' })
 
-type Mode = 'quick' | 'bedrock' | 'package' | 'mcdr'
-type WizardData = { mode: Mode | ''; name: string; port: number; coreType: string; mcVersion: string; buildVersion: string; javaVersion: string; memory: number; useAikar: boolean; packageFile: File | null; packageInfo: any }
+type DeployResult = { ok: boolean; message?: string; instance?: { id: string }; core_candidates?: Array<{ path: string; kind: string; recommended?: boolean }> }
+type WizardData = import('~/types').DeployWizardData
+type Mode = WizardData['mode']
 const data = useState<WizardData>('wizard-data', () => ({ mode: '', name: '', port: 25565, coreType: '', mcVersion: '', buildVersion: '', javaVersion: '21', memory: 4096, useAikar: true, packageFile: null, packageInfo: null }))
 const step = ref(0)
 const busy = ref(false)
 const error = ref('')
-const result = ref<any>(null)
+const result = ref<DeployResult | null>(null)
+const { request } = useApi()
 const modes = [{ id: 'quick', title: '快速部署', desc: '在线选择核心、版本与构建', icon: '↗' }, { id: 'bedrock', title: '基岩版', desc: '部署 Bedrock Dedicated Server', icon: '◇' }, { id: 'package', title: '上传整合包', desc: '上传、解压并自动检测服务端核心', icon: '↑' }, { id: 'mcdr', title: 'MCDR', desc: '使用 Python 管理 Minecraft 服务端', icon: '⌘' }] as const
 const steps = computed(() => data.value.mode === 'quick' ? ['基本信息', '核心文件', '环境与设置', '确认信息', '执行部署', '完成结果'] : data.value.mode === 'bedrock' ? ['基本信息', '服务端版本', '环境与设置', '确认信息', '执行部署', '完成结果'] : data.value.mode === 'package' ? ['上传整合包', '基本信息', '核心配置', '环境与设置', '确认信息', '执行部署', '完成结果'] : ['基本信息', 'Python 环境', '核心文件', '环境与设置', '确认信息', '执行部署', '完成结果'])
 const isComplete = computed(() => step.value === steps.value.length)
@@ -26,9 +28,9 @@ const canContinue = computed(() => {
 })
 function selectMode(mode: Mode) { data.value.mode = mode; step.value = 1; error.value = ''; result.value = null }
 function setCore(value: { core: string; version: string; build: string }) { data.value.coreType = value.core; data.value.mcVersion = value.version; data.value.buildVersion = value.build; data.value.javaVersion = value.version.startsWith('1.20') ? '17' : '21' }
-function onPackage(event: Event) { const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return; if (!/\\.(zip|tar\\.gz|tgz)$/i.test(file.name)) { error.value = '仅支持 .zip、.tar.gz 或 .tgz 整合包。'; return }; if (file.size > 500 * 1024 * 1024) { error.value = '整合包不能超过 500MB。'; return }; data.value.packageFile = file; error.value = '' }
-async function analyzePackage() { if (!data.value.packageFile) return; busy.value = true; error.value = ''; try { const form = new FormData(); form.set('instance_id', 'scan-' + Date.now().toString(36)); form.set('name', 'Package Scan'); form.set('port', String(data.value.port)); form.set('eula', 'false'); form.set('package', data.value.packageFile); const response = await $fetch('/api/instances/package/inspect', { method: 'POST', credentials: 'include', body: form }); data.value.packageInfo = response; const candidate = response.core_candidates?.find((item: any) => item.recommended) || response.core_candidates?.[0]; if (candidate) data.value.coreType = candidate.path; step.value++ } catch (cause: any) { error.value = cause?.data?.message || '整合包分析失败。' } finally { busy.value = false } }
-async function deploy() { busy.value = true; error.value = ''; try { if (data.value.mode === 'package' && data.value.packageFile) { const form = new FormData(); form.set('instance_id', data.value.name.toLowerCase()); form.set('name', data.value.name); form.set('port', String(data.value.port)); form.set('eula', 'true'); form.set('package', data.value.packageFile); result.value = await $fetch('/api/instances/package', { method: 'POST', credentials: 'include', body: form }) } else { result.value = await $fetch('/api/deploy/modes', { method: 'POST', credentials: 'include', body: { mode: data.value.mode, instance_id: data.value.name.toLowerCase(), port: data.value.port, version: data.value.mcVersion, resource: data.value.coreType, java_version: data.value.javaVersion, memory: data.value.memory } }) }; step.value = steps.value.length } catch (cause: any) { error.value = cause?.data?.message || '部署失败。' } finally { busy.value = false } }
+function onPackage(event: Event) { const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return; if (!/\.(zip|tar\.gz|tgz)$/i.test(file.name)) { error.value = '仅支持 .zip、.tar.gz 或 .tgz 整合包。'; return }; if (file.size > 500 * 1024 * 1024) { error.value = '整合包不能超过 500MB。'; return }; data.value.packageFile = file; error.value = '' }
+async function analyzePackage() { if (!data.value.packageFile) return; busy.value = true; error.value = ''; try { const form = new FormData(); form.set('instance_id', 'scan-' + Date.now().toString(36)); form.set('name', 'Package Scan'); form.set('port', String(data.value.port)); form.set('eula', 'false'); form.set('package', data.value.packageFile); const response = await request('/api/instances/package/inspect', { method: 'POST', body: form }); data.value.packageInfo = response; const candidate = response.core_candidates?.find((item) => item.recommended) || response.core_candidates?.[0]; if (candidate) data.value.coreType = candidate.path; step.value++ } catch (cause: unknown) { const err = cause as { data?: { message?: string }; message?: string }; error.value = err.data?.message || err.message || '整合包分析失败。' } finally { busy.value = false } }
+async function deploy() { busy.value = true; error.value = ''; try { if (data.value.mode === 'package' && data.value.packageFile) { const form = new FormData(); form.set('instance_id', data.value.name.toLowerCase()); form.set('name', data.value.name); form.set('port', String(data.value.port)); form.set('eula', 'true'); form.set('package', data.value.packageFile); result.value = await request('/api/instances/package', { method: 'POST', body: form }) } else { result.value = await request('/api/deploy/modes', { method: 'POST', body: { mode: data.value.mode, instance_id: data.value.name.toLowerCase(), port: data.value.port, version: data.value.mcVersion, resource: data.value.coreType, java_version: data.value.javaVersion, memory: data.value.memory } }) }; step.value = steps.value.length } catch (cause: unknown) { const err = cause as { data?: { message?: string }; message?: string }; error.value = err.data?.message || err.message || '部署失败。' } finally { busy.value = false } }
 function next() { error.value = ''; if (!canContinue.value) { error.value = '请先完成当前步骤。'; return }; if (data.value.mode === 'package' && step.value === 1) { analyzePackage(); return }; if (step.value === steps.value.length - 2) { deploy(); return }; if (step.value < steps.value.length) step.value++ }
 function back() { if (step.value > 1) step.value--; else { step.value = 0; data.value.mode = '' } }
 </script>

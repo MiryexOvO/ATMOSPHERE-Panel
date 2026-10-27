@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+
 const props = defineProps<{ instanceId: string }>()
 type Backup = { name: string; size: number; created_at: number }
 const items = ref<Backup[]>([])
 const loading = ref(false)
 const message = ref('')
 async function load() { const result = await $fetch<{ backups: Backup[] }>("/api/instances/" + encodeURIComponent(props.instanceId) + "/backups", { credentials: 'include' }); items.value = result.backups }
-async function create() { loading.value = true; message.value = ''; try { const result = await $fetch<{ name: string }>("/api/instances/" + encodeURIComponent(props.instanceId) + "/backups", { method: 'POST', credentials: 'include' }); message.value = '已创建：' + result.name; await load() } catch (error: any) { message.value = error?.data?.message || '备份失败' } finally { loading.value = false } }
+async function create() { loading.value = true; message.value = ''; try { const result = await $fetch<{ name: string }>("/api/instances/" + encodeURIComponent(props.instanceId) + "/backups", { method: 'POST', credentials: 'include' }); message.value = '已创建：' + result.name; await load() } catch (error: unknown) { const err = error as { data?: { message?: string }; message?: string }; message.value = err.data?.message || err.message || '备份失败' } finally { loading.value = false } }
 onMounted(load)
 </script>
 <template>

@@ -6,7 +6,8 @@ const emit = defineEmits<{ close: []; complete: [] }>()
 const step = ref(1)
 const formData = reactive({ name: '', port: 25565, coreType: '', mcVersion: '', buildVersion: '', javaVersion: '', memory: '4G', useAikar: true })
 const coreModal = ref(false)
-const selectedCore = ref<any>(null)
+type CoreOption = { id: string; name: string }
+const selectedCore = ref<CoreOption | null>(null)
 const deployStatus = ref('idle')
 const deployPercent = ref(0)
 const deployMessage = ref('')
@@ -15,7 +16,7 @@ const deploySteps = ref([
 ])
 const validBasic = computed(() => /^[A-Za-z0-9-]{2,48}$/.test(formData.name) && formData.port > 0 && formData.port < 65536)
 const canNext = computed(() => step.value === 1 ? validBasic.value : step.value === 2 ? !!formData.coreType && !!formData.mcVersion && !!formData.buildVersion : step.value === 3 ? !!formData.javaVersion && !!formData.memory : true)
-function chooseCore(core: any, version: string, build: string) { selectedCore.value = core; formData.coreType = core.name; formData.mcVersion = version; formData.buildVersion = build; coreModal.value = false }
+function chooseCore(core: CoreOption, version: string, build: string) { selectedCore.value = core; formData.coreType = core.name; formData.mcVersion = version; formData.buildVersion = build; coreModal.value = false }
 function recommendJava(version: string) { formData.javaVersion = version.startsWith('1.16') ? '8' : version.startsWith('1.17') ? '16' : (version.startsWith('1.18') || version.startsWith('1.19') || version === '1.20.4') ? '17' : '21' }
 watch(() => formData.mcVersion, value => { if (value) recommendJava(value) })
 function next() { if (!canNext.value) return; if (step.value < 4) step.value++; else if (step.value === 4) { step.value = 5; startDeploy() } }
@@ -24,10 +25,10 @@ async function startDeploy() {
   deployStatus.value = 'running'; deployMessage.value = '准备部署'
   try {
     const fd = new FormData(); fd.set('instance_id', formData.name.toLowerCase()); fd.set('resource', formData.coreType.toLowerCase()); fd.set('version', formData.mcVersion); fd.set('build', formData.buildVersion); fd.set('java_version', formData.javaVersion)
-    const result: any = await $fetch('/api/deploy/tasks', { method: 'POST', credentials: 'include', body: fd })
+    const result = await $fetch<{ task_id: string }>('/api/deploy/tasks', { method: 'POST', credentials: 'include', body: fd })
     const source = new EventSource(`/api/deploy/stream?task_id=${encodeURIComponent(result.task_id)}`)
     source.onmessage = event => { const data = JSON.parse(event.data); deployPercent.value = data.percent || 0; deployMessage.value = data.stage || data.status; if (data.status === 'completed') { deploySteps.value.forEach(item => item.state = 'done'); deployStatus.value = 'done'; source.close() } if (data.status === 'failed') { deployStatus.value = 'failed'; source.close() } }
-  } catch (error: any) { deployStatus.value = 'failed'; deployMessage.value = error?.data?.message || '部署失败' }
+  } catch (error: unknown) { const err = error as { data?: { message?: string }; message?: string }; deployStatus.value = 'failed'; deployMessage.value = err.data?.message || err.message || '部署失败' }
 }
 </script>
 <template>
