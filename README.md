@@ -6,7 +6,6 @@
       </td>
       <td align="left" valign="middle" style="border:0;">
         <h1>ATMOSPHERE-PANEL</h1>
-        <hr>
         <p>克制、可靠、可扩展的 Minecraft 服务端控制面板。</p>
       </td>
     </tr>
