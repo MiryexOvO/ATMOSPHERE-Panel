@@ -1,14 +1,10 @@
-<div align="center">
-  <div style="display: flex; align-items: center; justify-content: center; max-width: 700px; text-align: left;">
-    <div style="flex-shrink: 0; margin-right: 30px; text-align: center;">
-      <img src="Nuxt.png" width="112" height="112" alt="ATMOSPHERE logo">
-    </div>
-    <div style="flex-grow: 1;">
-      <h1 style="margin: 0 0 10px 0; font-size: 28px;">ATMOSPHERE-PANEL</h1>
-      <p style="margin: 0; color: #57606a;">克制、可靠、可扩展的 Minecraft 服务端控制面板。</p>
-    </div>
-  </div>
-</div>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="header-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="header-light.png">
+    <img src="header-dark.png" width="700" alt="Banner">
+  </picture>
+</p>
 
 <p align="center">
   <!-- HTML5 -->
