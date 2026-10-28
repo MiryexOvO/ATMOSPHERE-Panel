@@ -1,10 +1,10 @@
-<div align="center">
-  <img src="IMG/Nuxt.png" style="width: 128px; height: 128px;">
-</div>
-
-<h1 align="center">
-  ATMOSPHERE-PANEL
-</h1>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="header-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="header-light.png">
+    <img src="header-dark.png" width="700" alt="Banner">
+  </picture>
+</p>
 
 <p align="center">
   <!-- HTML5 -->
@@ -30,14 +30,31 @@
 </p>
 
 <p align="center">
-  <a href="README_EN.md">English</a> | <a href="README.md">简体中文</a> | 日本語
+  <a href="./README_EN.md">English</a> | <a href="./README.md">简体中文</a> | 日本語
 </p>
 
-<p align="center">
-  多用途で、節度があり、信頼性が高く、直感的な Minecraft サーバーコンソールの作成を目指しています。
-</p>
+## 概要
+
+ATMOSPHERE-PANEL は、Web ベースの Minecraft サーバー管理パネルです。認証で保護されたインターフェースを通じて、サーバーインスタンスの登録、サーバーコアとバージョンの選択、バックエンド API を利用したサーバーファイルのデプロイを行えます。
+
+プロジェクトは次の 2 つの部分で構成されています。
+
+- `frontend/` — Nuxt ベースの Web インターフェース
+- `backend/` — SQLite ストレージとデプロイ API を備えた FastAPI サービス
+
+## 機能
+
+- 安全なパスワードハッシュとセッション Cookie を使用した認証機能
+- インスタンス ID とポートを管理する Minecraft サーバーインスタンス管理
+- 複数の Java 版、Bedrock 版、MCDR のコアとバージョンの選択に対応
+- `.zip` および `.tar.gz` 形式のサーバーコアと Modpack アーカイブの処理に対応
+- パストラバーサルと危険なファイルを検査する安全なアーカイブ展開
+- デプロイ時の Java バージョンと JVM メモリ設定
+- 一部のリソースに対する公式リソース参照とミラー設定
+- SQLite に基づくローカルデータストレージ
 
 ## クイックスタート
+
 リポジトリをクローンします
   ```bash
   git clone https://github.com/MiryexOvO/ATMOSPHERE-Panel.git
@@ -58,17 +75,27 @@ npm run dev
 # 4. 本番環境へデプロイ
 npm run build
 
-# 5. 正式版をローカルでプレビュー
+# 5. 本番版をローカルでプレビュー
 npm run preview
 ```
- 
+
 デフォルトのパネルポート：`27777`、設定可能  
 `http://127.0.0.1:5173` にアクセスしてください。現在 Nuxt はクライアントサイドレンダリングを使用しており、API は `/api` を通じて FastAPI `27777` にプロキシされます  
 初回起動時、ターミナルには 20 文字の初期パスワードが一度だけ表示されます
 
-## バックエンド（[FastAPI](https://fastapi.tiangolo.com/)）
+## バックエンド開発（[FastAPI](https://fastapi.tiangolo.com/)）
 
-### Linux
+
+### Linux ワンクリックデプロイ（推奨）
+
+```bash
+wget -qO install.sh https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh
+sudo bash install.sh
+```
+
+スクリプトはインストールパスとポートを対話形式で確認し、依存関係、Python 仮想環境、Nuxt のビルド、systemd への登録を自動的に完了します。
+
+### Linux 手動デプロイ
 
 ```bash
 # 1. プロジェクトフォルダに移動
@@ -103,8 +130,31 @@ Set-ExecutionPolicy -Scope Process Bypass
 Linux コマンド `.venv/bin/activate` は使用しないでください。Windows の仮想環境のエントリーポイントは `.venv\\Scripts\\python.exe` です  
 Python 3.14 のシステム pip が壊れている場合は、Python 3.12 または 3.13 を使用して仮想環境を作成することをおすすめします
 
-## ライセンス
-このプロジェクトは [MIT License](LICENSE) のもとで公開されています ^ ^ 
+## サービス管理
 
-## メンテナンスとサポート  
-Maintained by [Miryex](https://www.astrelia7.com)。
+```bash
+sudo systemctl status atmosphere-panel.service
+sudo systemctl restart atmosphere-panel.service
+sudo journalctl -u atmosphere-panel.service -f
+```
+
+## 注意事項
+
+- バージョンに関するお知らせ：このバージョンはまだ正常に使用できません。すべての機能が正常に使用できるようになるのは 0.2 版の予定です ^ ^
+- Windows 起動スクリプトはクロスプラットフォーム開発専用です
+- 初期パスワードは初回の初期化時にのみ出力されます
+
+## 開発チェック
+
+```bash
+cd frontend && npm run build
+cd ../backend && find app -name "*.py" -print0 | xargs -0 -n1 python3 -m py_compile
+```
+
+## ライセンス
+
+このプロジェクトは [MIT License](LICENSE) を採用しています
+
+## メンテナンスとサポート
+
+Maintained by [Miryex](https://www.astrelia7.com)
