@@ -1,9 +1,87 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-RESET='\033[0m'; GOLD='\033[38;5;222m'; CYAN='\033[36m'; GREEN='\033[32m'; RED='\033[31m'
-REPO_URL='https://github.com/MiryexOvO/ATMOSPHERE-Panel.git'; MIRROR_REPO_URL='https://bgithub.xyz/https://github.com/MiryexOvO/ATMOSPHERE-Panel.git'; DEFAULT_INSTALL_PATH='/root/ATMOSPHERE-Panel'; DEFAULT_BACKEND_PORT=27777; DEFAULT_FRONTEND_PORT=3000; PIP_INDEX='https://pypi.tuna.tsinghua.edu.cn/simple'; NPM_REGISTRY='https://registry.npmmirror.com'; BACKEND_SERVICE='atmosphere-panel.service'; FRONTEND_SERVICE='atmosphere-frontend.service'
-info(){ printf '  %b»%b %s\n' "$CYAN" "$RESET" "$1"; }; fail(){ printf '  %b✗%b %s\n' "$RED" "$RESET" "$1" >&2; exit 1; }; box(){ printf '\n%b╔══════════════════════════════════════════════════════════════╗%b\n' "$GOLD" "$RESET"; printf '%b║%b  %-58s%b║%b\n' "$GOLD" "$RESET" "$1" "$GOLD" "$RESET"; printf '%b╚══════════════════════════════════════════════════════════════╝%b\n' "$GOLD" "$RESET"; }
-[[ $(id -u) -eq 0 ]] || fail '请使用 root 运行'; read -r -p "安装路径 [$DEFAULT_INSTALL_PATH]: " INSTALL_PATH; INSTALL_PATH=${INSTALL_PATH:-$DEFAULT_INSTALL_PATH}; read -r -p "后端端口 [$DEFAULT_BACKEND_PORT]: " BACKEND_PORT; BACKEND_PORT=${BACKEND_PORT:-$DEFAULT_BACKEND_PORT}; read -r -p "前端端口 [$DEFAULT_FRONTEND_PORT]: " FRONTEND_PORT; FRONTEND_PORT=${FRONTEND_PORT:-$DEFAULT_FRONTEND_PORT}; read -r -p '公网 IP/域名: ' PUBLIC_IP
+
+CYAN='\033[1;36m'
+GREEN='\033[1;32m'
+RED='\033[0;31m'
+NC='\033[0m'
+RESET="$NC"
+GOLD="$CYAN"
+REPO_URL='https://github.com/MiryexOvO/ATMOSPHERE-Panel.git'
+MIRROR_REPO_URL='https://bgithub.xyz/https://github.com/MiryexOvO/ATMOSPHERE-Panel.git'
+DEFAULT_INSTALL_PATH='/opt/ATMOSPHERE-Panel'
+DEFAULT_BACKEND_PORT=27777
+DEFAULT_FRONTEND_PORT=3000
+PIP_INDEX='https://pypi.tuna.tsinghua.edu.cn/simple'
+NPM_REGISTRY='https://registry.npmmirror.com'
+BACKEND_SERVICE='atmosphere-panel.service'
+FRONTEND_SERVICE='atmosphere-frontend.service'
+
+info(){ printf '  %b»%b %s\n' "$CYAN" "$RESET" "$1"; }
+fail(){ printf '  %b✗%b %s\n' "$RED" "$RESET" "$1" >&2; exit 1; }
+box(){ printf '\n%b╔══════════════════════════════════════════════════════════════╗%b\n' "$CYAN" "$RESET"; printf '%b║%b  %-58s%b║%b\n' "$CYAN" "$RESET" "$1" "$CYAN" "$RESET"; printf '%b╚══════════════════════════════════════════════════════════════╝%b\n' "$CYAN" "$RESET"; }
+
+get_user_config() {
+  clear || true
+  box '准备部署 ATMOSPHERE PANEL'
+  printf '%b交互式安装向导 · 配置完成后开始部署%b\n\n' "$CYAN" "$RESET"
+
+  echo -e "${CYAN}【安装路径】${NC}"
+  echo '1) 默认路径 (/opt/ATMOSPHERE-Panel)'
+  echo '2) 自定义绝对路径'
+  while true; do
+    read -r -p '请选择 [1-2] (默认 1): ' choice; choice=${choice:-1}
+    case "$choice" in
+      1) INSTALL_PATH="$DEFAULT_INSTALL_PATH"; break ;;
+      2) read -r -p '请输入绝对路径: ' INSTALL_PATH; [[ -n "$INSTALL_PATH" && "$INSTALL_PATH" = /* ]] && break; echo -e "${RED}路径必须是非空绝对路径。${NC}" ;;
+      *) echo -e "${RED}输入无效，请选 1 或 2。${NC}" ;;
+    esac
+  done
+  echo
+  echo -e "${CYAN}【后端端口】${NC}"
+  echo '1) 默认端口 (27777)'; echo '2) 自定义端口'
+  while true; do
+    read -r -p '请选择 [1-2] (默认 1): ' choice; choice=${choice:-1}
+    case "$choice" in
+      1) BACKEND_PORT=27777; break ;;
+      2) read -r -p '请输入端口 (1-65535): ' BACKEND_PORT; [[ "$BACKEND_PORT" =~ ^[0-9]+$ ]] && ((BACKEND_PORT>=1&&BACKEND_PORT<=65535)) && break; echo -e "${RED}端口无效。${NC}" ;;
+      *) echo -e "${RED}输入无效，请选 1 或 2。${NC}" ;;
+    esac
+  done
+  echo
+  echo -e "${CYAN}【前端端口】${NC}"
+  echo '1) 默认端口 (3000)'; echo '2) 自定义端口'
+  while true; do
+    read -r -p '请选择 [1-2] (默认 1): ' choice; choice=${choice:-1}
+    case "$choice" in
+      1) FRONTEND_PORT=3000; break ;;
+      2) read -r -p '请输入端口 (1-65535): ' FRONTEND_PORT; [[ "$FRONTEND_PORT" =~ ^[0-9]+$ ]] && ((FRONTEND_PORT>=1&&FRONTEND_PORT<=65535)) && break; echo -e "${RED}端口无效。${NC}" ;;
+      *) echo -e "${RED}输入无效，请选 1 或 2。${NC}" ;;
+    esac
+  done
+  echo
+  echo -e "${CYAN}【IP 设置】${NC}"
+  echo '1) 自动检测本机 IP'; echo '2) 自定义 IP / 域名'
+  while true; do
+    read -r -p '请选择 [1-2] (默认 1): ' choice; choice=${choice:-1}
+    case "$choice" in
+      1) PUBLIC_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"; [[ -n "$PUBLIC_IP" ]] && break; echo -e "${RED}自动检测失败，请选择自定义。${NC}" ;;
+      2) read -r -p '请输入 IP 或域名: ' PUBLIC_IP; [[ -n "$PUBLIC_IP" ]] && break; echo -e "${RED}IP/域名不能为空。${NC}" ;;
+      *) echo -e "${RED}输入无效，请选 1 或 2。${NC}" ;;
+    esac
+  done
+  [[ "$BACKEND_PORT" != "$FRONTEND_PORT" ]] || fail '前后端端口不能相同'
+  printf '\n%b✓ 配置完成%b\n' "$GREEN" "$RESET"
+  printf '安装路径: %b%s%b\n' "$CYAN" "$INSTALL_PATH" "$RESET"
+  printf '后端端口: %b%s%b\n' "$CYAN" "$BACKEND_PORT" "$RESET"
+  printf '前端端口: %b%s%b\n' "$CYAN" "$FRONTEND_PORT" "$RESET"
+  printf '公网 IP: %b%s%b\n\n' "$CYAN" "$PUBLIC_IP" "$RESET"
+  read -r -p '按回车开始部署，Ctrl+C 取消... ' _confirm
+}
+
+get_user_config
+
+
 if command -v apt-get >/dev/null; then export DEBIAN_FRONTEND=noninteractive; apt-get update -y; apt-get install -y ca-certificates curl git python3 python3-venv python3-pip build-essential; elif command -v dnf >/dev/null; then dnf install -y ca-certificates curl git python3 python3-pip gcc gcc-c++ make; else yum install -y ca-certificates curl git python3 python3-pip gcc gcc-c++ make; fi
 if ! command -v node >/dev/null || [[ $(node -p 'process.versions.node.split(".")[0]') -lt 22 ]]; then curl -fsSL https://mirrors.ustc.edu.cn/nodesource/deb/setup_22.x | bash - || curl -fsSL https://deb.nodesource.com/setup_22.x | bash -; apt-get install -y nodejs 2>/dev/null || true; fi
 corepack enable; corepack prepare pnpm@9.15.0 --activate; mkdir -p "$(dirname "$INSTALL_PATH")"; if [[ -d "$INSTALL_PATH/.git" ]]; then git -C "$INSTALL_PATH" pull --ff-only; else git clone --depth 1 "$REPO_URL" "$INSTALL_PATH" || git clone --depth 1 "$MIRROR_REPO_URL" "$INSTALL_PATH"; fi
