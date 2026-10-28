@@ -115,19 +115,6 @@ npm run preview
 - 快速部署、基岩版、上传整合包、MCDR
 - ZIP / TAR.GZ / TGZ 安全解压与核心检测
 
-## 项目架构
-
-```text
-ATMOSPHERE-Panel/
-├── backend/app/core/       # 配置、数据库、安全
-├── backend/app/routers/    # API 路由
-├── backend/app/services/   # 业务服务
-├── backend/app/infra/      # 基础设施
-├── frontend/app/pages/     # 页面
-├── frontend/app/composables/# Composables
-└── install.sh
-```
-
 ## 服务管理
 
 ```bash
