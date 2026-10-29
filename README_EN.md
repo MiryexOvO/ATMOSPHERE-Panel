@@ -63,20 +63,20 @@ Clone the repository
 ## Frontend Development ([Nuxt 4.6.2](https://nuxt.com/docs/getting-started/introduction))
 
 ```bash
-# 1. Enter the project directory
+# 1. Navigate to the frontend directory
 cd frontend
 
-# 2. Install dependencies (npm is used as an example below)
-npm install
+# 2. Install dependencies
+pnpm install
 
 # 3. Start the development server
-npm run dev
+pnpm dev
 
-# 4. Deploy to production
-npm run build
+# 4. Build for production
+pnpm build
 
-# 5. Preview the production version locally
-npm run preview
+# 5. Preview the production build locally
+pnpm preview
 ```
 
 Default panel port: `27777`, configurable  
@@ -89,7 +89,19 @@ On the first startup, the terminal prints the 20-character initial password only
 ### One-click Linux Deployment (Recommended)
 
 ```bash
+# Debian / Ubuntu
+sudo apt update && sudo apt install -y wget
+
+# Red Hat / Fedora
+sudo yum install -y wget
+
+# Arch Linux
+sudo pacman -Syu --noconfirm wget
+
+# Download the installation script
 wget -qO install.sh https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh
+
+# Grant permissions and run the installation
 sudo bash install.sh
 ```
 
@@ -133,8 +145,13 @@ If the system pip for Python 3.14 is damaged, it is recommended to use Python 3.
 ## Service Management
 
 ```bash
+# 1. Check the current running status of the atmosphere-panel service (whether it's running, errors, startup logs, etc.)
 sudo systemctl status atmosphere-panel.service
+
+# 2. Restart the atmosphere-panel service (usually executed after modifying backend code or configuration files to apply updates)
 sudo systemctl restart atmosphere-panel.service
+
+# 3. Real-time follow/view the runtime logs of the atmosphere-panel service (-f stands for follow, useful for troubleshooting errors)
 sudo journalctl -u atmosphere-panel.service -f
 ```
 

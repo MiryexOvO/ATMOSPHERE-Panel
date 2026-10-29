@@ -65,17 +65,17 @@ ATMOSPHERE-PANEL 是一个基于 Web 的 Minecraft 服务器管理面板。通�
 # 1.进入项目文件夹
 cd frontend
 
-# 2.安装依赖（以下皆以 npm 为例）
-npm install
+# 2.安装依赖
+pnpm install
 
 # 3.启动开发服务器
-npm run dev
+pnpm dev
 
 # 4.部署到生产环境
-npm run build
+pnpm build
 
 # 5.本地预览正式版本
-npm run preview
+pnpm preview
 ```
 
 默认面板端口：`27777` 可配置项  
@@ -84,11 +84,22 @@ npm run preview
 
 ## 后端开发（[FastAPI](https://fastapi.tiangolo.com/)）
 
-
 ### Linux 一键部署（推荐）
 
 ```bash
+# Debian / Ubuntu
+sudo apt update && sudo apt install -y wget
+
+# Red Hat / Fedora
+sudo yum install -y wget
+
+# Arch Linux
+sudo pacman -Syu --noconfirm wget
+
+# 下载安装脚本
 wget -qO install.sh https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh
+
+# 赋予权限并执行安装
 sudo bash install.sh
 ```
 
@@ -131,8 +142,13 @@ Set-ExecutionPolicy -Scope Process Bypass
 ## 服务管理
 
 ```bash
+# 1. 查看 atmosphere-panel 服务当前运行状态（是否正在运行、是否报错、启动日志等）
 sudo systemctl status atmosphere-panel.service
+
+# 2. 重启 atmosphere-panel 服务（通常在修改了后端代码或配置文件后执行，用于应用更新）
 sudo systemctl restart atmosphere-panel.service
+
+# 3. 实时跟踪/查看 atmosphere-panel 服务的运行日志（-f 表示 follow 实时滚动输出，方便排查报错）
 sudo journalctl -u atmosphere-panel.service -f
 ```
 

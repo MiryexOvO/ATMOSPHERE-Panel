@@ -63,20 +63,20 @@ ATMOSPHERE-PANEL は、Web ベースの Minecraft サーバー管理パネルで
 ## フロントエンド開発（[Nuxt 4.6.2](https://nuxt.com/docs/getting-started/introduction)）
 
 ```bash
-# 1. プロジェクトフォルダに移動
+# 1. フロントエンドディレクトリに移動
 cd frontend
 
-# 2. 依存関係をインストール（以下は npm を例にしています）
-npm install
+# 2. 依存関係のインストール
+pnpm install
 
-# 3. 開発サーバーを起動
-npm run dev
+# 3. 開発サーバーの起動
+pnpm dev
 
-# 4. 本番環境へデプロイ
-npm run build
+# 4. プロダクションビルドの実行
+pnpm build
 
-# 5. 本番版をローカルでプレビュー
-npm run preview
+# 5. 本番環境のローカルプレビュー
+pnpm preview
 ```
 
 デフォルトのパネルポート：`27777`、設定可能  
@@ -85,11 +85,22 @@ npm run preview
 
 ## バックエンド開発（[FastAPI](https://fastapi.tiangolo.com/)）
 
-
 ### Linux ワンクリックデプロイ（推奨）
 
 ```bash
+# Debian / Ubuntu
+sudo apt update && sudo apt install -y wget
+
+# Red Hat / Fedora
+sudo yum install -y wget
+
+# Arch Linux
+sudo pacman -Syu --noconfirm wget
+
+# インストールスクリプトのダウンロード
 wget -qO install.sh https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh
+
+# 権限を付与してインストールを実行
 sudo bash install.sh
 ```
 
@@ -133,8 +144,13 @@ Python 3.14 のシステム pip が壊れている場合は、Python 3.12 また
 ## サービス管理
 
 ```bash
+# 1. atmosphere-panel サービスの現在の稼働状態（実行中か、エラーの有無、起動ログなど）を確認する
 sudo systemctl status atmosphere-panel.service
+
+# 2. atmosphere-panel サービスを再起動する（バックエンドのコードや設定ファイルを変更した後、変更を反映させるために実行）
 sudo systemctl restart atmosphere-panel.service
+
+# 3. atmosphere-panel サービスの実行ログをリアルタイムで追跡・表示する（-f は follow の略で、エラーの切り分けやデバッグに便利）
 sudo journalctl -u atmosphere-panel.service -f
 ```
 
