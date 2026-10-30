@@ -26,16 +26,31 @@ function selectTheme(value: 'system' | 'dark' | 'light') {
   document.documentElement.style.setProperty('--brand', colors.textPrimary)
 }
 const { t, locale, setLocale } = useI18n()
-const languages = [{ code: 'zh', label: '中文' }, { code: 'en', label: 'EN' }, { code: 'ja', label: 'JA' }] as const
+const languages = [{ code: 'zh', label: 'ZH' }, { code: 'en', label: 'EN' }, { code: 'ja', label: 'JA' }] as const
 type LocaleCode = typeof languages[number]['code']
 function changeLocale(code: string) {
   if (languages.some((language) => language.code === code)) setLocale(code as LocaleCode)
 }
 const languageOpen = ref(false)
+const langSwitch = ref<HTMLElement | null>(null)
+function selectLanguage(code: LocaleCode) {
+  if (!languageOpen.value) {
+    languageOpen.value = true
+    return
+  }
+  changeLocale(code)
+  languageOpen.value = false
+}
+function closeLanguage(event: MouseEvent) {
+  if (!languageOpen.value) return
+  const node = event.target as Node | null
+  if (node && langSwitch.value && !langSwitch.value.contains(node)) languageOpen.value = false
+}
 let timer: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
   timer = setInterval(() => { now.value = new Date() }, 1000)
+  document.addEventListener('click', closeLanguage)
   const saved = localStorage.getItem('custom-theme')
   if (saved) { try { customColors.value = JSON.parse(saved) } catch {} }
   for (const field of colorFields) document.documentElement.style.setProperty(`--${field.variable}`, customColors.value[field.key])
@@ -43,7 +58,10 @@ onMounted(() => {
 })
 function saveToLocalStorage() { localStorage.setItem('custom-theme', JSON.stringify(customColors.value)) }
 function applyCustomColor(variable: string, key: keyof typeof customColors.value, value: string) { customColors.value[key] = value; document.documentElement.style.setProperty(`--${variable}`, value); if (key === 'textPrimary') document.documentElement.style.setProperty('--brand', value); saveToLocalStorage() }
-onUnmounted(() => { if (timer) clearInterval(timer) })
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+  document.removeEventListener('click', closeLanguage)
+})
 
 async function login() {
   loading.value = true
@@ -91,7 +109,10 @@ async function login() {
     <span class="absolute bottom-3 right-8 font-mono text-[9px] tracking-widest text-text-secondary">SECURE CONNECTION / OK</span>
   </div>
 
-  <div class="fixed right-8 top-8 z-50 flex items-center gap-2"> <div class="relative"><button class="palette-trigger border border-border bg-background/50 px-3 py-2 font-mono text-[9px] tracking-widest text-text-secondary backdrop-blur hover:border-brand hover:text-brand" @click="languageOpen=!languageOpen">{{ locale.toUpperCase() }}</button><div v-if="languageOpen" class="palette-menu absolute right-0 top-12 w-28 border border-border bg-surface p-2 shadow-2xl"><button v-for="language in languages" :key="language.code" class="block w-full px-2 py-2 text-left font-mono text-[9px] text-text-secondary hover:text-brand" @click="changeLocale(language.code);languageOpen=false">{{language.label}}</button></div></div>
+  <div class="fixed right-8 top-8 z-50 flex items-center gap-2">
+    <div ref="langSwitch" class="lang-switch flex items-center" :class="{ 'lang-open': languageOpen }">
+      <button v-for="language in languages" :key="language.code" type="button" class="lang-btn border bg-background/50 px-3 py-2 font-mono text-[9px] tracking-widest backdrop-blur hover:border-brand hover:text-brand" :class="locale === language.code ? 'is-active border-brand text-brand' : 'border-border text-text-secondary'" :tabindex="languageOpen || locale === language.code ? 0 : -1" :aria-pressed="locale === language.code" @click="selectLanguage(language.code)">{{ language.label }}</button>
+    </div>
     <button class="palette-trigger border border-border px-3 py-2 font-mono text-[9px] tracking-widest text-text-secondary hover:border-brand hover:text-brand" @click="paletteOpen = !paletteOpen">◒ PALETTE</button>
     <Transition name="palette-fade">
       <div v-if="paletteOpen" class="palette-menu absolute right-0 top-12 w-64 border border-border bg-surface p-5 shadow-2xl">
@@ -119,7 +140,7 @@ async function login() {
         <form class="auth-card relative border-l border-t border-border bg-surface/80 p-9 shadow-2xl" @submit.prevent="login">
           <div class="flex justify-between border-b border-border pb-5 font-mono text-xs tracking-[.16em] text-brand"><span>ACCESS / LOGIN</span><span>01</span></div>
           <label class="mt-9 block text-text-secondary">{{ t('labelUsername') }}<input v-model="username" class="mt-3 w-full border-0 border-b border-border bg-transparent px-0 py-3 font-mono text-text-primary outline-none focus:border-brand" placeholder="Atmo7"></label>
-          <label class="mt-7 block text-text-secondary">{{ t('labelPassword') }}<div class="relative"><input v-model="password" :type="showPassword ? 'text' : 'password'" class="mt-3 w-full border-0 border-b border-border bg-transparent px-0 py-3 pr-8 font-mono text-text-primary outline-none focus:border-brand" placeholder="••••••••••••"><button type="button" class="absolute right-0 top-3 text-text-secondary hover:text-brand" @click="showPassword=!showPassword"><Icon :icon="showPassword ? 'line-md:sunny-filled-loop' : 'line-md:moon-filled-loop'" width="18" /></button></div></label>
+          <label class="mt-7 block text-text-secondary">{{ t('labelPassword') }}<div class="relative"><input v-model="password" :type="showPassword ? 'text' : 'password'" class="mt-3 w-full border-0 border-b border-border bg-transparent px-0 py-3 pr-8 font-mono text-text-primary outline-none placeholder:text-text-secondary placeholder:opacity-40 focus:border-brand" :placeholder="t('placeholderCredentials')"><button type="button" class="absolute right-1 top-[26px] text-text-secondary hover:text-brand" @click="showPassword=!showPassword"><Icon :icon="showPassword ? 'line-md:sunny-filled-loop' : 'line-md:moon-filled-loop'" width="18" /></button></div></label>
           <p class="mt-5 flex items-center gap-2 font-mono text-xs" :class="apiOnline ? 'api-online' : 'api-offline'"><i class="status-hologram" />API {{ apiOnline ? t('apiConnected') : t('apiOffline') }}</p>
           <p v-if="error" class="mt-3 text-sm text-red-400">! {{ error }}</p>
           <button class="mt-6 inline-flex w-full items-center justify-between border border-brand/30 bg-transparent px-5 py-4 text-brand transition hover:border-brand hover:bg-brand/10 active:scale-[.99] disabled:opacity-50" :disabled="loading">{{ loading ? t('btnLoading') : t('btnLogin') }}<span v-if="!loading">→</span><span v-else class="h-4 w-4 animate-spin rounded-full border border-brand border-t-transparent" /></button>
@@ -137,8 +158,11 @@ async function login() {
 .cross-star{position:absolute;width:22px;height:22px;color:var(--brand);opacity:.45;animation:float-cross 9s ease-in-out infinite}.cross-star::before,.cross-star::after{content:'';position:absolute;background:currentColor}.cross-star::before{width:100%;height:1px;top:50%;left:0}.cross-star::after{height:100%;width:1px;left:50%;top:0}.cross-1{left:12%;top:22%}.cross-2{right:21%;top:30%;animation-delay:-3s}.cross-3{left:46%;bottom:17%;animation-delay:-6s}
 .orbit-line{position:absolute;height:1px;width:70%;background:linear-gradient(90deg,transparent,var(--brand),transparent);opacity:.12;mask-image:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent);animation:line-drift 24s ease-in-out infinite}.line-1{left:-8%;top:38%;transform:rotate(-17deg)}.line-2{right:-10%;bottom:27%;transform:rotate(13deg);animation-delay:-10s}
 .hand-title{font-style:italic;letter-spacing:-.04em;display:inline-block;clip-path:inset(0 100% 0 0);animation:hand-write 1.2s cubic-bezier(.65,0,.35,1) forwards}.sf-title{font-family:'SF Pro Display','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-style:italic;letter-spacing:-.05em;display:inline-block;clip-path:inset(0 100% 0 0);animation:hand-write 1.4s .2s cubic-bezier(.65,0,.35,1) forwards}
-@keyframes hand-write{to{clip-path:inset(0 0 0 0)}}@keyframes nebula-pulse{50%{opacity:.13;transform:scale(1.04)}}@keyframes twinkle{50%{opacity:.22}}@keyframes float-cross{50%{transform:translate(5px,-4px) scale(1.08)}}@keyframes line-drift{50%{transform:translate(8px,-5px) rotate(-17deg);opacity:.3}}
+@keyframes hand-write{99%{clip-path:inset(0 0 0 0)}to{clip-path:none}}@keyframes nebula-pulse{50%{opacity:.13;transform:scale(1.04)}}@keyframes twinkle{50%{opacity:.22}}@keyframes float-cross{50%{transform:translate(5px,-4px) scale(1.08)}}@keyframes line-drift{50%{transform:translate(8px,-5px) rotate(-17deg);opacity:.3}}
 .palette-fade-enter-active,.palette-fade-leave-active{transition:opacity 180ms ease,transform 180ms ease}.palette-fade-enter-from,.palette-fade-leave-to{opacity:0;transform:translateY(-8px) scale(.98)}
+.lang-switch{gap:0}.lang-switch.lang-open{gap:.5rem}
+.lang-btn{max-width:8em;white-space:nowrap;overflow:hidden;transition:max-width 220ms ease,opacity 220ms ease,padding-left 220ms ease,padding-right 220ms ease,border-color 220ms ease,color 220ms ease}
+.lang-switch:not(.lang-open) .lang-btn:not(.is-active){max-width:0;opacity:0;padding-left:0;padding-right:0;border-color:transparent;pointer-events:none}
 </style>
 <style scoped>
 .status-hologram{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;animation:hologram-pulse 1.4s ease-in-out infinite}.api-online{color:var(--data-live)}.api-offline{color:#f87171}@keyframes hologram-pulse{50%{opacity:.35;transform:scale(.72);box-shadow:0 0 2px currentColor}}

@@ -6,6 +6,7 @@
   "desc2": "请使用管理员凭据继续。",
   "labelUsername": "管理员账号",
   "labelPassword": "访问密码",
+  "placeholderCredentials": "请输入凭据",
   "btnLogin": "进入控制台",
   "btnLoading": "验证中...",
   "apiConnected": "已连接",

@@ -4,7 +4,20 @@ import DashboardBackground from '~/components/ui/DashboardBackground.vue'
 
 definePageMeta({ middleware: 'auth' })
 
-const activeTab = ref<'dashboard' | 'instances'>('dashboard')
+type Tab = 'dashboard' | 'instances' | 'users' | 'settings' | 'about'
+
+const activeTab = ref<Tab>('dashboard')
+
+const placeholders = {
+  users: { title: '用户管理', code: 'USERS' },
+  settings: { title: '设置', code: 'SETTINGS' },
+  about: { title: '关于', code: 'ABOUT' },
+} as const
+
+const placeholder = computed(() => {
+  const tab = activeTab.value
+  return tab === 'users' || tab === 'settings' || tab === 'about' ? placeholders[tab] : null
+})
 const instances = ref<import("~/types").InstanceData[]>([])
 const { request } = useApi()
 const host = ref({ cpu: 0, memory: 0, cores: [] as number[], platform: '读取中', hostname: '读取中', release: '读取中', panel: 'ATMOSPHERE / 02' })
@@ -53,6 +66,9 @@ const summary = computed(() => [
     <nav class="mt-8 flex gap-8 border-b border-border font-mono text-sm">
       <button type="button" :class="activeTab === 'dashboard' ? 'border-b-2 border-brand pb-3 text-text-primary' : 'border-b-2 border-transparent pb-3 text-text-secondary hover:text-text-primary'" @click="activeTab = 'dashboard'">◈ 仪表盘</button>
       <button type="button" :class="activeTab === 'instances' ? 'border-b-2 border-brand pb-3 text-text-primary' : 'border-b-2 border-transparent pb-3 text-text-secondary hover:text-text-primary'" @click="activeTab = 'instances'">✦ 实例概览</button>
+      <button type="button" :class="activeTab === 'users' ? 'border-b-2 border-brand pb-3 text-text-primary' : 'border-b-2 border-transparent pb-3 text-text-secondary hover:text-text-primary'" @click="activeTab = 'users'">◉ 用户管理</button>
+      <button type="button" :class="activeTab === 'settings' ? 'border-b-2 border-brand pb-3 text-text-primary' : 'border-b-2 border-transparent pb-3 text-text-secondary hover:text-text-primary'" @click="activeTab = 'settings'">◐ 设置</button>
+      <button type="button" :class="activeTab === 'about' ? 'border-b-2 border-brand pb-3 text-text-primary' : 'border-b-2 border-transparent pb-3 text-text-secondary hover:text-text-primary'" @click="activeTab = 'about'">◇ 关于</button>
     </nav>
 
     <Transition name="dashboard-panel" mode="out-in">
@@ -82,9 +98,17 @@ const summary = computed(() => [
         </div>
       </section>
 
-      <section v-else key="instances" class="mt-10">
+      <section v-else-if="activeTab === 'instances'" key="instances" class="mt-10">
         <div v-if="!instances.length" class="dashboard-card relative border-l border-t border-border bg-surface/75 py-32 text-center shadow-2xl"><span class="font-mono text-xs tracking-[0.3em] text-brand">[ 00 / 00 ]</span><h2 class="mt-6 font-mono text-lg tracking-[0.35em] text-text-primary">NO SERVER INSTANCES</h2><p class="mt-4 text-xs text-text-secondary">创建第一个实例，上传服务端核心并确认 EULA。</p></div>
         <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"><NuxtLink v-for="item in instances" :key="item.id" :to="`/instances/${item.id}`"><AtmosphereCard interactive><div class="flex items-start justify-between"><h2 class="font-mono text-lg font-bold text-text-primary">{{ item.name }}</h2><span class="h-2 w-2 rounded-full" :class="item.status === 'running' ? 'bg-data-live shadow-[0_0_12px_var(--data-live)] animate-pulse' : 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,.45)]'" /></div><p class="mt-8 font-mono text-xs text-text-secondary">{{ item.selected_core || 'Minecraft Server' }} · PORT {{ item.port }}</p><span class="mt-5 block font-mono text-[10px] tracking-[0.16em] text-brand">[ ACCESS ]</span></AtmosphereCard></NuxtLink></div>
+      </section>
+
+      <section v-else-if="placeholder" :key="activeTab" class="mt-10">
+        <div class="dashboard-card relative border-l border-t border-border bg-surface/75 py-32 text-center shadow-2xl">
+          <span class="font-mono text-xs tracking-[0.3em] text-brand">[ {{ placeholder.code }} / PENDING ]</span>
+          <h2 class="mt-6 font-mono text-lg tracking-[0.35em] text-text-primary">{{ placeholder.title }}</h2>
+          <p class="mt-4 text-xs text-text-secondary">模块建设中。</p>
+        </div>
       </section>
     </Transition>
   </main>

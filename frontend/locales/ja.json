@@ -1,11 +1,12 @@
 {
   "authRequired": "/ 認証が必要です",
   "titleEnter": "ENTER",
-  "titleAtmosphere": "the atmosphere.",
+  "titleAtmosphere": "THE ATMOSPHERE.",
   "desc1": "抑制された、信頼性の高いMinecraftサーバーコンソール。",
   "desc2": "管理者の資格情報で続行してください。",
   "labelUsername": "管理者アカウント",
   "labelPassword": "アクセスパスワード",
+  "placeholderCredentials": "認証情報を入力",
   "btnLogin": "コンソールへ",
   "btnLoading": "検証中...",
   "apiConnected": "接続済み",
