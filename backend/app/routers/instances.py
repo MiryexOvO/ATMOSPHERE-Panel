@@ -1,4 +1,10 @@
 from fastapi import APIRouter, Request
+import os
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
 from fastapi.responses import JSONResponse
 from ..core.database import connect
 from ..core.security import require_user
@@ -16,6 +22,14 @@ def get_instance(request: Request, instance_id: str):
     if isinstance((user:=require_user(request)),JSONResponse): return user
     conn=connect(); row=conn.execute('SELECT id,name,port,jar_name,status,created_at,selected_core FROM instances WHERE id=?',(instance_id,)).fetchone(); conn.close()
     return dict(row) if row else JSONResponse({'ok':False,'message':'实例不存在'},status_code=404)
+
+@router.get('/system/metrics')
+def system_metrics(request: Request):
+    if isinstance((user := require_user(request)), JSONResponse): return user
+    cpu = psutil.cpu_percent(interval=0.05) if psutil else 0.0
+    memory = psutil.virtual_memory().percent if psutil else 0.0
+    cores = psutil.cpu_percent(interval=0.05, percpu=True) if psutil else []
+    return {'panel': 'ATMOSPHERE / 02', 'cpu': cpu, 'memory': memory, 'cores': cores, 'platform': os.name, 'hostname': os.getenv('COMPUTERNAME') or os.getenv('HOSTNAME') or 'unknown', 'release': os.getenv('OS') or 'unknown'}
 
 @router.get('/{instance_id}/status')
 def instance_status(request: Request, instance_id: str):

@@ -14,5 +14,12 @@ def init_db() -> None:
     CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL, expires_at INTEGER NOT NULL, created_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS instances(id TEXT PRIMARY KEY, name TEXT NOT NULL, port INTEGER UNIQUE NOT NULL, jar_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'stopped', created_at INTEGER NOT NULL, core_candidates TEXT NOT NULL DEFAULT '[]', selected_core TEXT);
     """)
+    columns = {row['name'] for row in conn.execute("PRAGMA table_info(instances)").fetchall()}
+    if 'rcon_host' not in columns:
+        conn.execute("ALTER TABLE instances ADD COLUMN rcon_host TEXT")
+    if 'rcon_port' not in columns:
+        conn.execute("ALTER TABLE instances ADD COLUMN rcon_port INTEGER")
+    if 'rcon_password_hash' not in columns:
+        conn.execute("ALTER TABLE instances ADD COLUMN rcon_password_hash TEXT")
     conn.commit()
     conn.close()

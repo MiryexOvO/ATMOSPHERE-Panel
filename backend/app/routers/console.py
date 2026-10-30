@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request
+from pydantic import BaseModel, Field
 from fastapi.responses import JSONResponse, StreamingResponse
 from ..core.security import require_user
 from ..core.database import connect
@@ -7,8 +8,11 @@ import json, subprocess, re
 router=APIRouter(prefix='/api/instances',tags=['console'])
 INSTANCE_RE=re.compile(r'^[a-z0-9][a-z0-9-]{1,30}$')
 
+class CommandPayload(BaseModel):
+    command: str = Field(min_length=1, max_length=512)
+
 @router.post('/{instance_id}/command')
-def command(request: Request, instance_id: str):
+def command(request: Request, instance_id: str, payload: CommandPayload):
     if isinstance((user:=require_user(request)),JSONResponse): return user
     return JSONResponse({'ok':False,'message':'RCON 尚未配置，请先在实例设置中配置 RCON'},status_code=501)
 

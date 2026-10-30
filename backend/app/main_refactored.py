@@ -1,4 +1,9 @@
+import sys
+from loguru import logger
 from fastapi import FastAPI
+
+logger.remove()
+logger.add(sys.stderr, level='INFO', colorize=True, format='<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{message}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>')
 from fastapi.middleware.cors import CORSMiddleware
 from .core.database import init_db
 from .routers.auth import ensure_initial_user
@@ -18,9 +23,7 @@ def create_app() -> FastAPI:
     def startup():
         init_db()
         ensure_initial_user()
-        print('╔' + '═' * 70 + '╗')
-        print('║' + ' ' * 24 + 'ATMOSPHERE BACKEND' + ' ' * 28 + '║')
-        print('║' + ' ' * 18 + 'CONTROL PLANE READY / PORT 27777' + ' ' * 19 + '║')
-        print('╚' + '═' * 70 + '╝', flush=True)
+        logger.info('✨ ATMOSPHERE BACKEND · CONTROL PLANE READY / PORT 27777')
+        logger.info('🧭 Logs: journalctl -u atmosphere-panel.service -f')
     return app
 app=create_app()
