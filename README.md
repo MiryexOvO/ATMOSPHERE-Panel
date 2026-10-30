@@ -88,19 +88,22 @@ pnpm preview
 
 ```bash
 # Debian / Ubuntu
-sudo apt update && sudo apt install -y wget
+apt update && sudo apt install -y wget
 
 # Red Hat / Fedora
-sudo yum install -y wget
+yum install -y wget
 
 # Arch Linux
-sudo pacman -Syu --noconfirm wget
+pacman -Syu --noconfirm wget
 
 # 下载安装脚本
 wget -qO install.sh https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh
 
+# 你也可以使用镜像
+wget -qO install.sh https://gh-proxy.com/https://raw.githubusercontent.com/Miryex0v0/ATMOSPHERE-Panel/main/install.sh
+
 # 赋予权限并执行安装
-sudo bash install.sh
+bash install.sh
 ```
 
 脚本会交互式询问安装路径和端口，自动完成依赖、Python 虚拟环境、Nuxt 构建和 systemd 注册

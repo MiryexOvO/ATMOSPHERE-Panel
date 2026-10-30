@@ -90,19 +90,22 @@ On the first startup, the terminal prints the 20-character initial password only
 
 ```bash
 # Debian / Ubuntu
-sudo apt update && sudo apt install -y wget
+apt update && sudo apt install -y wget
 
 # Red Hat / Fedora
-sudo yum install -y wget
+yum install -y wget
 
 # Arch Linux
-sudo pacman -Syu --noconfirm wget
+pacman -Syu --noconfirm wget
 
 # Download the installation script
 wget -qO install.sh https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh
 
+# You can also use a mirror
+wget -qO install.sh https://gh-proxy.com/https://raw.githubusercontent.com/Miryex0v0/ATMOSPHERE-Panel/main/install.sh
+
 # Grant permissions and run the installation
-sudo bash install.sh
+bash install.sh
 ```
 
 The script interactively asks for the installation path and port, then automatically completes dependency installation, Python virtual environment creation, Nuxt build, and systemd registration.
