@@ -38,6 +38,12 @@
 
   html {
     transition: background-color 420ms ease, color 420ms ease;
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar {
+    width: 0;
+    height: 0;
   }
 
   body {

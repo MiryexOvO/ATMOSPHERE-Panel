@@ -1,8 +1,13 @@
 <script setup lang="ts">
 
 import StarfieldBackground from '~/components/ui/StarfieldBackground.vue'
+import ScrollRuler from '~/components/ui/ScrollRuler.vue'
+import { useSmoothScroll } from '~/composables/useSmoothScroll'
+
+useSmoothScroll()
 
 const now = ref(new Date())
+// null 表示鼠标还没移动过
 const pointer = ref<{ x: number, y: number } | null>(null)
 const menu = ref(false)
 const paletteOpen = ref(false)
@@ -79,6 +84,7 @@ async function logout() {
 <template>
   <div class="relative min-h-screen overflow-hidden bg-background text-text-primary">
     <StarfieldBackground />
+    <ScrollRuler />
     <header class="relative z-10 flex h-20 items-center justify-between border-b border-border px-8">
       <div class="flex items-center gap-5">
         <span class="text-brand">✦</span>
