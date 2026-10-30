@@ -21,5 +21,7 @@ def init_db() -> None:
         conn.execute("ALTER TABLE instances ADD COLUMN rcon_port INTEGER")
     if 'rcon_password_hash' not in columns:
         conn.execute("ALTER TABLE instances ADD COLUMN rcon_password_hash TEXT")
+    if 'rcon_password' not in columns:
+        conn.execute("ALTER TABLE instances ADD COLUMN rcon_password TEXT")
     conn.commit()
     conn.close()

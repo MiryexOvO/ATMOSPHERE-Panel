@@ -6,7 +6,8 @@ from ..core.database import connect
 from ..core.config import SERVER_ROOT, ROOT, MAX_PACKAGE_BYTES
 from ..archive_service import extract_archive, find_core_candidates
 from pathlib import Path
-import secrets, shutil, time
+import secrets, shutil, time, platform
+from ..services.systemd_service import SystemdService
 
 router = APIRouter(prefix='/api', tags=['deployments'])
 
@@ -38,15 +39,37 @@ def deploy_mode(request: Request, payload: ModePayload):
     try:
         root.mkdir(parents=True, exist_ok=False)
         (root / 'eula.txt').write_text('eula=true\n', encoding='utf-8')
-        (root / 'server.properties').write_text(f'server-port={payload.port}\n', encoding='utf-8')
+        rcon_password = secrets.token_urlsafe(24)
+        (root / 'server.properties').write_text(
+            f'server-port={payload.port}\n'
+            'enable-rcon=true\n'
+            'rcon.port=25575\n'
+            f'rcon.password={rcon_password}\n',
+            encoding='utf-8',
+        )
         selected = 'start_mcdr.py' if payload.mode == 'mcdr' else 'server.jar'
         if payload.mode == 'quick':
             (root / selected).write_bytes(b'')
         if payload.mode == 'mcdr':
             (root / selected).write_text('from mcdreforged.api.all import ServerInterface\n', encoding='utf-8')
-        conn.execute('INSERT INTO instances VALUES(?,?,?,?,?,?,?,?)', (instance_id, instance_id, payload.port, selected, 'stopped', int(time.time()), '[]', selected))
+        conn.execute(
+            'INSERT INTO instances '
+            '(id, name, port, jar_name, status, created_at, core_candidates, selected_core, '
+            'rcon_host, rcon_port, rcon_password_hash, rcon_password) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (instance_id, instance_id, payload.port, selected, 'stopped', int(time.time()),
+             '[]', selected, '127.0.0.1', 25575, None, rcon_password),
+        )
         conn.commit()
-        return {'ok': True, 'mode': payload.mode, 'instance': {'id': instance_id}, 'status': 'stopped'}
+        status = 'stopped'
+        if platform.system() != 'Windows':
+            code, output = SystemdService().deploy(instance_id, selected, payload.memory)
+            if code != 0:
+                raise RuntimeError(output or 'systemd 启动失败')
+            status = 'running'
+            conn.execute('UPDATE instances SET status=? WHERE id=?', (status, instance_id))
+            conn.commit()
+        return {'ok': True, 'mode': payload.mode, 'instance': {'id': instance_id}, 'status': status}
     except Exception as exc:
         shutil.rmtree(root, ignore_errors=True)
         conn.rollback()
@@ -87,9 +110,34 @@ async def upload_package(request: Request, package: UploadFile = File(...), inst
             raise ValueError('整合包中未找到可用服务端核心')
         root.mkdir(parents=True, exist_ok=False)
         shutil.copytree(target, root, dirs_exist_ok=True)
-        conn.execute('INSERT INTO instances (id,name,port,jar_name,status,created_at,core_candidates,selected_core) VALUES (?,?,?,?,?,?,?,?)', (instance_id, instance_id, port, Path(selected).name, 'stopped', int(time.time()), str(candidates), selected))
+        rcon_password = secrets.token_urlsafe(24)
+        properties = root / 'server.properties'
+        existing = properties.read_text(encoding='utf-8') if properties.exists() else ''
+        properties.write_text(
+            existing.rstrip('\n') + '\n'
+            'enable-rcon=true\n'
+            'rcon.port=25575\n'
+            f'rcon.password={rcon_password}\n',
+            encoding='utf-8',
+        )
+        conn.execute(
+            'INSERT INTO instances '
+            '(id, name, port, jar_name, status, created_at, core_candidates, selected_core, '
+            'rcon_host, rcon_port, rcon_password_hash, rcon_password) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (instance_id, instance_id, port, Path(selected).name, 'stopped', int(time.time()),
+             str(candidates), selected, '127.0.0.1', 25575, None, rcon_password),
+        )
         conn.commit()
-        return {'ok': True, 'instance': {'id': instance_id, 'name': instance_id, 'port': port}, 'selected_core': selected, 'status': 'stopped'}
+        status = 'stopped'
+        if platform.system() != 'Windows':
+            code, output = SystemdService().deploy(instance_id, Path(selected).name)
+            if code != 0:
+                raise RuntimeError(output or 'systemd 启动失败')
+            status = 'running'
+            conn.execute('UPDATE instances SET status=? WHERE id=?', (status, instance_id))
+            conn.commit()
+        return {'ok': True, 'instance': {'id': instance_id, 'name': instance_id, 'port': port}, 'selected_core': selected, 'status': status}
     except Exception as exc:
         shutil.rmtree(root, ignore_errors=True)
         conn.rollback()
