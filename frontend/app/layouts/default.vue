@@ -3,6 +3,7 @@
 import StarfieldBackground from '~/components/ui/StarfieldBackground.vue'
 
 const now = ref(new Date())
+const pointer = ref<{ x: number, y: number } | null>(null)
 const menu = ref(false)
 const paletteOpen = ref(false)
 const colorMode = useColorMode()
@@ -19,6 +20,22 @@ const fields = [
   { label: 'BACKGROUND', key: 'background', variable: '--background' },
 ] as const
 let timer: ReturnType<typeof setInterval> | undefined
+let pointerFrame = 0
+let pendingPointer: { x: number, y: number } | null = null
+
+function trackPointer(event: PointerEvent) {
+  pendingPointer = { x: Math.round(event.clientX), y: Math.round(event.clientY) }
+  if (pointerFrame) return
+  pointerFrame = requestAnimationFrame(() => {
+    pointerFrame = 0
+    if (pendingPointer) pointer.value = pendingPointer
+  })
+}
+
+const coordinates = computed(() => ({
+  x: pointer.value ? String(pointer.value.x).padStart(4, '0') : '----',
+  y: pointer.value ? String(pointer.value.y).padStart(4, '0') : '----',
+}))
 
 const themeOptions = computed(() => [
   { label: 'SYSTEM', value: 'system' },
@@ -28,13 +45,18 @@ const themeOptions = computed(() => [
 
 onMounted(() => {
   timer = setInterval(() => { now.value = new Date() }, 1000)
+  window.addEventListener('pointermove', trackPointer, { passive: true })
   const saved = localStorage.getItem('custom-theme')
   if (saved) {
     try { customColors.value = JSON.parse(saved) } catch { /* ignore malformed local preference */ }
   }
 })
 
-onUnmounted(() => { if (timer) clearInterval(timer) })
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+  window.removeEventListener('pointermove', trackPointer)
+  if (pointerFrame) cancelAnimationFrame(pointerFrame)
+})
 
 function applyColor(field: typeof fields[number], value: string) {
   customColors.value[field.key] = value
@@ -67,8 +89,16 @@ async function logout() {
         <button type="button" class="border border-border px-3 py-2 hover:border-brand hover:text-brand" @click="paletteOpen = !paletteOpen">
           ◒ PALETTE
         </button>
-        <span class="hidden lg:inline">CPU 12% · RAM 4.2G</span>
-        <span class="text-data-live">● SIGNAL / OK</span>
+        <span class="hidden items-center tabular-nums leading-none lg:inline-flex">
+          <span class="mr-2 translate-y-[-1.5px] leading-none">⌖</span>
+          <span class="leading-none">[</span>
+          <span class="px-2 leading-none">{{ coordinates.x }} N / {{ coordinates.y }} W</span>
+          <span class="leading-none">]</span>
+        </span>
+        <span class="flex items-center gap-1.5 leading-none text-data-live">
+          <span class="translate-y-[-1.5px] leading-none">●</span>
+          <span class="leading-none">SIGNAL / OK</span>
+        </span>
         <span class="hidden md:inline">{{ now.toLocaleTimeString('en-GB') }}</span>
         <button type="button" class="border border-border px-2 py-1 hover:border-brand hover:text-brand" @click="menu = !menu">A</button>
         <div v-if="menu" class="absolute right-0 top-12 z-30 w-36 border border-border bg-surface p-2 shadow-2xl">
