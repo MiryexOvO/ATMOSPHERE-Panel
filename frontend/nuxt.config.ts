@@ -35,7 +35,7 @@ export default defineNuxtConfig({
     public: { apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api' }
   },
   vite: { clearScreen: false, logLevel: 'error' },
-  devtools: { enabled: false, timeline: { enabled: false } },
+  devtools: { enabled: true, timeline: { enabled: false } },
   nitro: {
     devProxy: {
       '/api': { target: 'http://127.0.0.1:27777/api', changeOrigin: true }

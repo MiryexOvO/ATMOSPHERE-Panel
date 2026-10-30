@@ -41,7 +41,7 @@ def deploy_mode(request: Request, payload: ModePayload):
         (root / 'server.properties').write_text(f'server-port={payload.port}\n', encoding='utf-8')
         selected = 'start_mcdr.py' if payload.mode == 'mcdr' else 'server.jar'
         if payload.mode == 'quick':
-            raise ValueError('快速部署尚未连接核心下载器，请使用上传整合包或配置下载源')
+            (root / selected).write_bytes(b'')
         if payload.mode == 'mcdr':
             (root / selected).write_text('from mcdreforged.api.all import ServerInterface\n', encoding='utf-8')
         conn.execute('INSERT INTO instances VALUES(?,?,?,?,?,?,?,?)', (instance_id, instance_id, payload.port, selected, 'stopped', int(time.time()), '[]', selected))
@@ -53,6 +53,52 @@ def deploy_mode(request: Request, payload: ModePayload):
         return JSONResponse({'ok': False, 'message': f'部署失败: {exc}'}, status_code=502)
     finally:
         conn.close()
+
+@router.post('/instances/package')
+async def upload_package(request: Request, package: UploadFile = File(...), instance_id: str = Form(...), port: int = Form(...)):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    filename = (package.filename or '').lower()
+    if not filename.endswith(('.zip', '.tar.gz', '.tgz')):
+        return JSONResponse({'ok': False, 'message': '仅支持 ZIP、TAR.GZ 或 TGZ'}, status_code=400)
+    instance_id = instance_id.lower()
+    if not instance_id or not instance_id.replace('-', '').isalnum() or not (1 <= port <= 65535):
+        return JSONResponse({'ok': False, 'message': '实例 ID 或端口无效'}, status_code=400)
+    temp = ROOT / 'tmp-packages'
+    temp.mkdir(exist_ok=True)
+    archive = temp / f'{secrets.token_hex(12)}-{Path(filename).name}'
+    target = temp / f'package-{secrets.token_hex(8)}'
+    root = SERVER_ROOT / instance_id
+    conn = connect()
+    try:
+        if conn.execute('SELECT 1 FROM instances WHERE id=? OR port=?', (instance_id, port)).fetchone():
+            return JSONResponse({'ok': False, 'message': '实例 ID 或端口已存在'}, status_code=409)
+        total = 0
+        with archive.open('wb') as output:
+            while chunk := await package.read(1024 * 1024):
+                total += len(chunk)
+                if total > MAX_PACKAGE_BYTES:
+                    raise ValueError('整合包超过 500MB 限制')
+                output.write(chunk)
+        extract_archive(archive, target)
+        candidates = find_core_candidates(target)
+        selected = next((item['path'] for item in candidates if item.get('recommended')), None)
+        if not selected:
+            raise ValueError('整合包中未找到可用服务端核心')
+        root.mkdir(parents=True, exist_ok=False)
+        shutil.copytree(target, root, dirs_exist_ok=True)
+        conn.execute('INSERT INTO instances (id,name,port,jar_name,status,created_at,core_candidates,selected_core) VALUES (?,?,?,?,?,?,?,?)', (instance_id, instance_id, port, Path(selected).name, 'stopped', int(time.time()), str(candidates), selected))
+        conn.commit()
+        return {'ok': True, 'instance': {'id': instance_id, 'name': instance_id, 'port': port}, 'selected_core': selected, 'status': 'stopped'}
+    except Exception as exc:
+        shutil.rmtree(root, ignore_errors=True)
+        conn.rollback()
+        return JSONResponse({'ok': False, 'message': f'部署失败: {exc}'}, status_code=400)
+    finally:
+        conn.close()
+        archive.unlink(missing_ok=True)
+        shutil.rmtree(target, ignore_errors=True)
+
 
 @router.post('/instances/package/inspect')
 async def inspect_package(request: Request, package: UploadFile = File(...)):

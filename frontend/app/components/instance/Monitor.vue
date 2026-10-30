@@ -1,5 +1,5 @@
 <script setup lang="ts">
-
+// 性能指示器组件
 const props = defineProps<{ instanceId: string }>()
 type Point = { time: string; cpu: number; memory: number }
 const points = ref<Point[]>([])
