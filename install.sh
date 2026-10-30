@@ -65,7 +65,17 @@ get_user_config() {
   while true; do
     read -r -p '请选择 [1-2] (默认 1): ' choice; choice=${choice:-1}
     case "$choice" in
-      1) PUBLIC_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"; [[ -n "$PUBLIC_IP" ]] && break; echo -e "${RED}自动检测失败，请选择自定义。${NC}" ;;
+      1) 
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+          # macOS
+          PUBLIC_IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "")"
+        else
+          # Linux
+          PUBLIC_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+        fi
+        [[ -n "$PUBLIC_IP" ]] && break
+        echo -e "${RED}自动检测失败，请选择自定义。${NC}" 
+        ;;
       2) read -r -p '请输入 IP 或域名: ' PUBLIC_IP; [[ -n "$PUBLIC_IP" ]] && break; echo -e "${RED}IP/域名不能为空。${NC}" ;;
       *) echo -e "${RED}输入无效，请选 1 或 2。${NC}" ;;
     esac
