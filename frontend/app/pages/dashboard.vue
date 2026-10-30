@@ -4,19 +4,56 @@ import DashboardBackground from '~/components/ui/DashboardBackground.vue'
 
 definePageMeta({ middleware: 'auth' })
 
-type Tab = 'dashboard' | 'instances' | 'users' | 'settings' | 'about'
+const mainTabs = [
+  { key: 'dashboard', icon: '◈', label: '仪表盘' },
+  { key: 'instances', icon: '✦', label: '实例概览' },
+  { key: 'users', icon: '◉', label: '用户管理' },
+  { key: 'settings', icon: '◐', label: '设置' },
+  { key: 'about', icon: '◇', label: '关于' },
+] as const
+type Tab = typeof mainTabs[number]['key']
 
 const activeTab = ref<Tab>('dashboard')
 
+// 主标签高亮：每个标签用左右内边距占住自己的「格」（pl/pr 各 16px，
+// 总间距与原 gap-8 的 32px 一致），高亮线就是标签实际占据的空间，相邻格首尾相接
+const navEl = ref<HTMLElement | null>(null)
+const indicatorStyle = ref({ left: '0px', width: '0px' })
+let navObserver: ResizeObserver | undefined
+
+function updateIndicator() {
+  const nav = navEl.value
+  if (!nav) return
+  const buttons = Array.from(nav.querySelectorAll<HTMLElement>('[data-tab]'))
+  const index = buttons.findIndex((button) => button.dataset.tab === activeTab.value)
+  const button = buttons[index]
+  if (!button) return
+  // 高亮线基于标签实际占据的空间绘制
+  indicatorStyle.value = { left: `${button.offsetLeft}px`, width: `${button.offsetWidth}px` }
+}
+
+watch(activeTab, () => nextTick(updateIndicator))
+
 const placeholders = {
   users: { title: '用户管理', code: 'USERS' },
-  settings: { title: '设置', code: 'SETTINGS' },
   about: { title: '关于', code: 'ABOUT' },
 } as const
 
+const settingsTabs = [
+  { key: 'system', label: '系统设置', code: 'SYSTEM' },
+  { key: 'basic', label: '基础设置', code: 'BASIC' },
+  { key: 'schedule', label: '定时任务', code: 'CRON' },
+] as const
+type SettingsTab = typeof settingsTabs[number]['key']
+
+const activeSettings = ref<SettingsTab>('system')
+const activeSettingsTab = computed(() => settingsTabs.find((item) => item.key === activeSettings.value) ?? settingsTabs[0])
+
 const placeholder = computed(() => {
   const tab = activeTab.value
-  return tab === 'users' || tab === 'settings' || tab === 'about' ? placeholders[tab] : null
+  if (tab === 'settings')
+    return { title: activeSettingsTab.value.label, code: activeSettingsTab.value.code }
+  return tab === 'users' || tab === 'about' ? placeholders[tab] : null
 })
 const instances = ref<import("~/types").InstanceData[]>([])
 const { request } = useApi()
@@ -37,8 +74,15 @@ async function loadHostMetrics() {
 onMounted(() => {
   loadHostMetrics()
   timer = setInterval(loadHostMetrics, 5000)
+  updateIndicator()
+  navObserver = new ResizeObserver(updateIndicator)
+  if (navEl.value) navObserver.observe(navEl.value)
+  document.fonts.ready.then(updateIndicator)
 })
-onUnmounted(() => { if (timer) clearInterval(timer) })
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+  navObserver?.disconnect()
+})
 
 const summary = computed(() => [
   { label: 'ACTIVE INSTANCES', value: String(instances.value.length).padStart(2, '0'), note: '已登记的 Minecraft 实例' },
@@ -63,13 +107,19 @@ const summary = computed(() => [
       </div>
     </header>
 
-    <nav class="mt-8 flex gap-8 border-b border-border font-mono text-sm">
-      <button type="button" :class="activeTab === 'dashboard' ? 'border-b-2 border-brand pb-3 text-text-primary' : 'border-b-2 border-transparent pb-3 text-text-secondary hover:text-text-primary'" @click="activeTab = 'dashboard'">◈ 仪表盘</button>
-      <button type="button" :class="activeTab === 'instances' ? 'border-b-2 border-brand pb-3 text-text-primary' : 'border-b-2 border-transparent pb-3 text-text-secondary hover:text-text-primary'" @click="activeTab = 'instances'">✦ 实例概览</button>
-      <button type="button" :class="activeTab === 'users' ? 'border-b-2 border-brand pb-3 text-text-primary' : 'border-b-2 border-transparent pb-3 text-text-secondary hover:text-text-primary'" @click="activeTab = 'users'">◉ 用户管理</button>
-      <button type="button" :class="activeTab === 'settings' ? 'border-b-2 border-brand pb-3 text-text-primary' : 'border-b-2 border-transparent pb-3 text-text-secondary hover:text-text-primary'" @click="activeTab = 'settings'">◐ 设置</button>
-      <button type="button" :class="activeTab === 'about' ? 'border-b-2 border-brand pb-3 text-text-primary' : 'border-b-2 border-transparent pb-3 text-text-secondary hover:text-text-primary'" @click="activeTab = 'about'">◇ 关于</button>
+    <nav ref="navEl" class="relative mt-8 flex border-b border-border font-mono text-sm">
+      <button v-for="tab in mainTabs" :key="tab.key" type="button" :data-tab="tab.key" class="pb-3 pl-[16px] pr-[16px]" :class="activeTab === tab.key ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary'" @click="activeTab = tab.key">{{ tab.icon }} {{ tab.label }}</button>
+      <span class="tab-highlight" :style="indicatorStyle" aria-hidden="true" />
     </nav>
+
+    <!-- 设置子项：主标签切到「设置」时展开一行；横线与子项都从左侧生长出来，下方面板随之平滑下移 -->
+    <div class="grid transition-[grid-template-rows] duration-[320ms] ease-out" :class="activeTab === 'settings' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'">
+      <div class="overflow-hidden">
+        <div class="settings-subnav flex gap-6 border-b border-border pb-4 pl-[10px] pt-3 font-mono text-xs" :class="{ 'is-visible': activeTab === 'settings' }" :aria-hidden="activeTab !== 'settings'">
+          <button v-for="item in settingsTabs" :key="item.key" type="button" :class="activeSettings === item.key ? 'text-brand' : 'text-text-secondary hover:text-text-primary'" :tabindex="activeTab === 'settings' ? 0 : -1" @click="activeSettings = item.key">{{ item.label }}</button>
+        </div>
+      </div>
+    </div>
 
     <Transition name="dashboard-panel" mode="out-in">
       <section v-if="activeTab === 'dashboard'" key="dashboard" class="mt-10 space-y-6">
@@ -121,4 +171,9 @@ const summary = computed(() => [
 .dashboard-card { transition: transform 320ms cubic-bezier(.22,1,.36,1), border-color 260ms ease, background-color 260ms ease; }
 .dashboard-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--brand) 55%, transparent); }
 .metric-line { transition: width 900ms cubic-bezier(.22,1,.36,1); }
+/* 主标签高亮：高亮线 = 标签实际占据的格，切换时左右滑动 */
+.tab-highlight { position: absolute; bottom: -1px; height: 2px; background: var(--brand); pointer-events: none; transition: left 380ms cubic-bezier(.22,1,.36,1), width 380ms cubic-bezier(.22,1,.36,1); }
+/* 设置子项：横线与文字一起从左往右生长 */
+.settings-subnav { clip-path: inset(0 100% 0 0); transition: clip-path 480ms cubic-bezier(.22,1,.36,1); }
+.settings-subnav.is-visible { clip-path: inset(0 0 0 0); }
 </style>
