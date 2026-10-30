@@ -89,19 +89,22 @@ pnpm preview
 
 ```bash
 # Debian / Ubuntu
-sudo apt update && sudo apt install -y wget
+apt update && sudo apt install -y wget
 
 # Red Hat / Fedora
-sudo yum install -y wget
+yum install -y wget
 
 # Arch Linux
-sudo pacman -Syu --noconfirm wget
+pacman -Syu --noconfirm wget
 
 # インストールスクリプトのダウンロード
 wget -qO install.sh https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh
 
+# ミラーサイトもご利用いただけます
+wget -qO install.sh https://gh-proxy.com/https://raw.githubusercontent.com/Miryex0v0/ATMOSPHERE-Panel/main/install.sh
+
 # 権限を付与してインストールを実行
-sudo bash install.sh
+bash install.sh
 ```
 
 スクリプトはインストールパスとポートを対話形式で確認し、依存関係、Python 仮想環境、Nuxt のビルド、systemd への登録を自動的に完了します。
