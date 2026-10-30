@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import DotField from '~/components/ui/DotField.vue'
 
 
 definePageMeta({ layout: 'auth' })
@@ -91,8 +92,7 @@ async function login() {
   <div class="starfield-container fixed inset-0 z-0 pointer-events-none overflow-hidden">
     <div class="nebula nebula-1" />
     <div class="nebula nebula-2" />
-    <div class="stars-layer stars-sm" />
-    <div class="stars-layer stars-lg" />
+    <DotField />
     <div class="cross-star cross-1" />
     <div class="cross-star cross-2" />
     <div class="cross-star cross-3" />
@@ -154,11 +154,10 @@ async function login() {
 <style scoped>
 .starfield-container{background:var(--background)}
 .nebula{position:absolute;width:48vw;height:48vw;border-radius:50%;filter:blur(80px);opacity:.08;animation:nebula-pulse 18s ease-in-out infinite}.nebula-1{left:5%;top:8%;background:var(--brand)}.nebula-2{right:2%;bottom:-15%;background:var(--surface);animation-delay:-8s}
-.stars-layer{position:absolute;inset:0}.stars-sm{opacity:.5;background:radial-gradient(circle,var(--text-primary) 0 1px,transparent 1.5px);background-size:83px 71px;animation:twinkle 9s ease-in-out infinite}.stars-lg{opacity:.55;background:radial-gradient(circle,var(--brand) 0 1.5px,transparent 2px);background-size:211px 193px;animation:twinkle 13s ease-in-out infinite reverse}
 .cross-star{position:absolute;width:22px;height:22px;color:var(--brand);opacity:.45;animation:float-cross 9s ease-in-out infinite}.cross-star::before,.cross-star::after{content:'';position:absolute;background:currentColor}.cross-star::before{width:100%;height:1px;top:50%;left:0}.cross-star::after{height:100%;width:1px;left:50%;top:0}.cross-1{left:12%;top:22%}.cross-2{right:21%;top:30%;animation-delay:-3s}.cross-3{left:46%;bottom:17%;animation-delay:-6s}
 .orbit-line{position:absolute;height:1px;width:70%;background:linear-gradient(90deg,transparent,var(--brand),transparent);opacity:.12;mask-image:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent);animation:line-drift 24s ease-in-out infinite}.line-1{left:-8%;top:38%;transform:rotate(-17deg)}.line-2{right:-10%;bottom:27%;transform:rotate(13deg);animation-delay:-10s}
 .hand-title{font-style:italic;letter-spacing:-.04em;display:inline-block;clip-path:inset(0 100% 0 0);animation:hand-write 1.2s cubic-bezier(.65,0,.35,1) forwards}.sf-title{font-family:'SF Pro Display','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-style:italic;letter-spacing:-.05em;display:inline-block;clip-path:inset(0 100% 0 0);animation:hand-write 1.4s .2s cubic-bezier(.65,0,.35,1) forwards}
-@keyframes hand-write{99%{clip-path:inset(0 0 0 0)}to{clip-path:none}}@keyframes nebula-pulse{50%{opacity:.13;transform:scale(1.04)}}@keyframes twinkle{50%{opacity:.22}}@keyframes float-cross{50%{transform:translate(5px,-4px) scale(1.08)}}@keyframes line-drift{50%{transform:translate(8px,-5px) rotate(-17deg);opacity:.3}}
+@keyframes hand-write{99%{clip-path:inset(0 0 0 0)}to{clip-path:none}}@keyframes nebula-pulse{50%{opacity:.13;transform:scale(1.04)}}@keyframes float-cross{50%{transform:translate(5px,-4px) scale(1.08)}}@keyframes line-drift{50%{transform:translate(8px,-5px) rotate(-17deg);opacity:.3}}
 .palette-fade-enter-active,.palette-fade-leave-active{transition:opacity 180ms ease,transform 180ms ease}.palette-fade-enter-from,.palette-fade-leave-to{opacity:0;transform:translateY(-8px) scale(.98)}
 .lang-switch{gap:0}.lang-switch.lang-open{gap:.5rem}
 .lang-btn{max-width:8em;white-space:nowrap;overflow:hidden;transition:max-width 220ms ease,opacity 220ms ease,padding-left 220ms ease,padding-right 220ms ease,border-color 220ms ease,color 220ms ease}
