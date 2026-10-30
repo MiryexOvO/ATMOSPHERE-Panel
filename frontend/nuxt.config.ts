@@ -32,7 +32,7 @@ export default defineNuxtConfig({
   
   devServer: { port: 5173 },
   runtimeConfig: {
-    public: { apiBase: process.env.NUXT_PUBLIC_API_BASE || '' }
+    public: { apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api' }
   },
   vite: { clearScreen: false, logLevel: 'error' },
   devtools: { enabled: false, timeline: { enabled: false } },

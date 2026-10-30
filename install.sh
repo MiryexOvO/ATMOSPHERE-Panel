@@ -107,7 +107,7 @@ ExecStart=$NODE_BIN $INSTALL_PATH/frontend/.output/server/index.mjs
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=HOST=0.0.0.0
-Environment=NUXT_PUBLIC_API_BASE=http://$PUBLIC_IP:$BACKEND_PORT
+Environment=NUXT_PUBLIC_API_BASE=/api
 Restart=always
 [Install]
 WantedBy=multi-user.target
