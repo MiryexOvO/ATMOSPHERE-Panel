@@ -15,7 +15,7 @@ instances.value = instancesRes.instances || []
 
 async function loadHostMetrics() {
   try {
-    host.value = await request('/api/system/metrics')
+    host.value = await request('/api/instances/system/metrics')
   } catch {
     host.value = { ...host.value, platform: 'UNAVAILABLE', hostname: 'UNAVAILABLE', release: 'UNAVAILABLE' }
   }
@@ -84,7 +84,7 @@ const summary = computed(() => [
 
       <section v-else key="instances" class="mt-10">
         <div v-if="!instances.length" class="dashboard-card relative border-l border-t border-border bg-surface/75 py-32 text-center shadow-2xl"><span class="font-mono text-xs tracking-[0.3em] text-brand">[ 00 / 00 ]</span><h2 class="mt-6 font-mono text-lg tracking-[0.35em] text-text-primary">NO SERVER INSTANCES</h2><p class="mt-4 text-xs text-text-secondary">创建第一个实例，上传服务端核心并确认 EULA。</p></div>
-        <div v-else class="divide-y divide-border border-y border-border"> <NuxtLink v-for="(item, index) in instances" :key="item.id" :to="`/instances/${item.id}`" class="group flex items-center justify-between py-7 transition hover:bg-surface/60"><div class="flex items-center gap-8"><span class="font-mono text-xs text-brand">&gt; {{ String(index + 1).padStart(2, '0') }}</span><div><h2 class="font-mono text-lg font-bold text-text-primary">{{ item.name }}</h2><small class="font-mono text-xs text-text-secondary">PORT {{ item.port }} · STATUS {{ item.status }}</small></div></div><span class="font-mono text-xs text-text-secondary group-hover:text-brand">[ DETAILS + ]</span></NuxtLink></div>
+        <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"><NuxtLink v-for="item in instances" :key="item.id" :to="`/instances/${item.id}`"><AtmosphereCard interactive><div class="flex items-start justify-between"><h2 class="font-mono text-lg font-bold text-text-primary">{{ item.name }}</h2><span class="h-2 w-2 rounded-full" :class="item.status === 'running' ? 'bg-data-live shadow-[0_0_12px_var(--data-live)] animate-pulse' : 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,.45)]'" /></div><p class="mt-8 font-mono text-xs text-text-secondary">{{ item.selected_core || 'Minecraft Server' }} · PORT {{ item.port }}</p><span class="mt-5 block font-mono text-[10px] tracking-[0.16em] text-brand">[ ACCESS ]</span></AtmosphereCard></NuxtLink></div>
       </section>
     </Transition>
   </main>
