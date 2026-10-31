@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 小刻度
-const TICK = 8 
+const TICK = 8
 // 五个一个大刻度
 const MAJOR_EVERY = 5
 // 五个一个标注刻度
@@ -19,7 +19,7 @@ let lastTime = 0
 let observer: ResizeObserver | undefined
 
 const labels = computed(() => {
-  const items: { top: number, value: string }[] = []
+  const items: { top: number; value: string }[] = []
   const majors = Math.floor(rulerHeight.value / MAJOR_STEP)
   for (let i = LABEL_EVERY; i <= majors; i += LABEL_EVERY)
     items.push({ top: i * MAJOR_STEP, value: String(i).padStart(2, '0') })
@@ -94,19 +94,16 @@ onUnmounted(() => {
     <span
       v-for="label in labels"
       :key="label.top"
-      class="absolute right-[19px] -translate-y-1/2 font-mono text-[8px] leading-none text-text-secondary opacity-45 tabular-nums"
+      class="absolute right-[19px] -translate-y-1/2 font-mono text-[8px] tabular-nums leading-none text-text-secondary opacity-45"
       :style="{ top: `${label.top}px` }"
-    >{{ label.value }}</span>
+      >{{ label.value }}</span
+    >
   </div>
   <!-- 视口内的标注线 + 百分比：随滚动进度从视口顶部滑到视口底部 -->
-  <div
-    class="pointer-events-none fixed inset-0 z-40"
-    :style="{ '--ruler-progress': progress }"
-    aria-hidden="true"
-  >
+  <div class="pointer-events-none fixed inset-0 z-40" :style="{ '--ruler-progress': progress }" aria-hidden="true">
     <div class="ruler-line absolute right-0 top-0 h-px w-[30px]" />
     <!-- 百分比翻页 -->
-    <span class="ruler-percent absolute right-[34px] top-0 font-mono text-[9px] text-text-secondary tabular-nums">
+    <span class="ruler-percent absolute right-[34px] top-0 font-mono text-[9px] tabular-nums text-text-secondary">
       <span v-for="(digit, index) in digits" :key="index" class="ruler-digit">
         <span class="ruler-digit-strip" :style="{ transform: `translateY(${-digit}em)` }">
           <span v-for="n in 10" :key="n" class="ruler-digit-cell">{{ n - 1 }}</span>

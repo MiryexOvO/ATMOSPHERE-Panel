@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 import VersionWizardModal from './VersionWizardModal.vue'
 
 type Core = {
@@ -119,7 +118,7 @@ function handleSelection(selection: Selection) {
           v-for="category in categories"
           :key="category"
           type="button"
-          class="relative border-l-2 border-transparent px-4 py-3 text-left text-sm text-text-secondary transition-colors hover:bg-surface/60 hover:text-text-primary"
+          class="hover:bg-surface/60 relative border-l-2 border-transparent px-4 py-3 text-left text-sm text-text-secondary transition-colors hover:text-text-primary"
           :class="activeCategory === category ? 'border-brand bg-surface text-text-primary' : ''"
           @click="activeCategory = category"
         >
@@ -144,7 +143,7 @@ function handleSelection(selection: Selection) {
           v-for="core in filteredCores"
           :key="core.id"
           type="button"
-          class="group cursor-pointer border border-border bg-surface/50 p-5 text-left transition-colors hover:border-brand/50"
+          class="bg-surface/50 hover:border-brand/50 group cursor-pointer border border-border p-5 text-left transition-colors"
           @click="openWizard(core)"
         >
           <div class="mb-8 flex items-start justify-between">

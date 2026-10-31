@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
-    "preview": "nuxt preview"
+    "preview": "nuxt preview",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@iconify/vue": "^4.1.2",
@@ -20,6 +22,8 @@
     "@tailwindcss/postcss": "^4.3.3",
     "autoprefixer": "^10.6.2",
     "postcss": "^8.5.32",
+    "prettier": "^3.9.10",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^3.4.17"
   },
   "packageManager": "pnpm@12.16.1"

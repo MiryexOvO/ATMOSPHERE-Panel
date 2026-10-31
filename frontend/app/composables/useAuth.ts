@@ -7,16 +7,29 @@ export function useAuth() {
     loading.value = true
     error.value = ''
     try {
-      const result = await request<{ user: { username: string } }>('/api/login', { method: 'POST', body: { username, password }, timeout: 8000 })
+      const result = await request<{ user: { username: string } }>('/api/login', {
+        method: 'POST',
+        body: { username, password },
+        timeout: 8000,
+      })
       user.value = result.user
       return result
     } catch (cause: unknown) {
       const err = cause as { data?: { message?: string }; message?: string }
       error.value = err.data?.message || err.message || '登录失败'
       throw cause
-    } finally { loading.value = false }
+    } finally {
+      loading.value = false
+    }
   }
-  async function logout() { await request('/api/logout', { method: 'POST' }); user.value = null }
-  async function me() { const result = await request<{ user: { username: string } }>('/api/me'); user.value = result.user; return result }
+  async function logout() {
+    await request('/api/logout', { method: 'POST' })
+    user.value = null
+  }
+  async function me() {
+    const result = await request<{ user: { username: string } }>('/api/me')
+    user.value = result.user
+    return result
+  }
   return { user, error, loading, login, logout, me }
 }

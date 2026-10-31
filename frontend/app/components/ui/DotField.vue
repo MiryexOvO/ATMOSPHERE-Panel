@@ -6,7 +6,7 @@ const host = ref<HTMLElement | null>(null)
 let frame = 0
 let resizeFrame = 0
 let pointer = { x: -1e4, y: -1e4 }
-let dots: { el: HTMLElement, x: number, y: number, push: number, spread: number, angle: number }[] = []
+let dots: { el: HTMLElement; x: number; y: number; push: number; spread: number; angle: number }[] = []
 let reduced = false
 
 // 按原背景的间距生成点阵：小点 83×71，品牌色点 211×193

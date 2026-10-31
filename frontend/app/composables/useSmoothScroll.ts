@@ -6,7 +6,7 @@ export function useSmoothScroll() {
   // 当前实际滚动位置
   let current = 0
   // 滚轮累积出的目标位置
-  let target = 0 
+  let target = 0
   let frame = 0
   let lastTime = 0
 
@@ -41,22 +41,18 @@ export function useSmoothScroll() {
     let node = target as HTMLElement | null
     while (node && node !== document.body) {
       const style = getComputedStyle(node)
-      if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight)
-        return true
+      if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) return true
       node = node.parentElement
     }
     return false
   }
 
   function onWheel(event: WheelEvent) {
-    if (event.ctrlKey)
-      return
+    if (event.ctrlKey) return
     // 还浏览器
-    if (Math.abs(event.deltaX) > Math.abs(event.deltaY))
-      return
+    if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return
     const max = maxScroll()
-    if (max <= 0 || isScrollable(event.target))
-      return
+    if (max <= 0 || isScrollable(event.target)) return
     event.preventDefault()
     const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1
     target = Math.min(max, Math.max(0, target + event.deltaY * scale))
@@ -80,8 +76,7 @@ export function useSmoothScroll() {
 
   onMounted(() => {
     // 减少滚动时的效果
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-      return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     current = target = window.scrollY
     window.addEventListener('wheel', onWheel, { passive: false })
     window.addEventListener('scroll', onScroll, { passive: true })
