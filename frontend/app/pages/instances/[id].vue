@@ -4,6 +4,7 @@ import Monitor from '~/components/instance/Monitor.vue'
 import FileManager from '~/components/instance/FileManager.vue'
 import Backups from '~/components/instance/Backups.vue'
 definePageMeta({ middleware: 'auth' })
+const { t } = useI18n()
 const route = useRoute()
 const instanceId = String(route.params.id)
 const instance = ref<import('~/types').InstanceData | null>(null)
@@ -31,10 +32,7 @@ onUnmounted(() => {
 </script>
 <template>
   <main class="relative z-10 mx-auto max-w-7xl px-8 py-12">
-    <NuxtLink to="/dashboard" class="font-mono text-[10px] tracking-[0.18em] text-text-secondary hover:text-brand"
-      >← BACK TO CONTROL ROOM</NuxtLink
-    >
-    <header class="mt-8 flex flex-wrap items-end justify-between gap-6 border-b border-border pb-7">
+    <header class="flex flex-wrap items-end justify-between gap-6 border-b border-border pb-7">
       <div>
         <p class="font-mono text-[10px] tracking-[0.22em] text-text-secondary">/ INSTANCE CONTROL TERMINAL</p>
         <h1 class="mt-3 font-serif text-4xl text-text-primary">{{ instance?.name || instanceId }}</h1>
@@ -86,5 +84,10 @@ onUnmounted(() => {
         </p>
       </section>
     </section>
+    <div class="mt-10">
+      <NuxtLink to="/dashboard" class="font-mono text-sm tracking-[0.18em] text-text-secondary hover:text-brand">
+        ← {{ t('backToControlRoom') }}
+      </NuxtLink>
+    </div>
   </main>
 </template>

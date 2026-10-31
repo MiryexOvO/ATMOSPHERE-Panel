@@ -3,12 +3,14 @@ import DashboardBackground from '~/components/ui/DashboardBackground.vue'
 
 definePageMeta({ middleware: 'auth' })
 
+const { t } = useI18n()
+
 const mainTabs = [
-  { key: 'dashboard', icon: '◈', label: '仪表盘' },
-  { key: 'instances', icon: '✦', label: '实例概览' },
-  { key: 'users', icon: '◉', label: '用户管理' },
-  { key: 'settings', icon: '◐', label: '设置' },
-  { key: 'about', icon: '◇', label: '关于' },
+  { key: 'dashboard', icon: '◈', labelKey: 'tabDashboard' },
+  { key: 'instances', icon: '✦', labelKey: 'tabInstances' },
+  { key: 'users', icon: '◉', labelKey: 'tabUsers' },
+  { key: 'settings', icon: '◐', labelKey: 'tabSettings' },
+  { key: 'about', icon: '◇', labelKey: 'tabAbout' },
 ] as const
 type Tab = (typeof mainTabs)[number]['key']
 
@@ -33,15 +35,10 @@ function updateIndicator() {
 
 watch(activeTab, () => nextTick(updateIndicator))
 
-const placeholders = {
-  users: { title: '用户管理', code: 'USERS' },
-  about: { title: '关于', code: 'ABOUT' },
-} as const
-
 const settingsTabs = [
-  { key: 'system', label: '系统设置', code: 'SYSTEM' },
-  { key: 'basic', label: '基础设置', code: 'BASIC' },
-  { key: 'schedule', label: '定时任务', code: 'CRON' },
+  { key: 'system', labelKey: 'settingsSystem', code: 'SYSTEM' },
+  { key: 'basic', labelKey: 'settingsBasic', code: 'BASIC' },
+  { key: 'schedule', labelKey: 'settingsCron', code: 'CRON' },
 ] as const
 type SettingsTab = (typeof settingsTabs)[number]['key']
 
@@ -52,8 +49,10 @@ const activeSettingsTab = computed(
 
 const placeholder = computed(() => {
   const tab = activeTab.value
-  if (tab === 'settings') return { title: activeSettingsTab.value.label, code: activeSettingsTab.value.code }
-  return tab === 'users' || tab === 'about' ? placeholders[tab] : null
+  if (tab === 'settings') return { title: t(activeSettingsTab.value.labelKey), code: activeSettingsTab.value.code }
+  if (tab === 'users') return { title: t('tabUsers'), code: 'USERS' }
+  if (tab === 'about') return { title: t('tabAbout'), code: 'ABOUT' }
+  return null
 })
 const instances = ref<import('~/types').InstanceData[]>([])
 const { request } = useApi()
@@ -96,10 +95,10 @@ const summary = computed(() => [
   {
     label: 'ACTIVE INSTANCES',
     value: String(instances.value.length).padStart(2, '0'),
-    note: '已登记的 Minecraft 实例',
+    note: t('summaryNoteInstances'),
   },
-  { label: 'DEPLOYMENT MODE', value: 'JAR', note: '安全上传与独立目录' },
-  { label: 'SESSION', value: '24', note: '管理员会话已建立' },
+  { label: 'DEPLOYMENT MODE', value: 'JAR', note: t('summaryNoteDeploy') },
+  { label: 'SESSION', value: '24', note: t('summaryNoteSession') },
 ])
 </script>
 
@@ -135,7 +134,7 @@ const summary = computed(() => [
         :class="activeTab === tab.key ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary'"
         @click="activeTab = tab.key"
       >
-        {{ tab.icon }} {{ tab.label }}
+        {{ tab.icon }} {{ t(tab.labelKey) }}
       </button>
       <span class="tab-highlight" :style="indicatorStyle" aria-hidden="true" />
     </nav>
@@ -159,7 +158,7 @@ const summary = computed(() => [
             :tabindex="activeTab === 'settings' ? 0 : -1"
             @click="activeSettings = item.key"
           >
-            {{ item.label }}
+            {{ t(item.labelKey) }}
           </button>
         </div>
       </div>
@@ -193,7 +192,7 @@ const summary = computed(() => [
               <header class="flex items-center justify-between border-b border-border pb-4">
                 <div>
                   <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ HOST TELEMETRY</p>
-                  <h2 class="mt-2 font-serif text-2xl text-text-primary">资源监控</h2>
+                  <h2 class="mt-2 font-serif text-2xl text-text-primary">{{ t('hostTelemetryTitle') }}</h2>
                 </div>
                 <span class="text-data-live font-mono text-[10px]">● LIVE / 5S</span>
               </header>
@@ -226,7 +225,7 @@ const summary = computed(() => [
                   <div class="mt-4 h-2 overflow-hidden bg-background">
                     <div class="metric-line bg-data-live h-full" :style="{ width: host.memory + '%' }" />
                   </div>
-                  <p class="mt-6 font-mono text-xs text-text-secondary">实时采样 · 系统资源状态</p>
+                  <p class="mt-6 font-mono text-xs text-text-secondary">{{ t('samplingNote') }}</p>
                 </div>
               </div>
             </div>
@@ -238,7 +237,7 @@ const summary = computed(() => [
             />
             <div class="relative">
               <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ SYSTEM IDENTITY</p>
-              <h2 class="mt-2 font-serif text-2xl text-text-primary">主机信息</h2>
+              <h2 class="mt-2 font-serif text-2xl text-text-primary">{{ t('hostIdentityTitle') }}</h2>
               <dl class="mt-7 divide-y divide-border font-mono text-xs">
                 <div class="flex justify-between py-4">
                   <dt class="text-text-secondary">PANEL VERSION</dt>
@@ -268,8 +267,8 @@ const summary = computed(() => [
           class="dashboard-card bg-surface/75 relative border-l border-t border-border py-32 text-center shadow-2xl"
         >
           <span class="font-mono text-xs tracking-[0.3em] text-brand">[ 00 / 00 ]</span>
-          <h2 class="mt-6 font-mono text-lg tracking-[0.35em] text-text-primary">NO SERVER INSTANCES</h2>
-          <p class="mt-4 text-xs text-text-secondary">创建第一个实例，上传服务端核心并确认 EULA。</p>
+          <h2 class="mt-6 font-mono text-lg tracking-[0.35em] text-text-primary">{{ t('emptyInstancesTitle') }}</h2>
+          <p class="mt-4 text-xs text-text-secondary">{{ t('emptyInstancesDesc') }}</p>
         </div>
         <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           <NuxtLink v-for="item in instances" :key="item.id" :to="`/instances/${item.id}`"
@@ -300,7 +299,7 @@ const summary = computed(() => [
         <div class="dashboard-card bg-surface/75 relative border-l border-t border-border py-32 text-center shadow-2xl">
           <span class="font-mono text-xs tracking-[0.3em] text-brand">[ {{ placeholder.code }} / PENDING ]</span>
           <h2 class="mt-6 font-mono text-lg tracking-[0.35em] text-text-primary">{{ placeholder.title }}</h2>
-          <p class="mt-4 text-xs text-text-secondary">模块建设中。</p>
+          <p class="mt-4 text-xs text-text-secondary">{{ t('pending') }}</p>
         </div>
       </section>
     </Transition>

@@ -5,6 +5,8 @@ import { useSmoothScroll } from '~/composables/useSmoothScroll'
 
 useSmoothScroll()
 
+const { t } = useI18n()
+
 const now = ref(new Date())
 // null 表示鼠标还没移动过
 const pointer = ref<{ x: number; y: number } | null>(null)
@@ -150,7 +152,7 @@ async function logout() {
               class="block w-full px-3 py-2 text-left text-xs hover:bg-background hover:text-text-primary"
               @click="logout"
             >
-              登出
+              {{ t('logout') }}
             </button>
           </div>
         </Transition>
