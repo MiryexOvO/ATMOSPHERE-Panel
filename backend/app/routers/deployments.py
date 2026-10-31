@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Request, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
+import asyncio, json, httpx
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from ..core.security import require_user
@@ -7,9 +9,76 @@ from ..core.config import SERVER_ROOT, ROOT, MAX_PACKAGE_BYTES
 from ..archive_service import extract_archive, find_core_candidates
 from pathlib import Path
 import secrets, shutil, time, platform
-from ..services.systemd_service import SystemdService
+from ..infra.process_manager import get_process_manager
 
 router = APIRouter(prefix='/api', tags=['deployments'])
+deploy_events: dict[str, asyncio.Queue] = {}
+
+class DeployPayload(BaseModel):
+    instance_id: str
+    core_type: str
+    mc_version: str
+    build_version: str
+
+async def run_deploy_task(instance_id: str, core_type: str, mc_version: str, build_version: str):
+    queue = deploy_events[instance_id]
+    async def report(progress: int, status: str):
+        await queue.put({'progress': progress, 'status': status})
+    try:
+        await report(10, '正在解析核心信息...')
+        root = SERVER_ROOT / instance_id
+        root.mkdir(parents=True, exist_ok=True)
+        jar = root / 'server.jar'
+        await report(20, '正在下载核心...')
+        url = 'https://api.fastmirror.net/v1/projects/' + core_type + '/versions/' + mc_version + '/builds/' + build_version + '/downloads/server:default/download'
+        async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
+            async with client.stream('GET', url) as response:
+                response.raise_for_status()
+                total = int(response.headers.get('content-length') or 0)
+                downloaded = 0
+                with jar.open('wb') as output:
+                    async for chunk in response.aiter_bytes(1024 * 1024):
+                        output.write(chunk)
+                        downloaded += len(chunk)
+                        progress = 20 + int(downloaded / total * 70) if total else 0
+                        await report(progress, '正在下载核心...')
+        if not jar.is_file() or jar.stat().st_size == 0:
+            raise RuntimeError('核心下载完成但文件为空')
+        password = secrets.token_urlsafe(24)
+        (root / 'server.properties').write_text(f'server-port=25565\nenable-rcon=true\nrcon.port=25575\nrcon.password={password}\n', encoding='utf-8')
+        conn = connect()
+        password = secrets.token_urlsafe(24)
+        properties = root / 'server.properties'
+        properties.write_text('server-port=25565\nenable-rcon=true\nrcon.port=25575\nrcon.password=' + password + '\n', encoding='utf-8')
+        conn.execute('INSERT INTO instances (id,name,port,jar_name,status,created_at,core_candidates,selected_core,rcon_host,rcon_port,rcon_password_hash,rcon_password) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', (instance_id, instance_id, 25565, jar.name, 'stopped', int(time.time()), '[]', jar.name, '127.0.0.1', 25575, None, password))
+        conn.commit()
+        conn.close()
+        await get_process_manager().start(instance_id, jar.name, 4096)
+        await report(100, '部署完成！')
+    except Exception as exc:
+        await report(100, f'部署失败: {exc}')
+    finally:
+        await queue.put(None)
+
+@router.post('/instances/deploy')
+async def start_deploy(request: Request, payload: DeployPayload):
+    if isinstance((user := require_user(request)), JSONResponse): return user
+    deploy_events[payload.instance_id] = asyncio.Queue()
+    asyncio.create_task(run_deploy_task(payload.instance_id, payload.core_type, payload.mc_version, payload.build_version))
+    return {'ok': True, 'instance_id': payload.instance_id}
+
+@router.get('/instances/deploy/stream/{instance_id}')
+async def deploy_stream(request: Request, instance_id: str):
+    if isinstance((user := require_user(request)), JSONResponse): return user
+    queue = deploy_events.get(instance_id)
+    if queue is None: return JSONResponse({'ok': False, 'message': '部署任务不存在'}, status_code=404)
+    async def events():
+        while True:
+            event = await queue.get()
+            if event is None: break
+            yield f'data: {json.dumps(event, ensure_ascii=False)}\n\n'
+    return StreamingResponse(events(), media_type='text/event-stream')
+
 
 class ModePayload(BaseModel):
     mode: str

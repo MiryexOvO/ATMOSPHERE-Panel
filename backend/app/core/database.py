@@ -23,5 +23,16 @@ def init_db() -> None:
         conn.execute("ALTER TABLE instances ADD COLUMN rcon_password_hash TEXT")
     if 'rcon_password' not in columns:
         conn.execute("ALTER TABLE instances ADD COLUMN rcon_password TEXT")
+    if 'memory_mb' not in columns:
+        conn.execute("ALTER TABLE instances ADD COLUMN memory_mb INTEGER NOT NULL DEFAULT 4096")
+    for column, definition in {
+        'java_version': "TEXT NOT NULL DEFAULT '21'",
+        'jvm_args': "TEXT NOT NULL DEFAULT ''",
+        'rcon_enabled': 'INTEGER NOT NULL DEFAULT 1',
+        'auto_restart': 'INTEGER NOT NULL DEFAULT 0',
+        'ignore_eula': 'INTEGER NOT NULL DEFAULT 0',
+    }.items():
+        if column not in columns:
+            conn.execute(f'ALTER TABLE instances ADD COLUMN {column} {definition}')
     conn.commit()
     conn.close()

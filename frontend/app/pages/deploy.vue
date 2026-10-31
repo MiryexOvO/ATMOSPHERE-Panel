@@ -33,6 +33,11 @@ const step = ref(0)
 const busy = ref(false)
 const error = ref('')
 const result = ref<DeployResult | null>(null)
+const isDeploying = ref(false)
+const progress = ref<number | null>(0)
+const deployStatus = ref('准备部署...')
+const deployInstanceId = ref('')
+let deployStream: EventSource | null = null
 const { request } = useApi()
 
 const modes = [
@@ -129,6 +134,10 @@ async function analyzePackage() {
 
 async function deploy() {
   busy.value = true
+  isDeploying.value = true
+  progress.value = 0
+  deployStatus.value = '准备部署...'
+  deployInstanceId.value = data.value.name.toLowerCase()
   error.value = ''
   try {
     if (data.value.mode === 'package' && data.value.packageFile) {
@@ -140,7 +149,7 @@ async function deploy() {
       form.set('package', data.value.packageFile)
       result.value = await request<DeployResult>('/api/instances/package', { method: 'POST', body: form })
     } else {
-      result.value = await request<DeployResult>('/api/deploy/modes', {
+      result.value = await request<DeployResult>('/api/instances/deploy', {
         method: 'POST',
         body: {
           mode: data.value.mode,
@@ -153,7 +162,23 @@ async function deploy() {
         },
       })
     }
-    step.value = steps.value.length
+    busy.value = false
+    deployStream?.close()
+    deployStream = new EventSource('/api/instances/deploy/stream/' + encodeURIComponent(deployInstanceId.value))
+    deployStream.onmessage = (event) => {
+      const payload = JSON.parse(event.data) as { progress: number; status: string }
+      progress.value = payload.progress ?? null
+      deployStatus.value = payload.status
+      if (progress.value !== null && progress.value >= 100) {
+        deployStream?.close()
+        deployStatus.value = '部署完成！'
+        step.value = steps.value.length
+      }
+    }
+    deployStream.onerror = () => {
+      deployStream?.close()
+      isDeploying.value = false
+    }
   } catch (cause: unknown) {
     const err = cause as { data?: { message?: string }; message?: string }
     error.value = err.data?.message || err.message || '部署失败。'
@@ -375,6 +400,20 @@ function back() {
           </button>
         </footer>
       </template>
+      <div v-if="isDeploying" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
+        <AtmosphereCard>
+          <div class="w-full max-w-2xl space-y-6 p-4 md:p-8">
+            <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ DEPLOYMENT PROGRESS</p>
+            <h2 class="font-serif text-2xl text-text-primary">{{ data.name }}</h2>
+            <p class="font-mono text-xs text-text-secondary">{{ deployStatus }}</p>
+            <div class="h-1 w-full overflow-hidden bg-background">
+              <div class="h-full bg-brand transition-all duration-300" :class="progress === null ? 'w-1/3 animate-pulse' : ''" :style="progress === null ? {} : { width: progress + '%' }" />
+            </div>
+            <div class="flex items-center justify-between font-mono text-[10px] text-text-secondary"><span>REAL DOWNLOAD</span><span>{{ progress === null ? 'DOWNLOADING' : progress + '%' }}</span></div>
+            <button v-if="progress !== null && progress >= 100" type="button" class="border border-brand px-4 py-2 font-mono text-xs text-brand hover:bg-brand/10" @click="isDeploying = false; navigateTo('/instances/' + deployInstanceId)">进入控制台 →</button>
+          </div>
+        </AtmosphereCard>
+      </div>
     </div>
     <div class="mx-auto mt-10 w-full max-w-6xl">
       <button

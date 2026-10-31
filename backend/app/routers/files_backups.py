@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request, Query
+from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 from ..core.security import require_user
 from ..core.config import SERVER_ROOT
@@ -11,6 +12,67 @@ def safe_path(instance_id:str, requested:str)->tuple[Path,Path]:
     root=(SERVER_ROOT/instance_id).resolve(); target=(root/requested.lstrip('/')).resolve()
     if target!=root and root not in target.parents: raise ValueError('路径超出实例目录')
     return root,target
+
+class PropertiesPayload(BaseModel):
+    properties: dict[str, object]
+
+
+def parse_property_value(value: str) -> object:
+    normalized = value.strip()
+    if normalized.lower() in {'true', 'false'}:
+        return normalized.lower() == 'true'
+    try:
+        return int(normalized)
+    except ValueError:
+        return normalized
+
+
+@router.get('/{instance_id}/properties')
+def get_properties(request: Request, instance_id: str):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    try:
+        _, target = safe_path(instance_id, '/server.properties')
+        if not target.is_file():
+            return {'ok': True, 'properties': {}, 'exists': False}
+        parsed = {}
+        for line in target.read_text(encoding='utf-8').splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith('#') or '=' not in stripped:
+                continue
+            key, value = stripped.split('=', 1)
+            parsed[key.strip()] = parse_property_value(value)
+        return {'ok': True, 'properties': parsed, 'exists': True}
+    except (ValueError, OSError, UnicodeError) as exc:
+        return JSONResponse({'ok': False, 'message': f'属性读取失败: {exc}'}, status_code=400)
+
+
+@router.put('/{instance_id}/properties')
+def update_properties(request: Request, instance_id: str, payload: PropertiesPayload):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    try:
+        _, target = safe_path(instance_id, '/server.properties')
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.is_file():
+            shutil.copy2(target, target.with_name('server.properties.bak'))
+        lines = []
+        for key, value in payload.properties.items():
+            if not isinstance(key, str) or not key or '/' in key or '\n' in key or '=' in key:
+                raise ValueError('属性键名无效')
+            if isinstance(value, bool):
+                serialized = 'true' if value else 'false'
+            elif isinstance(value, (str, int, float)):
+                serialized = str(value)
+            else:
+                raise ValueError(f'属性值无效: {key}')
+            if '\n' in serialized or '\r' in serialized:
+                raise ValueError('属性值包含非法换行')
+            lines.append(f'{key}={serialized}')
+        target.write_text('\n'.join(lines) + ('\n' if lines else ''), encoding='utf-8')
+        return {'ok': True, 'properties': payload.properties}
+    except (ValueError, OSError) as exc:
+        return JSONResponse({'ok': False, 'message': f'属性保存失败: {exc}'}, status_code=400)
 
 @router.get('/{instance_id}/files')
 def files(request:Request,instance_id:str,path:str='/'):
