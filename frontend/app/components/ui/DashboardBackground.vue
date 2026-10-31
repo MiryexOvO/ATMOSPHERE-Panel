@@ -1,10 +1,14 @@
+<script setup lang="ts">
+import LineField from '~/components/ui/LineField.vue'
+</script>
+
 <template>
   <div class="dashboard-hud pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
-    <div class="hud-grid" />
+    <LineField />
     <div class="hud-glow" />
     <svg class="hud-radar absolute inset-0 h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="none">
       <g class="hud-crosshair" fill="none" stroke="currentColor">
-        <path d="M720 0V900M0 450H1440" stroke-width=".5" />
+        <path d="M0 450H1440" stroke-width=".5" />
         <path d="M0 180H1440M0 720H1440" stroke-width=".35" />
       </g>
       <g class="hud-rings" fill="none" stroke="currentColor">
@@ -44,12 +48,6 @@
 <style scoped>
 .dashboard-hud {
   color: color-mix(in srgb, var(--brand) 45%, transparent);
-}
-.hud-grid {
-  position: absolute;
-  inset: 0;
-  opacity: 0.06;
-  background-image: repeating-linear-gradient(135deg, transparent 0 72px, var(--text-secondary) 73px, transparent 74px);
 }
 .hud-glow {
   position: absolute;

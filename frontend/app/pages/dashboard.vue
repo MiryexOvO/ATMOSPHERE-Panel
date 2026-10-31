@@ -130,7 +130,7 @@ const summary = computed(() => [
         :key="tab.key"
         type="button"
         :data-tab="tab.key"
-        class="pb-3 pl-[16px] pr-[16px]"
+        class="pb-3 pl-[14px] pr-[18px]"
         :class="activeTab === tab.key ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary'"
         @click="activeTab = tab.key"
       >
