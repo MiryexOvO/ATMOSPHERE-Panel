@@ -11,16 +11,20 @@ export default defineNuxtConfig({
     preference: 'dark',
     fallback: 'dark',
   },
+  typescript: {
+    nodeTsConfig: {
+      compilerOptions: { types: ['node'] },
+    },
+  },
   i18n: {
-    restructureDir: false, //
     defaultLocale: 'zh',
-    langDir: 'locales',
     strategy: 'no_prefix',
     locales: [
-      { code: 'zh', name: '中文', file: 'zh.json' },
-      { code: 'en', name: 'English', file: 'en.json' },
-      { code: 'ja', name: '日本語', file: 'ja.json' },
+      { code: 'zh', name: '中文' },
+      { code: 'en', name: 'English' },
+      { code: 'ja', name: '日本語' },
     ],
+    vueI18n: './i18n.config.ts',
   },
 
   // I HATE TAILWIND

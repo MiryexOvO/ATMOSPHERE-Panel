@@ -3,14 +3,18 @@ import Step2CoreSelector from '~/components/deploy/Step2CoreSelector.vue'
 
 definePageMeta({ middleware: 'auth' })
 
+const { t } = useI18n()
+
 type DeployResult = {
   ok: boolean
   message?: string
   instance?: { id: string }
-  core_candidates?: Array<{ path: string; kind: string; recommended?: boolean }>
+  core_candidates?: import('~/types').PackageCandidate[]
 }
 type WizardData = import('~/types').DeployWizardData
+type PackageInfo = import('~/types').PackageInfo
 type Mode = WizardData['mode']
+
 const data = useState<WizardData>('wizard-data', () => ({
   mode: '',
   name: '',
@@ -24,17 +28,20 @@ const data = useState<WizardData>('wizard-data', () => ({
   packageFile: null,
   packageInfo: null,
 }))
+
 const step = ref(0)
 const busy = ref(false)
 const error = ref('')
 const result = ref<DeployResult | null>(null)
 const { request } = useApi()
+
 const modes = [
   { id: 'quick', title: '快速部署', desc: '在线选择核心、版本与构建', icon: '↗' },
   { id: 'bedrock', title: '基岩版', desc: '部署 Bedrock Dedicated Server', icon: '◇' },
   { id: 'package', title: '上传整合包', desc: '上传、解压并自动检测服务端核心', icon: '↑' },
   { id: 'mcdr', title: 'MCDR', desc: '使用 Python 管理 Minecraft 服务端', icon: '⌘' },
 ] as const
+
 const steps = computed(() =>
   data.value.mode === 'quick'
     ? ['基本信息', '核心文件', '环境与设置', '确认信息', '执行部署', '完成结果']
@@ -44,10 +51,12 @@ const steps = computed(() =>
         ? ['上传整合包', '基本信息', '核心配置', '环境与设置', '确认信息', '执行部署', '完成结果']
         : ['基本信息', 'Python 环境', '核心文件', '环境与设置', '确认信息', '执行部署', '完成结果'],
 )
+
 const isComplete = computed(() => step.value === steps.value.length)
 const validBasic = computed(
   () => /^[A-Za-z0-9-]{2,48}$/.test(data.value.name) && data.value.port > 0 && data.value.port <= 65535,
 )
+
 const canContinue = computed(() => {
   if (data.value.mode === 'package' && step.value === 1) return Boolean(data.value.packageFile)
   if (
@@ -63,6 +72,7 @@ const canContinue = computed(() => {
   if (step.value === steps.value.length - 2) return true
   return true
 })
+
 function selectMode(mode: Mode) {
   data.value.mode = mode
   step.value = 1
@@ -89,6 +99,7 @@ function onPackage(event: Event) {
   data.value.packageFile = file
   error.value = ''
 }
+
 async function analyzePackage() {
   if (!data.value.packageFile) return
   busy.value = true
@@ -100,7 +111,10 @@ async function analyzePackage() {
     form.set('port', String(data.value.port))
     form.set('eula', 'false')
     form.set('package', data.value.packageFile)
-    const response = await request('/api/instances/package/inspect', { method: 'POST', body: form })
+    const response = await request<PackageInfo>('/api/instances/package/inspect', {
+      method: 'POST',
+      body: form,
+    })
     data.value.packageInfo = response
     const candidate = response.core_candidates?.find((item) => item.recommended) || response.core_candidates?.[0]
     if (candidate) data.value.coreType = candidate.path
@@ -112,6 +126,7 @@ async function analyzePackage() {
     busy.value = false
   }
 }
+
 async function deploy() {
   busy.value = true
   error.value = ''
@@ -123,9 +138,9 @@ async function deploy() {
       form.set('port', String(data.value.port))
       form.set('eula', 'true')
       form.set('package', data.value.packageFile)
-      result.value = await request('/api/instances/package', { method: 'POST', body: form })
+      result.value = await request<DeployResult>('/api/instances/package', { method: 'POST', body: form })
     } else {
-      result.value = await request('/api/deploy/modes', {
+      result.value = await request<DeployResult>('/api/deploy/modes', {
         method: 'POST',
         body: {
           mode: data.value.mode,
@@ -146,6 +161,7 @@ async function deploy() {
     busy.value = false
   }
 }
+
 function next() {
   error.value = ''
   if (!canContinue.value) {
@@ -173,16 +189,9 @@ function back() {
 
 <template>
   <main class="relative z-10 min-h-screen px-6 py-10 text-text-primary md:px-10">
-    <div class="mx-auto max-w-6xl">
+    <div class="mx-auto w-full max-w-6xl">
       <header class="flex items-end justify-between border-b border-border pb-7">
         <div>
-          <button
-            type="button"
-            class="mb-5 font-mono text-[10px] tracking-[0.18em] text-text-secondary hover:text-brand"
-            @click="navigateTo('/dashboard')"
-          >
-            ← BACK TO CONTROL ROOM
-          </button>
           <p class="font-mono text-[10px] tracking-[0.22em] text-text-secondary">
             / ATMOSPHERE / INSTANCE PROVISIONING
           </p>
@@ -366,6 +375,15 @@ function back() {
           </button>
         </footer>
       </template>
+    </div>
+    <div class="mx-auto mt-10 w-full max-w-6xl">
+      <button
+        type="button"
+        class="font-mono text-sm tracking-[0.18em] text-text-secondary hover:text-brand"
+        @click="navigateTo('/dashboard')"
+      >
+        ← {{ t('backToControlRoom') }}
+      </button>
     </div>
   </main>
 </template>

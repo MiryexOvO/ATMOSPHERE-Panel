@@ -14,6 +14,14 @@ export interface InstanceData {
   selected_core?: string
   created_at?: number
 }
+export interface PackageCandidate {
+  path: string
+  kind: string
+  recommended?: boolean
+}
+export interface PackageInfo {
+  core_candidates?: PackageCandidate[]
+}
 export interface DeployWizardData {
   mode: 'quick' | 'bedrock' | 'package' | 'mcdr' | ''
   name: string
@@ -25,5 +33,5 @@ export interface DeployWizardData {
   memory: number
   useAikar: boolean
   packageFile: File | null
-  packageInfo?: unknown
+  packageInfo?: PackageInfo | null
 }
