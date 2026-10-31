@@ -17,6 +17,20 @@ const formData = reactive({
 const coreModal = ref(false)
 type CoreOption = { id: string; name: string }
 const selectedCore = ref<CoreOption | null>(null)
+const versions = ref<string[]>([])
+const builds = ref<Record<string, string[]>>({})
+const { request } = useApi()
+async function openCoreModal(core: CoreOption) {
+  selectedCore.value = core
+  versions.value = []
+  try {
+    const response = await request<{ versions: { id: string }[] }>(`/api/resources/cores/${core.id}/versions`)
+    versions.value = response.versions.map((item) => item.id)
+    coreModal.value = true
+  } catch (error) {
+    deployMessage.value = error instanceof Error ? error.message : '版本加载失败'
+  }
+}
 const deployStatus = ref('idle')
 const deployPercent = ref(0)
 const deployMessage = ref('')
@@ -141,7 +155,7 @@ async function startDeploy() {
       <section v-else-if="step === 2" key="core" class="wizard-step-panel">
         <h2>核心文件</h2>
         <p>选择核心后不会立即下载，确认后继续下一步。</p>
-        <button class="core-selected" @click="coreModal = true">
+        <button class="core-selected" @click="openCoreModal(selectedCore || { id: formData.coreType.toLowerCase(), name: formData.coreType })">
           {{
             formData.coreType
               ? `${formData.coreType} ${formData.mcVersion} · Build ${formData.buildVersion}`
@@ -211,7 +225,7 @@ async function startDeploy() {
       v-if="coreModal"
       :open="coreModal"
       :core="selectedCore || { id: 'paper', name: '服务端核心' }"
-      :versions="['1.21.4', '1.21.1', '1.20.4', '1.19.4', '1.18', '1.16.5']"
+      :versions="versions"
       @close="coreModal = false"
       @deploy="chooseCore(selectedCore || { name: 'Paper' }, $event[0], $event[1])"
     />

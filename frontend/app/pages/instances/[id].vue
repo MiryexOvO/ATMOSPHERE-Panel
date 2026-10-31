@@ -181,11 +181,11 @@ onUnmounted(() => {
             <p class="font-mono text-[10px] tracking-[0.2em] text-text-secondary">/ CONFIGURATION</p>
             <button
               type="button"
-              class="flex w-full items-center justify-between border-l-2 px-4 py-3 text-left font-mono text-xs"
+              class="flex w-full items-center justify-between px-4 py-3 text-left font-mono text-xs"
               :class="
                 settingsNav === 'instance'
-                  ? 'border-brand bg-surface text-text-primary'
-                  : 'border-transparent text-text-secondary hover:bg-surface hover:text-text-primary'
+                  ? 'border-brand text-text-primary'
+                  : 'border-transparent text-text-secondary hover:text-text-primary'
               "
               @click="settingsNav = 'instance'"
             >
@@ -193,11 +193,11 @@ onUnmounted(() => {
             </button>
             <button
               type="button"
-              class="flex w-full items-center justify-between border-l-2 px-4 py-3 text-left font-mono text-xs"
+              class="flex w-full items-center justify-between px-4 py-3 text-left font-mono text-xs"
               :class="
                 settingsNav === 'properties'
-                  ? 'border-brand bg-surface text-text-primary'
-                  : 'border-transparent text-text-secondary hover:bg-surface hover:text-text-primary'
+                  ? 'border-brand text-text-primary'
+                  : 'border-transparent text-text-secondary hover:text-text-primary'
               "
               @click="settingsNav = 'properties'"
             >
@@ -261,7 +261,7 @@ onUnmounted(() => {
                         class="w-full border border-border bg-background px-3 py-2 text-text-primary outline-none focus:border-brand"
                     /></label>
                   </div>
-                  <div class="grid gap-4 border-t border-border pt-6 md:grid-cols-3">
+                  <div class="grid gap-4 pt-6 md:grid-cols-3">
                     <label
                       class="flex items-center justify-between border border-border bg-background px-4 py-3 text-xs text-text-secondary"
                       >RCON 通讯模式 <input v-model="settings.rcon_enabled" type="checkbox" class="accent-brand"
@@ -296,7 +296,7 @@ onUnmounted(() => {
             <div class="settings-slot" :class="{ 'is-active': settingsNav === 'properties' }">
               <div class="settings-clip">
                 <form :inert="settingsNav !== 'properties'" class="space-y-6" @submit.prevent="saveSettings">
-                  <div class="flex items-start justify-between border-b border-border pb-5">
+                  <div class="flex items-start justify-between pb-5">
                     <div>
                       <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ SERVER.PROPERTIES</p>
                       <h2 class="mt-3 font-serif text-2xl text-text-primary">服务端属性</h2>
@@ -322,7 +322,7 @@ onUnmounted(() => {
       </div>
       <div
         v-if="toast"
-        class="fixed bottom-6 right-6 z-50 border border-border bg-surface px-5 py-3 font-mono text-xs text-text-primary"
+        class="fixed bottom-6 right-6 z-50 border border-border px-5 py-3 font-mono text-xs text-text-primary backdrop-blur-md"
       >
         {{ toast.message }}
       </div>

@@ -67,8 +67,16 @@ const host = ref({
 })
 let timer: ReturnType<typeof setInterval> | undefined
 
-const instancesRes = await request<{ instances?: import('~/types').InstanceData[] }>('/api/instances')
-instances.value = instancesRes.instances || []
+async function loadInstances() {
+  try {
+    const response = await request<{ instances?: import('~/types').InstanceData[] }>('/api/instances')
+    instances.value = response.instances ?? []
+  } catch {
+    instances.value = []
+  }
+}
+
+await loadInstances()
 
 async function loadHostMetrics() {
   try {
@@ -79,8 +87,12 @@ async function loadHostMetrics() {
 }
 
 onMounted(() => {
+  loadInstances()
   loadHostMetrics()
-  timer = setInterval(loadHostMetrics, 5000)
+  timer = setInterval(() => {
+    loadInstances()
+    loadHostMetrics()
+  }, 5000)
   updateIndicator()
   navObserver = new ResizeObserver(updateIndicator)
   if (navEl.value) navObserver.observe(navEl.value)
@@ -166,30 +178,24 @@ const summary = computed(() => [
 
     <Transition name="dashboard-panel" mode="out-in">
       <section v-if="activeTab === 'dashboard'" key="dashboard" class="mt-10 space-y-6">
-        <div class="grid gap-5 md:grid-cols-3">
-          <article
+        <div class="grid gap-8 md:grid-cols-3">
+          <AtmosphereCard
             v-for="item in summary"
             :key="item.label"
-            class="dashboard-card bg-surface/75 relative border-l border-t border-border p-6 shadow-2xl"
+            class="p-8"
           >
-            <div
-              class="bg-background/40 pointer-events-none absolute inset-0 translate-x-2 translate-y-2 border border-border"
-            />
-            <div class="relative">
+            <div>
               <p class="font-mono text-[10px] tracking-[0.2em] text-text-secondary">{{ item.label }}</p>
               <strong class="mt-5 block font-mono text-3xl text-text-primary">{{ item.value }}</strong
               ><small class="mt-2 block text-xs text-text-secondary">{{ item.note }}</small>
             </div>
-          </article>
+          </AtmosphereCard>
         </div>
 
-        <div class="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-          <article class="dashboard-card bg-surface/75 relative border-l border-t border-border p-7 shadow-2xl">
-            <div
-              class="bg-background/40 pointer-events-none absolute inset-0 translate-x-2 translate-y-2 border border-border"
-            />
-            <div class="relative">
-              <header class="flex items-center justify-between border-b border-border pb-4">
+        <div class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <AtmosphereCard class="p-8">
+            <div>
+              <header class="flex items-center justify-between pb-4">
                 <div>
                   <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ HOST TELEMETRY</p>
                   <h2 class="mt-2 font-serif text-2xl text-text-primary">{{ t('hostTelemetryTitle') }}</h2>
@@ -209,7 +215,7 @@ const summary = computed(() => [
                     <i
                       v-for="(core, index) in host.cores"
                       :key="index"
-                      class="bg-background/50 block h-16 border border-border p-1"
+                      class="block h-16 p-1"
                       ><span
                         class="bg-brand/70 block h-full transition-all duration-700"
                         :style="{ transform: 'scaleY(' + Math.max(0.08, core / 100) + ')', transformOrigin: 'bottom' }"
@@ -229,50 +235,44 @@ const summary = computed(() => [
                 </div>
               </div>
             </div>
-          </article>
+          </AtmosphereCard>
 
-          <article class="dashboard-card bg-surface/75 relative border-l border-t border-border p-7 shadow-2xl">
-            <div
-              class="bg-background/40 pointer-events-none absolute inset-0 translate-x-2 translate-y-2 border border-border"
-            />
-            <div class="relative">
+          <AtmosphereCard class="p-8">
+            <div>
               <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ SYSTEM IDENTITY</p>
               <h2 class="mt-2 font-serif text-2xl text-text-primary">{{ t('hostIdentityTitle') }}</h2>
-              <dl class="mt-7 divide-y divide-border font-mono text-xs">
-                <div class="flex justify-between py-4">
+              <dl class="mt-7 font-mono text-xs">
+                <div class="flex justify-between border-b border-white/10 py-4 last:border-b-0">
                   <dt class="text-text-secondary">PANEL VERSION</dt>
                   <dd class="text-text-primary">{{ host.panel }}</dd>
                 </div>
-                <div class="flex justify-between py-4">
+                <div class="flex justify-between border-b border-white/10 py-4 last:border-b-0">
                   <dt class="text-text-secondary">PLATFORM</dt>
                   <dd class="text-text-primary">{{ host.platform }}</dd>
                 </div>
-                <div class="flex justify-between py-4">
+                <div class="flex justify-between border-b border-white/10 py-4 last:border-b-0">
                   <dt class="text-text-secondary">HOSTNAME</dt>
                   <dd class="text-text-primary">{{ host.hostname }}</dd>
                 </div>
-                <div class="flex justify-between py-4">
+                <div class="flex justify-between border-b border-white/10 py-4 last:border-b-0">
                   <dt class="text-text-secondary">RELEASE</dt>
                   <dd class="max-w-[12rem] truncate text-right text-text-primary">{{ host.release }}</dd>
                 </div>
               </dl>
             </div>
-          </article>
+          </AtmosphereCard>
         </div>
       </section>
 
       <section v-else-if="activeTab === 'instances'" key="instances" class="mt-10">
-        <div
-          v-if="!instances.length"
-          class="dashboard-card bg-surface/75 relative border-l border-t border-border py-32 text-center shadow-2xl"
-        >
+        <AtmosphereCard v-if="!instances.length" class="dashboard-card py-32 text-center">
           <span class="font-mono text-xs tracking-[0.3em] text-brand">[ 00 / 00 ]</span>
           <h2 class="mt-6 font-mono text-lg tracking-[0.35em] text-text-primary">{{ t('emptyInstancesTitle') }}</h2>
           <p class="mt-4 text-xs text-text-secondary">{{ t('emptyInstancesDesc') }}</p>
-        </div>
+        </AtmosphereCard>
         <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           <NuxtLink v-for="item in instances" :key="item.id" :to="`/instances/${item.id}`"
-            ><AtmosphereCard interactive
+            ><AtmosphereCard
               ><div class="flex items-start justify-between">
                 <h2 class="font-mono text-lg font-bold text-text-primary">{{ item.name }}</h2>
                 <span
@@ -296,11 +296,11 @@ const summary = computed(() => [
       </section>
 
       <section v-else-if="placeholder" :key="activeTab" class="mt-10">
-        <div class="dashboard-card bg-surface/75 relative border-l border-t border-border py-32 text-center shadow-2xl">
+        <AtmosphereCard class="dashboard-card py-32 text-center">
           <span class="font-mono text-xs tracking-[0.3em] text-brand">[ {{ placeholder.code }} / PENDING ]</span>
           <h2 class="mt-6 font-mono text-lg tracking-[0.35em] text-text-primary">{{ placeholder.title }}</h2>
           <p class="mt-4 text-xs text-text-secondary">{{ t('pending') }}</p>
-        </div>
+        </AtmosphereCard>
       </section>
     </Transition>
   </main>

@@ -2,46 +2,75 @@
 import VersionWizardModal from './VersionWizardModal.vue'
 type Core = { id: string; name: string; desc: string; category: string }
 type Selection = { core: string; version: string; build: string }
-const categories = ['插件服务端', '模组服务端', '原版服务端', '代理服务端']
+const categories = ['插件服务端', '模组服务端', '代理服务端', '基岩服务端', '原版服务端', '混合服务端']
 const cores: Core[] = [
-  { id: 'paper', name: 'Paper', desc: '高性能 Spigot 分支', category: '插件服务端' },
-  { id: 'purpur', name: 'Purpur', desc: 'Paper 的高可定制分支', category: '插件服务端' },
-  { id: 'folia', name: 'Folia', desc: '面向区域并行的服务端', category: '插件服务端' },
-  { id: 'fabric', name: 'Fabric', desc: '轻量灵活的模组加载器', category: '模组服务端' },
-  { id: 'forge', name: 'Forge', desc: '经典 Minecraft 模组平台', category: '模组服务端' },
-  { id: 'vanilla', name: 'Vanilla', desc: '官方原版服务端', category: '原版服务端' },
+  { id: 'arclight', name: 'Arclight', desc: '混合端（推荐）', category: '混合服务端' },
+  { id: 'catserver', name: 'CatServer', desc: '混合端', category: '混合服务端' },
+  { id: 'fabric', name: 'Fabric', desc: '轻量模组加载器', category: '模组服务端' },
+  { id: 'forge', name: 'Forge', desc: '经典模组平台', category: '模组服务端' },
+  { id: 'neoforge', name: 'NeoForge', desc: '新一代模组生态', category: '模组服务端' },
+  { id: 'quilt', name: 'Quilt', desc: 'Fabric 衍生加载器', category: '模组服务端' },
+  { id: 'bungeecord', name: 'BungeeCord', desc: '代理服务端', category: '代理服务端' },
   { id: 'velocity', name: 'Velocity', desc: '现代代理服务端', category: '代理服务端' },
+  { id: 'folia', name: 'Folia', desc: '多线程区域并行', category: '插件服务端' },
+  { id: 'leaves', name: 'Leaves', desc: 'Paper 衍生服务端', category: '插件服务端' },
+  { id: 'paper', name: 'Paper', desc: '高性能插件服务端（推荐）', category: '插件服务端' },
+  { id: 'purpur', name: 'Purpur', desc: '高可定制服务端', category: '插件服务端' },
+  { id: 'spigot', name: 'Spigot', desc: '经典插件服务端', category: '插件服务端' },
+  { id: 'spongevanilla', name: 'SpongeVanilla', desc: 'Sponge 插件服务端', category: '插件服务端' },
+  { id: 'nukkit', name: 'Nukkit', desc: '基岩版服务端', category: '基岩服务端' },
+  { id: 'pocketmine', name: 'PocketMine', desc: '基岩版服务端', category: '基岩服务端' },
+  { id: 'vanilla', name: 'Vanilla', desc: '官方原版服务端', category: '原版服务端' },
+  { id: 'spongeforge', name: 'SpongeForge', desc: 'Forge 混合生态', category: '混合服务端' },
+  { id: 'spongeneo', name: 'SpongeNeo', desc: 'NeoForge 混合生态', category: '混合服务端' },
 ]
-const versions: Record<string, string[]> = {
-  paper: ['1.21.1', '1.21', '1.20.4'],
-  purpur: ['1.21.1', '1.20.4'],
-  folia: ['1.21', '1.20.4'],
-  fabric: ['1.21.1', '1.20.4'],
-  forge: ['1.21.1', '1.20.1'],
-  vanilla: ['1.21.1', '1.20.4'],
-  velocity: ['3.4.0', '3.3.0'],
+const versions = ref<string[]>([])
+const builds = ref<Record<string, string[]>>({})
+const loadError = ref('')
+const isLoading = ref(false)
+const { request } = useApi()
+async function loadVersions(core: Core) {
+  loadError.value = ''
+  versions.value = []
+  isLoading.value = true
+  try {
+    const response = await request<{ versions?: ({ id?: string } | string)[] } | ({ id?: string } | string)[]>(`/api/resources/cores/${core.id}/versions`)
+    const rawVersions = Array.isArray(response) ? response : response.versions ?? []
+    versions.value = rawVersions
+      .map((item) => typeof item === 'string' ? item : item.id ?? '')
+      .filter(Boolean)
+  } catch (error: unknown) {
+    loadError.value = error instanceof Error ? error.message : '版本加载失败'
+    versions.value = []
+  } finally {
+    isLoading.value = false
+  }
 }
-const builds: Record<string, Record<string, string[]>> = {
-  paper: {
-    '1.21.1': ['Build 497', 'Build 496'],
-    '1.21': ['Build 130', 'Build 129'],
-    '1.20.4': ['Build 496', 'Build 495'],
-  },
-  purpur: { '1.21.1': ['Build 2327', 'Build 2326'] },
-  folia: { '1.21': ['Build 30', 'Build 29'] },
-  fabric: { '1.21.1': ['Loader 0.16.5', 'Loader 0.16.4'] },
-  forge: { '1.21.1': ['Build 52.0.30', 'Build 52.0.29'] },
-  vanilla: { '1.21.1': ['Release', 'Server Jar'] },
-  velocity: { '3.4.0': ['Build 459', 'Build 458'] },
+async function loadBuilds(core: Core, version: string) {
+  loadError.value = ''
+  try {
+    const response = await request<{ builds?: ({ id?: string } | string)[] } | ({ id?: string } | string)[]>(`/api/resources/cores/${core.id}/versions/${encodeURIComponent(version)}/builds`)
+    const rawBuilds = Array.isArray(response) ? response : response.builds ?? []
+    builds.value = {
+      ...builds.value,
+      [version]: rawBuilds
+        .map((item) => typeof item === 'string' ? item : item.id ?? '')
+        .filter(Boolean),
+    }
+  } catch (error: unknown) {
+    loadError.value = error instanceof Error ? error.message : '构建加载失败'
+    builds.value = { ...builds.value, [version]: [] }
+  }
 }
 const activeCategory = ref(categories[0])
 const selectedCore = ref<Core | null>(null)
 const selected = ref<Selection | null>(null)
 const isModalOpen = ref(false)
 const filteredCores = computed(() => cores.filter((core) => core.category === activeCategory.value))
-function openWizard(core: Core) {
+async function openWizard(core: Core) {
   selectedCore.value = core
   isModalOpen.value = true
+  await loadVersions(core)
 }
 function handleSelection(value: Selection) {
   selected.value = value
@@ -77,6 +106,7 @@ const emit = defineEmits<{ select: [value: Selection] }>()
           >{{ filteredCores.length.toString().padStart(2, '0') }} AVAILABLE</span
         >
       </header>
+      <p v-if="loadError" class="mb-4 border border-red-400/40 px-4 py-3 text-xs text-red-300">! {{ loadError }}</p>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <button
           v-for="core in filteredCores"
@@ -88,9 +118,9 @@ const emit = defineEmits<{ select: [value: Selection] }>()
           <div class="mb-8 flex items-start justify-between">
             <span class="font-mono text-lg font-bold text-text-primary">{{ core.name }}</span
             ><span
-              class="text-lg text-text-secondary transition-all group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-brand"
-              >↗</span
-            >
+              aria-hidden="true"
+              class="mt-1 h-2 w-2 border border-text-secondary/60 transition-colors group-hover:border-brand group-hover:bg-brand"
+            />
           </div>
           <p class="text-xs text-text-secondary">{{ core.desc }}</p>
         </button>
@@ -102,10 +132,13 @@ const emit = defineEmits<{ select: [value: Selection] }>()
     <VersionWizardModal
       :open="isModalOpen"
       :core="selectedCore"
-      :versions="selectedCore ? versions[selectedCore.id] || [] : []"
-      :builds="selectedCore ? builds[selectedCore.id] || {} : {}"
+      :versions="versions"
+      :builds="builds"
+      :loading="isLoading"
+      :error="loadError"
       @close="isModalOpen = false"
       @select="handleSelection"
+      @version-select="selectedCore && loadBuilds(selectedCore, $event)"
     />
   </section>
 </template>

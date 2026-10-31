@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-brand: var(--brand);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-data-live: var(--data-live);
+  --font-serif: "Bodoni 72", "Didot", "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+}
+
 @layer base {
   :root {
     color-scheme: dark;

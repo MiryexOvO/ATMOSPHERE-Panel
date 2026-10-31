@@ -187,7 +187,7 @@ async function login() {
       <div
         v-if="paletteOpen"
         ref="palettePanel"
-        class="palette-menu absolute right-0 top-12 w-64 border border-border bg-surface p-5 shadow-2xl"
+        class="palette-menu absolute right-0 top-12 w-64 p-5 shadow-2xl"
       >
         <p class="mb-3 font-mono text-[9px] tracking-[0.2em] text-text-secondary">APPEARANCE</p>
         <div class="mb-4 space-y-1 border-b border-border pb-4">
@@ -234,11 +234,9 @@ async function login() {
         <p class="mt-10 max-w-md text-sm leading-8 text-text-secondary">{{ t('desc1') }}<br />{{ t('desc2') }}</p>
       </section>
       <div class="relative w-full max-w-md">
-        <div
-          class="pointer-events-none absolute inset-0 translate-x-3 translate-y-3 border border-border bg-black/20 dark:bg-black/40"
-        />
+        <AtmosphereCard :interactive="false" bg-color="rgba(0, 0, 0, 0.3)" :shadow-offset-x="10"  :shadow-offset-y="10" >
         <form
-          class="auth-card bg-surface/80 relative border-l border-t border-border p-9 shadow-2xl"
+          class="relative p-8 md:p-10"
           @submit.prevent="login"
         >
           <div class="flex justify-between border-b border-border pb-5 font-mono text-xs tracking-[.16em] text-brand">
@@ -282,6 +280,7 @@ async function login() {
             SESSION / HTTPONLY · SAME-SITE LAX<br />默认会话有效期 24 小时
           </p>
         </form>
+        </AtmosphereCard>
       </div>
     </div>
   </main>

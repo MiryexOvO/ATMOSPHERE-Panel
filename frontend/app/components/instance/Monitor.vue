@@ -33,7 +33,7 @@ onUnmounted(() => {
         <strong class="mt-3 block font-mono text-3xl text-text-primary"
           >{{ (points.at(-1)?.cpu ?? 0).toFixed(1) }}%</strong
         >
-        <div class="mt-5 flex h-20 items-end gap-1 border-b border-border">
+        <div class="mt-5 flex h-20 items-end gap-1 border border-white/10 bg-black/40 p-1">
           <i
             v-for="(point, index) in points"
             :key="index"
@@ -47,7 +47,7 @@ onUnmounted(() => {
         <strong class="mt-3 block font-mono text-3xl text-text-primary"
           >{{ (points.at(-1)?.memory ?? 0).toFixed(1) }}%</strong
         >
-        <div class="mt-5 flex h-20 items-end gap-1 border-b border-border">
+        <div class="mt-5 flex h-20 items-end gap-1 border border-white/10 bg-black/40 p-1">
           <i
             v-for="(point, index) in points"
             :key="index"

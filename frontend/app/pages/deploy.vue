@@ -156,6 +156,7 @@ async function deploy() {
           core_type: data.value.coreType,
           mc_version: data.value.mcVersion,
           build_version: data.value.buildVersion,
+          port: data.value.port,
         },
       })
     }
@@ -168,6 +169,11 @@ async function deploy() {
       deployStatus.value = payload.status
       if (progress.value !== null && progress.value >= 100) {
         deployStream?.close()
+        if (payload.status.startsWith('部署失败')) {
+          error.value = payload.status
+          isDeploying.value = false
+          return
+        }
         deployStatus.value = '部署完成！'
         step.value = steps.value.length
       }
@@ -345,7 +351,7 @@ function back() {
               </option>
             </select>
           </section>
-          <section v-else key="settings" class="bg-surface/50 mx-auto mt-12 max-w-xl border border-border p-8">
+          <section v-else-if="step === 3" key="settings" class="bg-surface/50 mx-auto mt-12 max-w-xl border border-border p-8">
             <p class="font-mono text-[10px] tracking-[0.2em] text-brand">
               {{ String(step).padStart(2, '0') }} / ENVIRONMENT
             </p>
@@ -371,6 +377,19 @@ function back() {
                   min="512"
               /></label>
             </div>
+          </section>
+          <section v-else-if="step === steps.length - 2" key="confirm" class="mx-auto mt-12 max-w-2xl border border-border p-8">
+            <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ CONFIRMATION</p>
+            <h2 class="mt-4 font-serif text-3xl">确认部署信息</h2>
+            <dl class="mt-8 divide-y divide-border font-mono text-sm">
+              <div class="flex justify-between py-4"><dt class="text-text-secondary">实例名称</dt><dd>{{ data.name }}</dd></div>
+              <div class="flex justify-between py-4"><dt class="text-text-secondary">服务端口</dt><dd>{{ data.port }}</dd></div>
+              <div class="flex justify-between py-4"><dt class="text-text-secondary">核心</dt><dd>{{ data.coreType || data.mode }}</dd></div>
+              <div class="flex justify-between py-4"><dt class="text-text-secondary">游戏版本</dt><dd>{{ data.mcVersion || '—' }}</dd></div>
+              <div class="flex justify-between py-4"><dt class="text-text-secondary">核心构建</dt><dd>{{ data.buildVersion || '—' }}</dd></div>
+              <div class="flex justify-between py-4"><dt class="text-text-secondary">Java</dt><dd>{{ data.javaVersion }}</dd></div>
+              <div class="flex justify-between py-4"><dt class="text-text-secondary">内存</dt><dd>{{ data.memory }} MB</dd></div>
+            </dl>
           </section>
         </Transition>
         <p

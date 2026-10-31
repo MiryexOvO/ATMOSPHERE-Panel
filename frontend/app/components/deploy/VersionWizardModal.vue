@@ -7,18 +7,21 @@ const props = defineProps<{
   core: Core | null
   versions: string[]
   builds: Record<string, string[]>
+  loading?: boolean
+  error?: string
 }>()
 
 const emit = defineEmits<{
   close: []
   select: [selection: Selection]
+  versionSelect: [version: string]
 }>()
 
 const step = ref(1)
 const selectedVersion = ref<string | null>(null)
 
 const selectedBuilds = computed(() =>
-  selectedVersion.value ? props.builds[selectedVersion.value] || ['最新稳定版'] : [],
+  selectedVersion.value ? props.builds[selectedVersion.value] || [] : [],
 )
 
 watch(
@@ -33,6 +36,7 @@ watch(
 
 function chooseVersion(version: string) {
   selectedVersion.value = version
+  emit('versionSelect', version)
   step.value = 2
 }
 
@@ -77,7 +81,10 @@ function chooseBuild(build: string) {
 
         <div v-if="step === 1">
           <p class="mb-4 text-xs text-text-secondary">选择一个 Minecraft 游戏版本以继续。</p>
-          <div class="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
+          <p v-if="loading" class="py-8 text-center text-xs text-text-secondary">正在获取最新版本数据...</p>
+          <p v-else-if="error" class="py-4 text-center text-xs text-red-300">! {{ error }}</p>
+          <p v-else-if="!versions.length" class="py-8 text-center text-xs text-text-secondary">暂无可用版本</p>
+          <div class="grid max-h-96 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
             <button
               v-for="version in versions"
               :key="version"
