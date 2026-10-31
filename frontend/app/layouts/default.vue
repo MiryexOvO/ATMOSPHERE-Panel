@@ -10,6 +10,10 @@ const now = ref(new Date())
 const pointer = ref<{ x: number; y: number } | null>(null)
 const menu = ref(false)
 const paletteOpen = ref(false)
+const paletteTrigger = ref<HTMLElement | null>(null)
+const palettePanel = ref<HTMLElement | null>(null)
+const menuTrigger = ref<HTMLElement | null>(null)
+const menuPanel = ref<HTMLElement | null>(null)
 const colorMode = useColorMode()
 const customColors = ref({
   textPrimary: '#e9dfc6',
@@ -47,11 +51,21 @@ const themeOptions = computed(() => [
   { label: 'LIGHT', value: 'light' },
 ])
 
+// 点击 PALETTE 面板或用户菜单以外的区域时自动收起
+function closePopovers(event: MouseEvent) {
+  const node = event.target as Node | null
+  if (!node) return
+  if (paletteOpen.value && !paletteTrigger.value?.contains(node) && !palettePanel.value?.contains(node))
+    paletteOpen.value = false
+  if (menu.value && !menuTrigger.value?.contains(node) && !menuPanel.value?.contains(node)) menu.value = false
+}
+
 onMounted(() => {
   timer = setInterval(() => {
     now.value = new Date()
   }, 1000)
   window.addEventListener('pointermove', trackPointer, { passive: true })
+  document.addEventListener('click', closePopovers)
   const saved = localStorage.getItem('custom-theme')
   if (saved) {
     try {
@@ -65,6 +79,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (timer) clearInterval(timer)
   window.removeEventListener('pointermove', trackPointer)
+  document.removeEventListener('click', closePopovers)
   if (pointerFrame) cancelAnimationFrame(pointerFrame)
 })
 
@@ -98,6 +113,7 @@ async function logout() {
       </div>
       <div class="relative flex items-center gap-4 font-mono text-xs text-text-secondary">
         <button
+          ref="paletteTrigger"
           type="button"
           class="border border-border px-3 py-2 hover:border-brand hover:text-brand"
           @click="paletteOpen = !paletteOpen"
@@ -116,24 +132,32 @@ async function logout() {
         </span>
         <span class="hidden md:inline">{{ now.toLocaleTimeString('en-GB') }}</span>
         <button
+          ref="menuTrigger"
           type="button"
           class="border border-border px-2 py-1 hover:border-brand hover:text-brand"
           @click="menu = !menu"
         >
           A
         </button>
-        <div v-if="menu" class="absolute right-0 top-12 z-30 w-36 border border-border bg-surface p-2 shadow-2xl">
-          <button
-            type="button"
-            class="block w-full px-3 py-2 text-left text-xs hover:bg-background hover:text-text-primary"
-            @click="logout"
+        <Transition name="palette-fade">
+          <div
+            v-if="menu"
+            ref="menuPanel"
+            class="absolute right-0 top-12 z-30 w-36 border border-border bg-surface p-2 shadow-2xl"
           >
-            登出
-          </button>
-        </div>
+            <button
+              type="button"
+              class="block w-full px-3 py-2 text-left text-xs hover:bg-background hover:text-text-primary"
+              @click="logout"
+            >
+              登出
+            </button>
+          </div>
+        </Transition>
         <Transition name="palette-fade">
           <div
             v-if="paletteOpen"
+            ref="palettePanel"
             class="absolute right-0 top-12 z-20 w-64 border border-border bg-surface p-5 shadow-2xl"
           >
             <p class="mb-3 font-mono text-[9px] tracking-[0.2em] text-text-secondary">APPEARANCE</p>

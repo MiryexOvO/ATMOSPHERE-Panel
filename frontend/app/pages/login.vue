@@ -54,6 +54,8 @@ function changeLocale(code: string) {
 }
 const languageOpen = ref(false)
 const langSwitch = ref<HTMLElement | null>(null)
+const paletteTrigger = ref<HTMLElement | null>(null)
+const palettePanel = ref<HTMLElement | null>(null)
 function selectLanguage(code: LocaleCode) {
   if (!languageOpen.value) {
     languageOpen.value = true
@@ -62,10 +64,13 @@ function selectLanguage(code: LocaleCode) {
   changeLocale(code)
   languageOpen.value = false
 }
-function closeLanguage(event: MouseEvent) {
-  if (!languageOpen.value) return
+// 点击语言切换或调色板以外的区域时收起对应的小菜单
+function closePopovers(event: MouseEvent) {
   const node = event.target as Node | null
-  if (node && langSwitch.value && !langSwitch.value.contains(node)) languageOpen.value = false
+  if (!node) return
+  if (languageOpen.value && langSwitch.value && !langSwitch.value.contains(node)) languageOpen.value = false
+  if (paletteOpen.value && !paletteTrigger.value?.contains(node) && !palettePanel.value?.contains(node))
+    paletteOpen.value = false
 }
 let timer: ReturnType<typeof setInterval> | undefined
 
@@ -73,7 +78,7 @@ onMounted(() => {
   timer = setInterval(() => {
     now.value = new Date()
   }, 1000)
-  document.addEventListener('click', closeLanguage)
+  document.addEventListener('click', closePopovers)
   const saved = localStorage.getItem('custom-theme')
   if (saved) {
     try {
@@ -95,7 +100,7 @@ function applyCustomColor(variable: string, key: keyof typeof customColors.value
 }
 onUnmounted(() => {
   if (timer) clearInterval(timer)
-  document.removeEventListener('click', closeLanguage)
+  document.removeEventListener('click', closePopovers)
 })
 
 async function login() {
@@ -172,6 +177,7 @@ async function login() {
       </button>
     </div>
     <button
+      ref="paletteTrigger"
       class="palette-trigger border border-border px-3 py-2 font-mono text-[9px] tracking-widest text-text-secondary hover:border-brand hover:text-brand"
       @click="paletteOpen = !paletteOpen"
     >
@@ -180,6 +186,7 @@ async function login() {
     <Transition name="palette-fade">
       <div
         v-if="paletteOpen"
+        ref="palettePanel"
         class="palette-menu absolute right-0 top-12 w-64 border border-border bg-surface p-5 shadow-2xl"
       >
         <p class="mb-3 font-mono text-[9px] tracking-[0.2em] text-text-secondary">APPEARANCE</p>
