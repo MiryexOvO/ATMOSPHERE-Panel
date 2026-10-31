@@ -79,7 +79,8 @@ def files(request:Request,instance_id:str,path:str='/'):
     if isinstance((user:=require_user(request)),JSONResponse): return user
     try:
         root,directory=safe_path(instance_id,path)
-        if not directory.is_dir(): return JSONResponse({'ok':False,'message':'目录不存在'},status_code=404)
+        if not directory.is_dir():
+            return {'ok': True, 'path': path, 'entries': []}
         entries=[]
         for item in sorted(directory.iterdir(),key=lambda p:(not p.is_dir(),p.name.lower())):
             entries.append({'name':item.name,'path':'/'+str(item.relative_to(root)).replace('\\','/'),'type':'directory' if item.is_dir() else 'file','size':item.stat().st_size if item.is_file() else None})

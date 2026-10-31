@@ -31,7 +31,7 @@ onUnmounted(() => {
       <article class="bg-surface/40 border border-border p-5">
         <p class="font-mono text-[10px] tracking-[0.18em] text-text-secondary">CPU LOAD</p>
         <strong class="mt-3 block font-mono text-3xl text-text-primary"
-          >{{ (points.at(-1)?.cpu || 0).toFixed(1) }}%</strong
+          >{{ (points.at(-1)?.cpu ?? 0).toFixed(1) }}%</strong
         >
         <div class="mt-5 flex h-20 items-end gap-1 border-b border-border">
           <i
@@ -45,7 +45,7 @@ onUnmounted(() => {
       <article class="bg-surface/40 border border-border p-5">
         <p class="font-mono text-[10px] tracking-[0.18em] text-text-secondary">MEMORY LOAD</p>
         <strong class="mt-3 block font-mono text-3xl text-text-primary"
-          >{{ (points.at(-1)?.memory || 0).toFixed(1) }}%</strong
+          >{{ (points.at(-1)?.memory ?? 0).toFixed(1) }}%</strong
         >
         <div class="mt-5 flex h-20 items-end gap-1 border-b border-border">
           <i

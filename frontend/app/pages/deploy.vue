@@ -152,13 +152,10 @@ async function deploy() {
       result.value = await request<DeployResult>('/api/instances/deploy', {
         method: 'POST',
         body: {
-          mode: data.value.mode,
           instance_id: data.value.name.toLowerCase(),
-          port: data.value.port,
-          version: data.value.mcVersion,
-          resource: data.value.coreType,
-          java_version: data.value.javaVersion,
-          memory: data.value.memory,
+          core_type: data.value.coreType,
+          mc_version: data.value.mcVersion,
+          build_version: data.value.buildVersion,
         },
       })
     }
@@ -405,7 +402,8 @@ function back() {
           <div class="w-full max-w-2xl space-y-6 p-4 md:p-8">
             <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ DEPLOYMENT PROGRESS</p>
             <h2 class="font-serif text-2xl text-text-primary">{{ data.name }}</h2>
-            <p class="font-mono text-xs text-text-secondary">{{ deployStatus }}</p>
+            <p class="font-mono text-xs text-text-secondary" :class="error ? 'text-red-400' : ''">{{ deployStatus }}</p>
+            <button v-if="error" type="button" class="border border-red-400/40 px-4 py-2 font-mono text-xs text-red-400 hover:bg-red-400/10" @click="isDeploying = false">[ CLOSE ]</button>
             <div class="h-1 w-full overflow-hidden bg-background">
               <div class="h-full bg-brand transition-all duration-300" :class="progress === null ? 'w-1/3 animate-pulse' : ''" :style="progress === null ? {} : { width: progress + '%' }" />
             </div>

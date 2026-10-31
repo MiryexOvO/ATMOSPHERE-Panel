@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
   ssr: false,
 
-  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', '@nuxtjs/i18n'],
+  modules: ['@nuxtjs/color-mode', '@nuxtjs/i18n'],
 
   colorMode: {
     classSuffix: '',
@@ -27,8 +27,13 @@ export default defineNuxtConfig({
     vueI18n: './i18n.config.ts',
   },
 
-  // I HATE TAILWIND
   css: ['~/assets/css/main.css'],
+
+  postcss: {
+    plugins: {
+      '@tailwindcss/postcss': {},
+    },
+  },
 
   devServer: { port: 5173 },
   runtimeConfig: {
