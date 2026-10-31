@@ -250,7 +250,7 @@ async function login() {
               <input
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
-                class="mt-3 w-full border-0 border-b border-border bg-transparent px-0 py-3 pr-8 font-mono text-text-primary outline-none placeholder:text-text-secondary placeholder:opacity-40 focus:border-brand"
+                class="password-input mt-3 w-full border-0 border-b border-border bg-transparent px-0 py-3 pr-8 font-mono text-text-primary outline-none placeholder:text-text-secondary placeholder:opacity-40 focus:border-brand"
                 :placeholder="t('placeholderCredentials')"
               /><button
                 type="button"
@@ -446,6 +446,11 @@ async function login() {
   padding-right: 0;
   border-color: transparent;
   pointer-events: none;
+}
+/* 隐藏 Edge / IE 自带的密码显示按钮，只保留自定义的太阳 / 月亮切换 */
+.password-input::-ms-reveal,
+.password-input::-ms-clear {
+  display: none;
 }
 </style>
 <style scoped>
