@@ -1,27 +1,51 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Query
 from fastapi.responses import JSONResponse
+import logging
 from ..core.security import require_user
+from ..services.mc_meta_service import list_versions, list_builds, resolve_download
 
 router = APIRouter(prefix='/api/resources', tags=['resources'])
-
-CORE_CATALOG = [
-    {'id': 'paper', 'name': 'Paper', 'category': 'plugin', 'description': '高性能 Spigot 分支', 'versions': ['1.21.4', '1.21.1', '1.20.6', '1.20.4']},
-    {'id': 'purpur', 'name': 'Purpur', 'category': 'plugin', 'description': 'Paper 兼容增强核心', 'versions': ['1.21.1', '1.20.4']},
-    {'id': 'fabric', 'name': 'Fabric', 'category': 'mod', 'description': '轻量现代模组加载器', 'versions': ['1.21.1', '1.20.4']},
-    {'id': 'forge', 'name': 'Forge', 'category': 'mod', 'description': '传统大型模组生态', 'versions': ['1.21.1', '1.20.1']},
-    {'id': 'vanilla', 'name': 'Vanilla', 'category': 'vanilla', 'description': '官方原版核心', 'versions': ['1.21.4', '1.20.4']},
-    {'id': 'velocity', 'name': 'Velocity', 'category': 'proxy', 'description': '现代代理服务端', 'versions': ['3.4.0', '3.3.0']},
-]
+logger = logging.getLogger(__name__)
 
 @router.get('/cores')
 def core_catalog(request: Request):
-    if isinstance((user := require_user(request)), JSONResponse): return user
-    categories = [{'id': 'plugin', 'name': '插件服务端'}, {'id': 'mod', 'name': '模组服务端'}, {'id': 'vanilla', 'name': '原版服务端'}, {'id': 'proxy', 'name': '代理服务端'}]
-    return {'ok': True, 'categories': categories, 'cores': CORE_CATALOG}
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    catalog = {
+        'plugin': ['Folia', 'Leaves', 'Paper', 'Purpur', 'Spigot', 'SpongeVanilla'],
+        'mod': ['Arclight', 'CatServer', 'Fabric', 'Forge', 'NeoForge', 'Quilt'],
+        'proxy': ['BungeeCord', 'Velocity'],
+        'bedrock': ['Nukkit', 'PocketMine'],
+        'vanilla': ['Vanilla'],
+        'hybrid': ['SpongeForge', 'SpongeNeo'],
+    }
+    categories = [
+        {'id': key, 'name': key} for key in catalog
+    ]
+    cores = [
+        {'id': name.lower(), 'name': name, 'category': category}
+        for category, names in catalog.items()
+        for name in names
+    ]
+    return {'ok': True, 'categories': categories, 'cores': cores}
 
 @router.get('/cores/{core_id}/versions')
-def core_versions(request: Request, core_id: str):
-    if isinstance((user := require_user(request)), JSONResponse): return user
-    item = next((item for item in CORE_CATALOG if item['id'] == core_id), None)
-    if not item: return JSONResponse({'ok': False, 'message': '核心不存在'}, status_code=404)
-    return {'ok': True, 'core': core_id, 'versions': item['versions'], 'source': 'catalog'}
+async def core_versions(request: Request, core_id: str, source: str = Query('fastmirror')):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    values = await list_versions(core_id, source if source in {'fastmirror', 'official'} else 'fastmirror')
+    logger.info('版本接口响应 core=%s payload=%s', core_id, values)
+    return {'ok': True, 'core': core_id, 'versions': values, 'source': source}
+
+@router.get('/cores/{core_id}/versions/{mc_version}/builds')
+async def core_builds(request: Request, core_id: str, mc_version: str, source: str = Query('fastmirror')):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    values = await list_builds(core_id, mc_version, source if source in {'fastmirror', 'official'} else 'fastmirror')
+    return {'ok': True, 'core': core_id, 'version': mc_version, 'builds': values, 'source': source}
+
+@router.get('/cores/{core_id}/versions/{mc_version}/builds/{build}/download')
+async def core_download(request: Request, core_id: str, mc_version: str, build: str, source: str = Query('fastmirror')):
+    if isinstance((user := require_user(request)), JSONResponse):
+        return user
+    return {'ok': True, **await resolve_download(core_id, mc_version, build, source if source in {'fastmirror', 'official'} else 'fastmirror')}
