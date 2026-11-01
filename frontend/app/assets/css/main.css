@@ -64,9 +64,24 @@
     margin: 0;
     background-color: var(--background);
     color: var(--text-primary);
+    cursor: default;
+    user-select: none;
     transition:
       background-color 420ms ease,
       color 420ms ease;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    cursor: text;
+    user-select: text;
+  }
+
+  button,
+  a,
+  select {
+    cursor: pointer;
   }
 
   *,

@@ -103,7 +103,11 @@ onUnmounted(() => {
   document.removeEventListener('click', closePopovers)
 })
 
+const authTransition = useState('auth-transition', () => 'idle')
+const isRouteTransitioning = useState('route-transitioning', () => false)
+
 async function login() {
+  if (loading.value || authTransition.value !== 'idle') return
   loading.value = true
   error.value = ''
   const timeout = setTimeout(() => {
@@ -120,10 +124,39 @@ async function login() {
       timeout: 8000,
       body: { username: username.value, password: password.value },
     })
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    authTransition.value = reducedMotion ? 'navigating' : 'expanding'
+    await nextTick()
+    await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 0 : 650))
+    isRouteTransitioning.value = true
+    const source = document.querySelector('.login-glass-card')
+    const handoff = document.getElementById('route-card-handoff')
+    if (source instanceof HTMLElement && handoff) {
+      const rect = source.getBoundingClientRect()
+      const clone = source.cloneNode(true)
+      if (clone instanceof HTMLElement) {
+        clone.classList.add('route-card-clone')
+        clone.querySelector('.auth-transition-content')?.remove()
+        clone.style.left = String(rect.left + rect.width / 2) + 'px'
+        clone.style.top = String(rect.top + rect.height / 2) + 'px'
+        clone.style.width = String(rect.width) + 'px'
+        clone.style.height = String(rect.height) + 'px'
+        handoff.replaceChildren(clone)
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 0 : 180))
+    authTransition.value = 'navigating'
     await navigateTo('/dashboard')
+    await nextTick()
+    isRouteTransitioning.value = false
+    authTransition.value = 'idle'
+    document.getElementById('route-card-handoff')?.replaceChildren()
   } catch (cause: unknown) {
     const err = cause as { data?: { message?: string }; message?: string }
     error.value = apiOnline.value ? getErrorMessage(cause, '密码错误，请检查账号和密码') : '后端未连接，请启动后端服务'
+    authTransition.value = 'idle'
+    isRouteTransitioning.value = false
+    document.getElementById('route-card-handoff')?.replaceChildren()
   } finally {
     clearTimeout(timeout)
     loading.value = false
@@ -233,8 +266,12 @@ async function login() {
         </h1>
         <p class="mt-10 max-w-md text-sm leading-8 text-text-secondary">{{ t('desc1') }}<br />{{ t('desc2') }}</p>
       </section>
-      <div class="relative w-full max-w-md">
-        <AtmosphereCard :interactive="false" bg-color="rgba(0, 0, 0, 0.3)" :shadow-offset-x="10"  :shadow-offset-y="10" >
+      <div class="login-transition-stage relative w-full max-w-md">
+        <div class="login-transition-outer" :class="{ 'is-expanding': authTransition === 'expanding' }">
+          <div class="login-scan-laser" aria-hidden="true" />
+        </div>
+        <div class="login-transition-inner" :class="{ 'is-dissolving': authTransition === 'expanding' }">
+        <div class="login-glass-card">
         <form
           class="relative p-8 md:p-10"
           @submit.prevent="login"
@@ -280,13 +317,45 @@ async function login() {
             SESSION / HTTPONLY · SAME-SITE LAX<br />默认会话有效期 24 小时
           </p>
         </form>
-        </AtmosphereCard>
+        </div>
+        </div>
       </div>
     </div>
   </main>
 </template>
 
 <style scoped>
+.login-glass-card {
+  position: relative;
+  isolation: isolate;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px);
+  transition: transform 300ms ease, opacity 300ms ease;
+}
+.login-transition-stage { position: relative; min-height: 540px; }
+.login-transition-outer { position: absolute; inset: 0; z-index: 2; pointer-events: none; border: 1px solid rgba(255,255,255,.2); background: transparent; }
+.login-transition-inner { position: relative; z-index: 3; }
+.login-scan-laser { position: absolute; inset: 0 0 auto; height: 1px; background: rgba(255,255,255,.85); box-shadow: 0 0 15px 2px rgba(255,255,255,.7); opacity: 0; }
+.login-transition-outer.is-expanding { animation: login-outer-erase 800ms linear forwards; }
+.login-transition-outer.is-expanding .login-scan-laser { animation: login-laser 800ms linear forwards; }
+.login-transition-inner.is-dissolving { animation: login-inner-dissolve 400ms ease-out forwards; }
+@keyframes login-outer-erase { 0% { clip-path: inset(0 0 0 0); opacity: 1; } 100% { clip-path: inset(0 0 100% 0); opacity: 0; } }
+@keyframes login-laser { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(540px); opacity: 0; } }
+@keyframes login-inner-dissolve { 0% { opacity: 1; transform: translateY(0); filter: blur(0); } 100% { opacity: .15; transform: translateY(-22px); filter: blur(3px); } }
+@media (prefers-reduced-motion: reduce) { .login-transition-outer.is-expanding, .login-transition-inner.is-dissolving, .login-transition-outer.is-expanding .login-scan-laser { animation: none; } }
+.login-glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  transform: translate(10px, 10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
 .starfield-container {
   background: var(--background);
 }
