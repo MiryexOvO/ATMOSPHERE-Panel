@@ -99,12 +99,6 @@ const styles = computed(() => {
   z-index: 70;
   pointer-events: none;
 }
-/* 进入仪表盘后细线降到页面内容之下 */
-.route-seam.is-clearing,
-.route-seam.is-completed,
-.route-seam.is-retracting {
-  z-index: 5;
-}
 .route-seam-piece {
   position: absolute;
   transition:

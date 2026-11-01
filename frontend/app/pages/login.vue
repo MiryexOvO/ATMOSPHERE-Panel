@@ -126,15 +126,41 @@ async function login() {
       body: { username: username.value, password: password.value },
     })
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    authTransition.value = reducedMotion ? 'navigating' : 'expanding'
-    await nextTick()
-    await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 0 : 750))
-    authTransition.value = 'navigating'
+    if (reducedMotion) {
+      authTransition.value = 'navigating'
+    } else {
+      authTransition.value = 'expanding'
+      await nextTick()
+      await new Promise((resolve) => setTimeout(resolve, 750))
+      // 无缝交接：拆开的两条细线从卡片角落飞向视口边缘
+      const stage = document.querySelector('.login-transition-stage')?.getBoundingClientRect()
+      if (stage) {
+        seam.value = { phase: 'at-card', x: stage.x, y: stage.y, w: stage.width, h: stage.height }
+        await nextTick()
+        await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+        seam.value.phase = 'away'
+        await new Promise((resolve) => setTimeout(resolve, 800))
+      }
+      authTransition.value = 'navigating'
+    }
     await navigateTo('/dashboard')
     await nextTick()
     isRouteTransitioning.value = false
     authTransition.value = 'idle'
     document.getElementById('route-card-handoff')?.replaceChildren()
+    if (seam.value.phase === 'away') {
+      // 半透明矩形淡出
+      seam.value.phase = 'clearing'
+      // 状态文字闪烁
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      seam.value.phase = 'completed'
+      // 细线收紧消失
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      seam.value.phase = 'retracting'
+      // 卸载覆盖层
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      seam.value.phase = 'idle'
+    }
   } catch (cause: unknown) {
     const err = cause as { data?: { message?: string }; message?: string }
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -265,6 +291,7 @@ async function login() {
           :class="{
             'is-splitting':
               authTransition === 'expanding' || authTransition === 'failed' || authTransition === 'failed-stuck',
+            'is-hidden': seam.phase !== 'idle',
           }"
           aria-hidden="true"
         />
@@ -426,6 +453,7 @@ async function login() {
   animation: login-laser 800ms linear forwards;
 }
 .login-transition-outer.is-stuck,
+.login-transition-outer.is-stuck .login-scan-laser,
 .login-transition-inner.is-stuck {
   animation-play-state: paused;
 }
@@ -554,6 +582,9 @@ async function login() {
 /* 左上、右下拼成完整矩形 */
 /* 扫描开始 拆开 向左上 / 右下悬浮 */
 /* 这真帅吧 */
+.login-ghost-frame.is-hidden {
+  opacity: 0;
+}
 .login-ghost-frame {
   position: absolute;
   inset: 0;
