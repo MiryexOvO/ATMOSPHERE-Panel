@@ -127,24 +127,7 @@ async function login() {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     authTransition.value = reducedMotion ? 'navigating' : 'expanding'
     await nextTick()
-    await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 0 : 650))
-    isRouteTransitioning.value = true
-    const source = document.querySelector('.login-glass-card')
-    const handoff = document.getElementById('route-card-handoff')
-    if (source instanceof HTMLElement && handoff) {
-      const rect = source.getBoundingClientRect()
-      const clone = source.cloneNode(true)
-      if (clone instanceof HTMLElement) {
-        clone.classList.add('route-card-clone')
-        clone.querySelector('.auth-transition-content')?.remove()
-        clone.style.left = String(rect.left + rect.width / 2) + 'px'
-        clone.style.top = String(rect.top + rect.height / 2) + 'px'
-        clone.style.width = String(rect.width) + 'px'
-        clone.style.height = String(rect.height) + 'px'
-        handoff.replaceChildren(clone)
-      }
-    }
-    await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 0 : 180))
+    await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 0 : 750))
     authTransition.value = 'navigating'
     await navigateTo('/dashboard')
     await nextTick()
@@ -338,6 +321,10 @@ async function login() {
 .login-transition-stage { position: relative; min-height: 540px; }
 .login-transition-outer { position: absolute; inset: 0; z-index: 2; pointer-events: none; border: 1px solid rgba(255,255,255,.2); background: transparent; }
 .login-transition-inner { position: relative; z-index: 3; }
+.login-transition-inner.is-dissolving { animation: login-inner-dissolve 120ms steps(1,end) forwards; }
+.login-transition-outer.is-expanding { animation: login-outer-erase 220ms linear forwards; }
+.login-transition-outer.is-expanding .login-scan-laser { animation: login-laser 220ms linear forwards; }
+.login-transition-stage { isolation: isolate; }
 .login-scan-laser { position: absolute; inset: 0 0 auto; height: 1px; background: rgba(255,255,255,.85); box-shadow: 0 0 15px 2px rgba(255,255,255,.7); opacity: 0; }
 .login-transition-outer.is-expanding { animation: login-outer-erase 800ms linear forwards; }
 .login-transition-outer.is-expanding .login-scan-laser { animation: login-laser 800ms linear forwards; }
