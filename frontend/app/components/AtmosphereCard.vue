@@ -64,8 +64,21 @@ const shadowStyle = computed<Record<string, string>>(() => ({
 </script>
 
 <template>
-  <div v-bind="forwardedAttrs" :class="[attrs.class, 'group relative isolate p-8 backdrop-blur-[2px] border-t border-l border-[color:var(--card-border-color)] transition-all duration-300', props.interactive ? 'cursor-pointer hover:-translate-y-1 hover:border-brand/60' : '']" :style="[cardStyle, attrs.style]">
-    <div v-if="props.hasShadow" aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 border bg-transparent" :style="shadowStyle" />
+  <div
+    v-bind="forwardedAttrs"
+    :class="[
+      attrs.class,
+      'group relative isolate border-t border-l border-[color:var(--card-border-color)] p-8 backdrop-blur-[2px] transition-all duration-300',
+      props.interactive ? 'cursor-pointer hover:-translate-y-1 hover:border-brand/60' : '',
+    ]"
+    :style="[cardStyle, attrs.style]"
+  >
+    <div
+      v-if="props.hasShadow"
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 -z-10 border bg-transparent"
+      :style="shadowStyle"
+    />
     <div class="relative"><slot /></div>
   </div>
 </template>

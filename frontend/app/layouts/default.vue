@@ -122,13 +122,13 @@ async function logout() {
         >
           ◒ PALETTE
         </button>
-        <span class="hidden items-center tabular-nums leading-none lg:inline-flex">
+        <span class="hidden items-center leading-none tabular-nums lg:inline-flex">
           <span class="mr-2 translate-y-[-1.5px] leading-none">⌖</span>
           <span class="leading-none">[</span>
           <span class="px-2 leading-none">{{ coordinates.x }} N / {{ coordinates.y }} W</span>
           <span class="leading-none">]</span>
         </span>
-        <span class="text-data-live flex items-center gap-1.5 leading-none">
+        <span class="flex items-center gap-1.5 leading-none text-data-live">
           <span class="translate-y-[-1.5px] leading-none">●</span>
           <span class="leading-none">SIGNAL / OK</span>
         </span>
@@ -145,7 +145,7 @@ async function logout() {
           <div
             v-if="menu"
             ref="menuPanel"
-            class="absolute right-0 top-12 z-30 w-36 border border-border bg-surface p-2 shadow-2xl"
+            class="absolute top-12 right-0 z-30 w-36 border border-border bg-surface p-2 shadow-2xl"
           >
             <button
               type="button"
@@ -160,7 +160,7 @@ async function logout() {
           <div
             v-if="paletteOpen"
             ref="palettePanel"
-            class="absolute right-0 top-12 z-20 w-64 border border-border bg-surface p-5 shadow-2xl"
+            class="absolute top-12 right-0 z-20 w-64 border border-border bg-surface p-5 shadow-2xl"
           >
             <p class="mb-3 font-mono text-[9px] tracking-[0.2em] text-text-secondary">APPEARANCE</p>
             <div class="space-y-1 border-b border-border pb-4">
@@ -179,7 +179,7 @@ async function logout() {
                 <span>◌</span>{{ theme.label }}
               </button>
             </div>
-            <p class="mb-3 mt-4 font-mono text-[9px] tracking-[0.2em] text-text-secondary">CUSTOM COLORS</p>
+            <p class="mt-4 mb-3 font-mono text-[9px] tracking-[0.2em] text-text-secondary">CUSTOM COLORS</p>
             <div class="grid grid-cols-4 gap-3">
               <label
                 v-for="field in fields"

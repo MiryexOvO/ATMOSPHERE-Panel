@@ -155,7 +155,10 @@ async function startDeploy() {
       <section v-else-if="step === 2" key="core" class="wizard-step-panel">
         <h2>核心文件</h2>
         <p>选择核心后不会立即下载，确认后继续下一步。</p>
-        <button class="core-selected" @click="openCoreModal(selectedCore || { id: formData.coreType.toLowerCase(), name: formData.coreType })">
+        <button
+          class="core-selected"
+          @click="openCoreModal(selectedCore || { id: formData.coreType.toLowerCase(), name: formData.coreType })"
+        >
           {{
             formData.coreType
               ? `${formData.coreType} ${formData.mcVersion} · Build ${formData.buildVersion}`

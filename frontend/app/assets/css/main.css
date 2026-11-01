@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -10,7 +10,7 @@
   --color-text-secondary: var(--text-secondary);
   --color-border: var(--border);
   --color-data-live: var(--data-live);
-  --font-serif: "Bodoni 72", "Didot", "Times New Roman", serif;
+  --font-serif: 'Bodoni 72', 'Didot', 'Times New Roman', serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
 }
 
@@ -73,7 +73,7 @@
 
   input,
   textarea,
-  [contenteditable="true"] {
+  [contenteditable='true'] {
     cursor: text;
     user-select: text;
   }

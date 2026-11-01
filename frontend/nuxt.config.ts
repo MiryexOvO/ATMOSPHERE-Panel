@@ -1,4 +1,5 @@
 import { defineNuxtConfig } from 'nuxt/config'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
@@ -29,17 +30,11 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  postcss: {
-    plugins: {
-      '@tailwindcss/postcss': {},
-    },
-  },
-
   devServer: { port: 5173 },
   runtimeConfig: {
     public: { apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api' },
   },
-  vite: { clearScreen: false, logLevel: 'error' },
+  vite: { plugins: [tailwindcss()], clearScreen: false, logLevel: 'error' },
   devtools: { enabled: true, timeline: { enabled: false } },
   nitro: {
     devProxy: {

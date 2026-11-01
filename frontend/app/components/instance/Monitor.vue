@@ -28,7 +28,7 @@ onUnmounted(() => {
 <template>
   <section class="space-y-4">
     <div class="grid gap-4 md:grid-cols-2">
-      <article class="bg-surface/40 border border-border p-5">
+      <article class="border border-border bg-surface/40 p-5">
         <p class="font-mono text-[10px] tracking-[0.18em] text-text-secondary">CPU LOAD</p>
         <strong class="mt-3 block font-mono text-3xl text-text-primary"
           >{{ (points.at(-1)?.cpu ?? 0).toFixed(1) }}%</strong
@@ -37,12 +37,12 @@ onUnmounted(() => {
           <i
             v-for="(point, index) in points"
             :key="index"
-            class="bg-brand/70 flex-1 transition-all duration-500"
+            class="flex-1 bg-brand/70 transition-all duration-500"
             :style="{ height: Math.max(3, Math.min(100, point.cpu)) + '%' }"
           />
         </div>
       </article>
-      <article class="bg-surface/40 border border-border p-5">
+      <article class="border border-border bg-surface/40 p-5">
         <p class="font-mono text-[10px] tracking-[0.18em] text-text-secondary">MEMORY LOAD</p>
         <strong class="mt-3 block font-mono text-3xl text-text-primary"
           >{{ (points.at(-1)?.memory ?? 0).toFixed(1) }}%</strong
@@ -51,7 +51,7 @@ onUnmounted(() => {
           <i
             v-for="(point, index) in points"
             :key="index"
-            class="bg-data-live/70 flex-1 transition-all duration-500"
+            class="flex-1 bg-data-live/70 transition-all duration-500"
             :style="{ height: Math.max(3, Math.min(100, point.memory)) + '%' }"
           />
         </div>

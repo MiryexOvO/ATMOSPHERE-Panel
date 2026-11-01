@@ -127,7 +127,7 @@ onUnmounted(() => {
         ><button type="button" class="hover:text-brand" @click="clearLogs">CLEAR</button>
       </div>
     </header>
-    <div class="border-border/70 flex items-center justify-between border-b px-4 py-2 font-mono text-[10px]">
+    <div class="flex items-center justify-between border-b border-border/70 px-4 py-2 font-mono text-[10px]">
       <div class="flex gap-3">
         <button
           v-for="item in [

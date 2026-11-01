@@ -31,7 +31,7 @@ async function create() {
 onMounted(load)
 </script>
 <template>
-  <section class="bg-surface/30 border border-border p-6">
+  <section class="border border-border bg-surface/30 p-6">
     <header class="flex items-center justify-between border-b border-border pb-5">
       <div>
         <p class="font-mono text-[10px] tracking-[0.18em] text-text-secondary">BACKUP ARCHIVE</p>
@@ -39,14 +39,14 @@ onMounted(load)
       </div>
       <button
         type="button"
-        class="hover:bg-brand/10 border border-brand px-4 py-2 font-mono text-[10px] text-brand disabled:opacity-50"
+        class="border border-brand px-4 py-2 font-mono text-[10px] text-brand hover:bg-brand/10 disabled:opacity-50"
         :disabled="loading"
         @click="create"
       >
         {{ loading ? '处理中…' : '一键备份' }}
       </button>
     </header>
-    <p v-if="message" class="text-data-live mt-4 font-mono text-xs">{{ message }}</p>
+    <p v-if="message" class="mt-4 font-mono text-xs text-data-live">{{ message }}</p>
     <div v-if="!items.length" class="py-16 text-center font-mono text-xs text-text-secondary">暂无备份记录</div>
     <div v-else class="mt-5 divide-y divide-border">
       <div v-for="item in items" :key="item.name" class="flex items-center justify-between py-4 font-mono text-xs">

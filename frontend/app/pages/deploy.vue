@@ -40,6 +40,11 @@ const deployInstanceId = ref('')
 let deployStream: EventSource | null = null
 const { request } = useApi()
 
+function openInstanceConsole() {
+  isDeploying.value = false
+  navigateTo('/instances/' + deployInstanceId.value)
+}
+
 const modes = [
   { id: 'quick', title: '快速部署', desc: '在线选择核心、版本与构建', icon: '↗' },
   { id: 'bedrock', title: '基岩版', desc: '部署 Bedrock Dedicated Server', icon: '◇' },
@@ -234,7 +239,7 @@ function back() {
           v-for="mode in modes"
           :key="mode.id"
           type="button"
-          class="bg-surface/50 group border border-border p-7 text-left transition-all hover:-translate-y-1 hover:border-brand hover:bg-surface"
+          class="group border border-border bg-surface/50 p-7 text-left transition-all hover:-translate-y-1 hover:border-brand hover:bg-surface"
           @click="selectMode(mode.id)"
         >
           <div class="flex items-start justify-between">
@@ -270,14 +275,14 @@ function back() {
           <section
             v-if="isComplete"
             key="complete"
-            class="border-brand/50 bg-surface/60 mx-auto mt-12 max-w-xl border p-10 text-center"
+            class="mx-auto mt-12 max-w-xl border border-brand/50 bg-surface/60 p-10 text-center"
           >
             <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ DEPLOYMENT COMPLETE</p>
             <h2 class="mt-4 font-serif text-3xl">实例已创建</h2>
             <p class="mt-4 text-sm text-text-secondary">服务端已写入独立实例目录，可以进入控制台。</p>
             <button
               type="button"
-              class="hover:bg-brand/10 mt-8 border border-brand px-5 py-3 font-mono text-xs text-brand"
+              class="mt-8 border border-brand px-5 py-3 font-mono text-xs text-brand hover:bg-brand/10"
               @click="navigateTo('/dashboard')"
             >
               返回实例列表 →
@@ -286,7 +291,7 @@ function back() {
           <section
             v-else-if="data.mode === 'package' && step === 1"
             key="package-upload"
-            class="bg-surface/50 mx-auto mt-12 max-w-xl border border-border p-8"
+            class="mx-auto mt-12 max-w-xl border border-border bg-surface/50 p-8"
           >
             <p class="font-mono text-[10px] tracking-[0.2em] text-brand">01 / PACKAGE UPLOAD</p>
             <h2 class="mt-4 font-serif text-3xl">上传整合包</h2>
@@ -305,7 +310,7 @@ function back() {
               (data.mode === 'package' && step === 2)
             "
             key="basic"
-            class="bg-surface/50 mx-auto mt-12 max-w-xl border border-border p-8"
+            class="mx-auto mt-12 max-w-xl border border-border bg-surface/50 p-8"
           >
             <p class="font-mono text-[10px] tracking-[0.2em] text-brand">
               {{ String(step).padStart(2, '0') }} / BASIC INFO
@@ -315,12 +320,12 @@ function back() {
               <label class="block text-xs text-text-secondary"
                 >实例名称<input
                   v-model="data.name"
-                  class="bg-background/50 mt-2 w-full border border-border px-4 py-3 font-mono text-sm outline-none focus:border-brand"
+                  class="mt-2 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm outline-none focus:border-brand"
                   placeholder="Survival-Server" /></label
               ><label class="block text-xs text-text-secondary"
                 >服务端口<input
                   v-model.number="data.port"
-                  class="bg-background/50 mt-2 w-full border border-border px-4 py-3 font-mono text-sm outline-none focus:border-brand"
+                  class="mt-2 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm outline-none focus:border-brand"
                   type="number"
               /></label>
             </div>
@@ -331,7 +336,7 @@ function back() {
           <section
             v-else-if="data.mode === 'package' && step === 3"
             key="package-core"
-            class="bg-surface/50 mx-auto mt-12 max-w-xl border border-border p-8"
+            class="mx-auto mt-12 max-w-xl border border-border bg-surface/50 p-8"
           >
             <p class="font-mono text-[10px] tracking-[0.2em] text-brand">03 / CORE CONFIG</p>
             <h2 class="mt-4 font-serif text-3xl">核心检测结果</h2>
@@ -340,7 +345,7 @@ function back() {
             </p>
             <select
               v-model="data.coreType"
-              class="bg-background/50 mt-8 w-full border border-border px-4 py-3 font-mono text-sm outline-none focus:border-brand"
+              class="mt-8 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm outline-none focus:border-brand"
             >
               <option
                 v-for="candidate in data.packageInfo?.core_candidates || []"
@@ -351,7 +356,11 @@ function back() {
               </option>
             </select>
           </section>
-          <section v-else-if="step === 3" key="settings" class="bg-surface/50 mx-auto mt-12 max-w-xl border border-border p-8">
+          <section
+            v-else-if="step === 3"
+            key="settings"
+            class="mx-auto mt-12 max-w-xl border border-border bg-surface/50 p-8"
+          >
             <p class="font-mono text-[10px] tracking-[0.2em] text-brand">
               {{ String(step).padStart(2, '0') }} / ENVIRONMENT
             </p>
@@ -363,7 +372,7 @@ function back() {
               <label class="block text-xs text-text-secondary"
                 >Java 版本<select
                   v-model="data.javaVersion"
-                  class="bg-background/50 mt-2 w-full border border-border px-4 py-3 font-mono text-sm"
+                  class="mt-2 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm"
                 >
                   <option>8</option>
                   <option>17</option>
@@ -372,23 +381,48 @@ function back() {
               ><label class="block text-xs text-text-secondary"
                 >内存（MB）<input
                   v-model.number="data.memory"
-                  class="bg-background/50 mt-2 w-full border border-border px-4 py-3 font-mono text-sm"
+                  class="mt-2 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm"
                   type="number"
                   min="512"
               /></label>
             </div>
           </section>
-          <section v-else-if="step === steps.length - 2" key="confirm" class="mx-auto mt-12 max-w-2xl border border-border p-8">
+          <section
+            v-else-if="step === steps.length - 2"
+            key="confirm"
+            class="mx-auto mt-12 max-w-2xl border border-border p-8"
+          >
             <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ CONFIRMATION</p>
             <h2 class="mt-4 font-serif text-3xl">确认部署信息</h2>
             <dl class="mt-8 divide-y divide-border font-mono text-sm">
-              <div class="flex justify-between py-4"><dt class="text-text-secondary">实例名称</dt><dd>{{ data.name }}</dd></div>
-              <div class="flex justify-between py-4"><dt class="text-text-secondary">服务端口</dt><dd>{{ data.port }}</dd></div>
-              <div class="flex justify-between py-4"><dt class="text-text-secondary">核心</dt><dd>{{ data.coreType || data.mode }}</dd></div>
-              <div class="flex justify-between py-4"><dt class="text-text-secondary">游戏版本</dt><dd>{{ data.mcVersion || '—' }}</dd></div>
-              <div class="flex justify-between py-4"><dt class="text-text-secondary">核心构建</dt><dd>{{ data.buildVersion || '—' }}</dd></div>
-              <div class="flex justify-between py-4"><dt class="text-text-secondary">Java</dt><dd>{{ data.javaVersion }}</dd></div>
-              <div class="flex justify-between py-4"><dt class="text-text-secondary">内存</dt><dd>{{ data.memory }} MB</dd></div>
+              <div class="flex justify-between py-4">
+                <dt class="text-text-secondary">实例名称</dt>
+                <dd>{{ data.name }}</dd>
+              </div>
+              <div class="flex justify-between py-4">
+                <dt class="text-text-secondary">服务端口</dt>
+                <dd>{{ data.port }}</dd>
+              </div>
+              <div class="flex justify-between py-4">
+                <dt class="text-text-secondary">核心</dt>
+                <dd>{{ data.coreType || data.mode }}</dd>
+              </div>
+              <div class="flex justify-between py-4">
+                <dt class="text-text-secondary">游戏版本</dt>
+                <dd>{{ data.mcVersion || '—' }}</dd>
+              </div>
+              <div class="flex justify-between py-4">
+                <dt class="text-text-secondary">核心构建</dt>
+                <dd>{{ data.buildVersion || '—' }}</dd>
+              </div>
+              <div class="flex justify-between py-4">
+                <dt class="text-text-secondary">Java</dt>
+                <dd>{{ data.javaVersion }}</dd>
+              </div>
+              <div class="flex justify-between py-4">
+                <dt class="text-text-secondary">内存</dt>
+                <dd>{{ data.memory }} MB</dd>
+              </div>
             </dl>
           </section>
         </Transition>
@@ -408,7 +442,7 @@ function back() {
           ><button
             v-if="!isComplete"
             type="button"
-            class="hover:bg-brand/10 border border-brand px-5 py-2 font-mono text-xs text-brand disabled:opacity-40"
+            class="border border-brand px-5 py-2 font-mono text-xs text-brand hover:bg-brand/10 disabled:opacity-40"
             :disabled="busy || !canContinue"
             @click="next"
           >
@@ -416,18 +450,43 @@ function back() {
           </button>
         </footer>
       </template>
-      <div v-if="isDeploying" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
+      <div
+        v-if="isDeploying"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+        role="dialog"
+        aria-modal="true"
+      >
         <AtmosphereCard>
           <div class="w-full max-w-2xl space-y-6 p-4 md:p-8">
             <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ DEPLOYMENT PROGRESS</p>
             <h2 class="font-serif text-2xl text-text-primary">{{ data.name }}</h2>
             <p class="font-mono text-xs text-text-secondary" :class="error ? 'text-red-400' : ''">{{ deployStatus }}</p>
-            <button v-if="error" type="button" class="border border-red-400/40 px-4 py-2 font-mono text-xs text-red-400 hover:bg-red-400/10" @click="isDeploying = false">[ CLOSE ]</button>
+            <button
+              v-if="error"
+              type="button"
+              class="border border-red-400/40 px-4 py-2 font-mono text-xs text-red-400 hover:bg-red-400/10"
+              @click="isDeploying = false"
+            >
+              [ CLOSE ]
+            </button>
             <div class="h-1 w-full overflow-hidden bg-background">
-              <div class="h-full bg-brand transition-all duration-300" :class="progress === null ? 'w-1/3 animate-pulse' : ''" :style="progress === null ? {} : { width: progress + '%' }" />
+              <div
+                class="h-full bg-brand transition-all duration-300"
+                :class="progress === null ? 'w-1/3 animate-pulse' : ''"
+                :style="progress === null ? {} : { width: progress + '%' }"
+              />
             </div>
-            <div class="flex items-center justify-between font-mono text-[10px] text-text-secondary"><span>REAL DOWNLOAD</span><span>{{ progress === null ? 'DOWNLOADING' : progress + '%' }}</span></div>
-            <button v-if="progress !== null && progress >= 100" type="button" class="border border-brand px-4 py-2 font-mono text-xs text-brand hover:bg-brand/10" @click="isDeploying = false; navigateTo('/instances/' + deployInstanceId)">进入控制台 →</button>
+            <div class="flex items-center justify-between font-mono text-[10px] text-text-secondary">
+              <span>REAL DOWNLOAD</span><span>{{ progress === null ? 'DOWNLOADING' : progress + '%' }}</span>
+            </div>
+            <button
+              v-if="progress !== null && progress >= 100"
+              type="button"
+              class="border border-brand px-4 py-2 font-mono text-xs text-brand hover:bg-brand/10"
+              @click="openInstanceConsole"
+            >
+              进入控制台 →
+            </button>
           </div>
         </AtmosphereCard>
       </div>

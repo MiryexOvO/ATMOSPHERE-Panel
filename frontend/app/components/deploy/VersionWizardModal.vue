@@ -20,9 +20,7 @@ const emit = defineEmits<{
 const step = ref(1)
 const selectedVersion = ref<string | null>(null)
 
-const selectedBuilds = computed(() =>
-  selectedVersion.value ? props.builds[selectedVersion.value] || [] : [],
-)
+const selectedBuilds = computed(() => (selectedVersion.value ? props.builds[selectedVersion.value] || [] : []))
 
 watch(
   () => props.open,
@@ -54,7 +52,7 @@ function chooseBuild(build: string) {
   <Teleport to="body">
     <div
       v-if="open"
-      class="bg-background/80 fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm"
+      class="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       @click.self="emit('close')"
@@ -90,7 +88,7 @@ function chooseBuild(build: string) {
               :key="version"
               type="button"
               class="border border-border px-3 py-4 text-center font-mono text-xs text-text-secondary transition-colors hover:border-brand hover:text-text-primary"
-              :class="selectedVersion === version ? 'bg-brand/10 border-brand text-text-primary' : ''"
+              :class="selectedVersion === version ? 'border-brand bg-brand/10 text-text-primary' : ''"
               @click="chooseVersion(version)"
             >
               {{ version }}
@@ -112,7 +110,7 @@ function chooseBuild(build: string) {
               v-for="(build, index) in selectedBuilds"
               :key="build"
               type="button"
-              class="hover:border-brand/60 flex w-full items-center justify-between border border-border px-4 py-3 text-left font-mono text-sm text-text-primary transition-colors hover:bg-background"
+              class="flex w-full items-center justify-between border border-border px-4 py-3 text-left font-mono text-sm text-text-primary transition-colors hover:border-brand/60 hover:bg-background"
               @click="chooseBuild(build)"
             >
               <span>{{ build }}</span>

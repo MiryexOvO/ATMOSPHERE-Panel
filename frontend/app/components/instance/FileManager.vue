@@ -41,8 +41,8 @@ async function save() {
 onMounted(() => list())
 </script>
 <template>
-  <section class="bg-surface/30 grid min-h-[480px] border border-border md:grid-cols-[240px_1fr]">
-    <aside class="border-b border-border p-4 md:border-b-0 md:border-r">
+  <section class="grid min-h-[480px] border border-border bg-surface/30 md:grid-cols-[240px_1fr]">
+    <aside class="border-b border-border p-4 md:border-r md:border-b-0">
       <div class="mb-4 flex items-center justify-between">
         <span class="font-mono text-[10px] tracking-[0.18em] text-text-secondary">FILES / {{ currentPath }}</span
         ><button type="button" class="text-brand" @click="list(currentPath)">↻</button>
@@ -59,7 +59,7 @@ onMounted(() => list())
         v-for="entry in entries"
         :key="entry.path"
         type="button"
-        class="border-border/50 flex w-full items-center justify-between border-b px-2 py-2 text-left font-mono text-xs hover:bg-background"
+        class="flex w-full items-center justify-between border-b border-border/50 px-2 py-2 text-left font-mono text-xs hover:bg-background"
         @click="open(entry)"
       >
         <span :class="entry.type === 'directory' ? 'text-brand' : 'text-text-primary'"
@@ -72,7 +72,7 @@ onMounted(() => list())
         <span class="font-mono text-xs text-text-secondary">{{ selectedPath || '选择文件' }}</span
         ><button
           type="button"
-          class="hover:bg-brand/10 border border-brand px-3 py-1 font-mono text-[10px] text-brand disabled:opacity-40"
+          class="border border-brand px-3 py-1 font-mono text-[10px] text-brand hover:bg-brand/10 disabled:opacity-40"
           :disabled="!selectedPath"
           @click="save"
         >
@@ -86,7 +86,7 @@ onMounted(() => list())
         placeholder="选择一个文本文件开始编辑"
         spellcheck="false"
       />
-      <p class="text-data-live px-4 py-2 font-mono text-[10px]">{{ message }}</p>
+      <p class="px-4 py-2 font-mono text-[10px] text-data-live">{{ message }}</p>
     </div>
   </section>
 </template>

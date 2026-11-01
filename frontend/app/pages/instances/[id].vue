@@ -107,14 +107,14 @@ onUnmounted(() => {
           v-for="action in ['start', 'restart', 'stop']"
           :key="action"
           type="button"
-          class="border border-border px-4 py-2 font-mono text-[10px] uppercase text-text-secondary hover:border-brand hover:text-brand"
+          class="border border-border px-4 py-2 font-mono text-[10px] text-text-secondary uppercase hover:border-brand hover:text-brand"
           @click="power(action as 'start' | 'stop' | 'restart')"
         >
           {{ action }}
         </button>
         <button
           type="button"
-          class="border border-red-500/30 px-4 py-2 font-mono text-[10px] uppercase text-red-500 hover:bg-red-500/10"
+          class="border border-red-500/30 px-4 py-2 font-mono text-[10px] text-red-500 uppercase hover:bg-red-500/10"
           @click="showDeleteModal = true"
         >
           [ DELETE ]
@@ -322,7 +322,7 @@ onUnmounted(() => {
       </div>
       <div
         v-if="toast"
-        class="fixed bottom-6 right-6 z-50 border border-border px-5 py-3 font-mono text-xs text-text-primary backdrop-blur-md"
+        class="fixed right-6 bottom-6 z-50 border border-border px-5 py-3 font-mono text-xs text-text-primary backdrop-blur-md"
       >
         {{ toast.message }}
       </div>

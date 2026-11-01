@@ -121,9 +121,9 @@ const summary = computed(() => [
       <div class="flex items-end justify-between gap-8">
         <div>
           <p class="mb-6 font-mono text-xs tracking-[0.2em] text-text-secondary">/ CONTROL ROOM / AUTHORIZED</p>
-          <h1 class="font-serif text-6xl font-light leading-none tracking-tight md:text-8xl">
+          <h1 class="font-serif text-6xl leading-none font-light tracking-tight md:text-8xl">
             <span class="block text-text-primary">Server</span>
-            <span class="mt-2 block italic text-brand">instances.</span>
+            <span class="mt-2 block text-brand italic">instances.</span>
           </h1>
         </div>
         <button
@@ -142,7 +142,7 @@ const summary = computed(() => [
         :key="tab.key"
         type="button"
         :data-tab="tab.key"
-        class="pb-3 pl-[14px] pr-[18px]"
+        class="pr-[18px] pb-3 pl-[14px]"
         :class="activeTab === tab.key ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary'"
         @click="activeTab = tab.key"
       >
@@ -158,7 +158,7 @@ const summary = computed(() => [
     >
       <div class="overflow-hidden">
         <div
-          class="settings-subnav flex gap-6 border-b border-border pb-4 pl-[10px] pt-3 font-mono text-xs"
+          class="settings-subnav flex gap-6 border-b border-border pt-3 pb-4 pl-[10px] font-mono text-xs"
           :class="{ 'is-visible': activeTab === 'settings' }"
           :aria-hidden="activeTab !== 'settings'"
         >
@@ -179,11 +179,7 @@ const summary = computed(() => [
     <Transition name="dashboard-panel" mode="out-in">
       <section v-if="activeTab === 'dashboard'" key="dashboard" class="mt-10 space-y-6">
         <div class="grid gap-8 md:grid-cols-3">
-          <AtmosphereCard
-            v-for="item in summary"
-            :key="item.label"
-            class="p-8"
-          >
+          <AtmosphereCard v-for="item in summary" :key="item.label" class="p-8">
             <div>
               <p class="font-mono text-[10px] tracking-[0.2em] text-text-secondary">{{ item.label }}</p>
               <strong class="mt-5 block font-mono text-3xl text-text-primary">{{ item.value }}</strong
@@ -200,7 +196,7 @@ const summary = computed(() => [
                   <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ HOST TELEMETRY</p>
                   <h2 class="mt-2 font-serif text-2xl text-text-primary">{{ t('hostTelemetryTitle') }}</h2>
                 </div>
-                <span class="text-data-live font-mono text-[10px]">● LIVE / 5S</span>
+                <span class="font-mono text-[10px] text-data-live">● LIVE / 5S</span>
               </header>
               <div class="mt-7 grid gap-8 md:grid-cols-2">
                 <div>
@@ -212,12 +208,9 @@ const summary = computed(() => [
                     <div class="metric-line h-full bg-brand" :style="{ width: host.cpu + '%' }" />
                   </div>
                   <div class="mt-5 grid grid-cols-4 gap-2">
-                    <i
-                      v-for="(core, index) in host.cores"
-                      :key="index"
-                      class="block h-16 p-1"
+                    <i v-for="(core, index) in host.cores" :key="index" class="block h-16 p-1"
                       ><span
-                        class="bg-brand/70 block h-full transition-all duration-700"
+                        class="block h-full bg-brand/70 transition-all duration-700"
                         :style="{ transform: 'scaleY(' + Math.max(0.08, core / 100) + ')', transformOrigin: 'bottom' }"
                       /><small class="mt-1 block font-mono text-[8px] text-text-secondary">C{{ index + 1 }}</small></i
                     >
@@ -229,7 +222,7 @@ const summary = computed(() => [
                     ><strong class="font-mono text-2xl text-text-primary">{{ host.memory.toFixed(1) }}%</strong>
                   </div>
                   <div class="mt-4 h-2 overflow-hidden bg-background">
-                    <div class="metric-line bg-data-live h-full" :style="{ width: host.memory + '%' }" />
+                    <div class="metric-line h-full bg-data-live" :style="{ width: host.memory + '%' }" />
                   </div>
                   <p class="mt-6 font-mono text-xs text-text-secondary">{{ t('samplingNote') }}</p>
                 </div>
@@ -279,7 +272,7 @@ const summary = computed(() => [
                   class="h-2 w-2 rounded-full"
                   :class="
                     item.status === 'running'
-                      ? 'bg-data-live animate-pulse shadow-[0_0_12px_var(--data-live)]'
+                      ? 'animate-pulse bg-data-live shadow-[0_0_12px_var(--data-live)]'
                       : 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,.45)]'
                   "
                 />

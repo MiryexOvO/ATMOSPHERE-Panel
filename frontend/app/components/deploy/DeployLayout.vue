@@ -118,7 +118,7 @@ function handleSelection(selection: Selection) {
           v-for="category in categories"
           :key="category"
           type="button"
-          class="hover:bg-surface/60 relative border-l-2 border-transparent px-4 py-3 text-left text-sm text-text-secondary transition-colors hover:text-text-primary"
+          class="relative border-l-2 border-transparent px-4 py-3 text-left text-sm text-text-secondary transition-colors hover:bg-surface/60 hover:text-text-primary"
           :class="activeCategory === category ? 'border-brand bg-surface text-text-primary' : ''"
           @click="activeCategory = category"
         >
@@ -133,7 +133,7 @@ function handleSelection(selection: Selection) {
           <p class="mb-2 font-mono text-[10px] tracking-[0.24em] text-text-secondary">/ CORE LIBRARY</p>
           <h2 class="font-serif text-2xl text-text-primary">选择服务端核心</h2>
         </div>
-        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-text-secondary">
+        <span class="font-mono text-[10px] tracking-[0.18em] text-text-secondary uppercase">
           {{ filteredCores.length.toString().padStart(2, '0') }} AVAILABLE
         </span>
       </header>
@@ -143,7 +143,7 @@ function handleSelection(selection: Selection) {
           v-for="core in filteredCores"
           :key="core.id"
           type="button"
-          class="bg-surface/50 hover:border-brand/50 group cursor-pointer border border-border p-5 text-left transition-colors"
+          class="group cursor-pointer border border-border bg-surface/50 p-5 text-left transition-colors hover:border-brand/50"
           @click="openWizard(core)"
         >
           <div class="mb-8 flex items-start justify-between">

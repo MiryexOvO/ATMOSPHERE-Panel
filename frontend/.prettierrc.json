@@ -3,5 +3,6 @@
   "singleQuote": true,
   "printWidth": 120,
   "trailingComma": "all",
+  "tailwindStylesheet": "./app/assets/css/main.css",
   "plugins": ["prettier-plugin-tailwindcss"]
 }

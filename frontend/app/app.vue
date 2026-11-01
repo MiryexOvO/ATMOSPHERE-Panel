@@ -35,4 +35,3 @@ watch(
     <NuxtPage :transition="false" />
   </NuxtLayout>
 </template>
-

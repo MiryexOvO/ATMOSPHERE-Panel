@@ -34,11 +34,11 @@ async function loadVersions(core: Core) {
   versions.value = []
   isLoading.value = true
   try {
-    const response = await request<{ versions?: ({ id?: string } | string)[] } | ({ id?: string } | string)[]>(`/api/resources/cores/${core.id}/versions`)
-    const rawVersions = Array.isArray(response) ? response : response.versions ?? []
-    versions.value = rawVersions
-      .map((item) => typeof item === 'string' ? item : item.id ?? '')
-      .filter(Boolean)
+    const response = await request<{ versions?: ({ id?: string } | string)[] } | ({ id?: string } | string)[]>(
+      `/api/resources/cores/${core.id}/versions`,
+    )
+    const rawVersions = Array.isArray(response) ? response : (response.versions ?? [])
+    versions.value = rawVersions.map((item) => (typeof item === 'string' ? item : (item.id ?? ''))).filter(Boolean)
   } catch (error: unknown) {
     loadError.value = error instanceof Error ? error.message : '版本加载失败'
     versions.value = []
@@ -49,13 +49,13 @@ async function loadVersions(core: Core) {
 async function loadBuilds(core: Core, version: string) {
   loadError.value = ''
   try {
-    const response = await request<{ builds?: ({ id?: string } | string)[] } | ({ id?: string } | string)[]>(`/api/resources/cores/${core.id}/versions/${encodeURIComponent(version)}/builds`)
-    const rawBuilds = Array.isArray(response) ? response : response.builds ?? []
+    const response = await request<{ builds?: ({ id?: string } | string)[] } | ({ id?: string } | string)[]>(
+      `/api/resources/cores/${core.id}/versions/${encodeURIComponent(version)}/builds`,
+    )
+    const rawBuilds = Array.isArray(response) ? response : (response.builds ?? [])
     builds.value = {
       ...builds.value,
-      [version]: rawBuilds
-        .map((item) => typeof item === 'string' ? item : item.id ?? '')
-        .filter(Boolean),
+      [version]: rawBuilds.map((item) => (typeof item === 'string' ? item : (item.id ?? ''))).filter(Boolean),
     }
   } catch (error: unknown) {
     loadError.value = error instanceof Error ? error.message : '构建加载失败'
@@ -88,7 +88,7 @@ const emit = defineEmits<{ select: [value: Selection] }>()
           v-for="category in categories"
           :key="category"
           type="button"
-          class="hover:bg-surface/60 relative border-l-2 border-transparent px-4 py-3 text-left text-sm text-text-secondary transition-colors hover:text-text-primary"
+          class="relative border-l-2 border-transparent px-4 py-3 text-left text-sm text-text-secondary transition-colors hover:bg-surface/60 hover:text-text-primary"
           :class="activeCategory === category ? 'border-brand bg-surface text-text-primary' : ''"
           @click="activeCategory = category"
         >
@@ -112,7 +112,7 @@ const emit = defineEmits<{ select: [value: Selection] }>()
           v-for="core in filteredCores"
           :key="core.id"
           type="button"
-          class="bg-surface/50 hover:border-brand/60 group cursor-pointer border border-border p-5 text-left transition-all duration-300 hover:-translate-y-1 hover:bg-surface"
+          class="group cursor-pointer border border-border bg-surface/50 p-5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-brand/60 hover:bg-surface"
           @click="openWizard(core)"
         >
           <div class="mb-8 flex items-start justify-between">
@@ -125,7 +125,7 @@ const emit = defineEmits<{ select: [value: Selection] }>()
           <p class="text-xs text-text-secondary">{{ core.desc }}</p>
         </button>
       </div>
-      <p v-if="selected" class="bg-brand/15 mt-6 border-l-2 border-brand px-4 py-3 font-mono text-xs text-text-primary">
+      <p v-if="selected" class="mt-6 border-l-2 border-brand bg-brand/15 px-4 py-3 font-mono text-xs text-text-primary">
         已选择：{{ selected.core }} {{ selected.version }} ({{ selected.build }})
       </p>
     </main>
