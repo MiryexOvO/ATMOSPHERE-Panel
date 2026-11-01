@@ -105,6 +105,7 @@ onUnmounted(() => {
 
 const authTransition = useState('auth-transition', () => 'idle')
 const isRouteTransitioning = useState('route-transitioning', () => false)
+const seam = useRouteSeam()
 
 async function login() {
   if (loading.value || authTransition.value !== 'idle') return

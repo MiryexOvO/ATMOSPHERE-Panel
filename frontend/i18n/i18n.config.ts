@@ -164,6 +164,41 @@ export const i18nMessages = {
     en: () => 'Create your first instance, upload a server core and accept the EULA.',
     ja: () => '最初のインスタンスを作成し、サーバーコアをアップロードして EULA に同意してください。',
   },
+  downloadSourceTitle: {
+    zh: () => '下载源切换',
+    en: () => 'Download Source',
+    ja: () => 'ダウンロードソース',
+  },
+  downloadSourceHint: {
+    zh: () => '选择服务端核心下载时使用的镜像源。',
+    en: () => 'Choose the mirror used when downloading server cores.',
+    ja: () => 'サーバーコアのダウンロードに使うミラーを選択します。',
+  },
+  mirrorLabel: {
+    zh: () => '镜像源',
+    en: () => 'Mirror Source',
+    ja: () => 'ミラーソース',
+  },
+  mirrorDefault: {
+    zh: () => '默认',
+    en: () => 'Default',
+    ja: () => 'デフォルト',
+  },
+  mirrorOfficial: {
+    zh: () => '官方',
+    en: () => 'Official',
+    ja: () => '公式',
+  },
+  customMirrorLabel: {
+    zh: () => '自定义镜像',
+    en: () => 'Custom Mirror',
+    ja: () => 'カスタムミラー',
+  },
+  customMirrorPlaceholder: {
+    zh: () => '输入镜像地址，例如 https://example.com',
+    en: () => 'Enter a mirror URL, e.g. https://example.com',
+    ja: () => 'ミラーURLを入力（例: https://example.com）',
+  },
   pending: {
     zh: () => '模块建设中。',
     en: () => 'Module under construction.',

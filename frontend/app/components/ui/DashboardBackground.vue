@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import LineField from '~/components/ui/LineField.vue'
+
+const seam = useRouteSeam()
+const enteringFromLogin = seam.value.phase === 'away' || seam.value.phase === 'clearing'
 </script>
 
 <template>
-  <div class="dashboard-hud pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+  <div
+    class="dashboard-hud pointer-events-none fixed inset-0 z-0 overflow-hidden"
+    :class="{ 'hud-enter': enteringFromLogin }"
+    aria-hidden="true"
+  >
     <LineField />
     <div class="hud-glow" />
     <svg class="hud-radar absolute inset-0 h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="none">
@@ -48,6 +55,17 @@ import LineField from '~/components/ui/LineField.vue'
 <style scoped>
 .dashboard-hud {
   color: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+.hud-enter {
+  animation: hud-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) 320ms both;
+}
+@keyframes hud-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .hud-glow {
   position: absolute;

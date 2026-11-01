@@ -1,4 +1,8 @@
 <script setup lang="ts">
+const seam = useRouteSeam()
+// 延后淡入
+const enteringFromLogin = seam.value.phase === 'away' || seam.value.phase === 'clearing'
+
 // 小刻度
 const TICK = 8
 // 五个一个大刻度
@@ -87,7 +91,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="pointer-events-none absolute inset-y-0 right-0 z-30 w-[30px]" aria-hidden="true">
+  <div
+    class="pointer-events-none absolute inset-y-0 right-0 z-30 w-[30px]"
+    :class="{ 'seam-enter': enteringFromLogin }"
+    aria-hidden="true"
+  >
     <div class="ruler-minor absolute inset-y-0 right-0 w-[5px]" />
     <div class="ruler-major absolute inset-y-0 right-0 w-2.5" />
     <div class="ruler-labeled absolute inset-y-0 right-0 w-4" />
@@ -100,7 +108,12 @@ onUnmounted(() => {
     >
   </div>
   <!-- 视口内的标注线 + 百分比：随滚动进度从视口顶部滑到视口底部 -->
-  <div class="pointer-events-none fixed inset-0 z-40" :style="{ '--ruler-progress': progress }" aria-hidden="true">
+  <div
+    class="pointer-events-none fixed inset-0 z-40"
+    :class="{ 'seam-enter': enteringFromLogin }"
+    :style="{ '--ruler-progress': progress }"
+    aria-hidden="true"
+  >
     <div class="ruler-line absolute top-0 right-0 h-px w-[30px]" />
     <!-- 百分比翻页 -->
     <span class="ruler-percent absolute top-0 right-[34px] font-mono text-[9px] text-text-secondary tabular-nums">
@@ -115,6 +128,17 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.seam-enter {
+  animation: seam-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) 320ms both;
+}
+@keyframes seam-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 .ruler-minor {
   background-image: repeating-linear-gradient(to bottom, var(--text-secondary) 0 1px, transparent 1px 8px);
   opacity: 0.18;

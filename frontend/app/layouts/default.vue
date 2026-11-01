@@ -5,6 +5,10 @@ import { useSmoothScroll } from '~/composables/useSmoothScroll'
 
 useSmoothScroll()
 
+const seam = useRouteSeam()
+// 从登录页进入时，顶栏与页面内容一起延后淡入
+const enteringFromLogin = seam.value.phase === 'away' || seam.value.phase === 'clearing'
+
 const { t } = useI18n()
 
 const now = ref(new Date())
@@ -107,7 +111,10 @@ async function logout() {
   <div class="relative min-h-screen overflow-hidden bg-background text-text-primary">
     <StarfieldBackground />
     <ScrollRuler />
-    <header class="relative z-10 flex h-20 items-center justify-between border-b border-border px-8">
+    <header
+      class="relative z-10 flex h-20 items-center justify-between border-b border-border px-8"
+      :class="{ 'layout-enter': enteringFromLogin }"
+    >
       <div class="flex items-center gap-5">
         <span class="text-brand">✦</span>
         <strong class="font-mono tracking-[0.18em]">ATMOSPHERE</strong>
@@ -208,6 +215,17 @@ async function logout() {
 </template>
 
 <style scoped>
+.layout-enter {
+  animation: layout-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) 320ms both;
+}
+@keyframes layout-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 .palette-fade-enter-active,
 .palette-fade-leave-active {
   transition:

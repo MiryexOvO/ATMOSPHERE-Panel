@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import RouteSeam from '~/components/ui/RouteSeam.vue'
+
 const colorMode = useColorMode()
 const defaults = {
   dark: { textPrimary: '#e9dfc6', textSecondary: '#a4aaa3', surface: '#1c252d', background: '#11151b' },
@@ -34,4 +36,5 @@ watch(
   <NuxtLayout>
     <NuxtPage :transition="false" />
   </NuxtLayout>
+  <RouteSeam />
 </template>
