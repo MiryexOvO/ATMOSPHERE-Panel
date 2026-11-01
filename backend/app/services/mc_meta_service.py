@@ -63,7 +63,7 @@ async def _fast_versions(core: str) -> list[dict[str, Any]]:
 
 async def _official_versions(core: str) -> list[dict[str, Any]]:
     if core == 'paper':
-        async with httpx.AsyncClient(timeout=2.0, headers=HEADERS) as client:
+        async with httpx.AsyncClient(timeout=10.0, headers=HEADERS) as client:
             payload = await _get_json(client, f'{FILL}/projects/paper')
         values = payload.get('versions') if isinstance(payload, dict) else None
         if not isinstance(values, list):

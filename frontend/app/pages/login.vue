@@ -136,6 +136,19 @@ async function login() {
     document.getElementById('route-card-handoff')?.replaceChildren()
   } catch (cause: unknown) {
     const err = cause as { data?: { message?: string }; message?: string }
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!reducedMotion && apiOnline.value) {
+      // 复用扫描激光 卡一半暂停
+      authTransition.value = 'failed'
+      await nextTick()
+      await new Promise((resolve) => setTimeout(resolve, 400))
+      authTransition.value = 'failed-stuck'
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      authTransition.value = 'failed-return'
+      await new Promise((resolve) => setTimeout(resolve, 480))
+      authTransition.value = 'idle'
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    }
     error.value = apiOnline.value ? getErrorMessage(cause, '密码错误，请检查账号和密码') : '后端未连接，请启动后端服务'
     authTransition.value = 'idle'
     isRouteTransitioning.value = false
@@ -246,10 +259,34 @@ async function login() {
         <p class="mt-10 max-w-md text-sm leading-8 text-text-secondary">{{ t('desc1') }}<br />{{ t('desc2') }}</p>
       </section>
       <div class="login-transition-stage relative w-full max-w-md">
-        <div class="login-transition-outer" :class="{ 'is-expanding': authTransition === 'expanding' }">
+        <div
+          class="login-ghost-frame"
+          :class="{
+            'is-splitting':
+              authTransition === 'expanding' || authTransition === 'failed' || authTransition === 'failed-stuck',
+          }"
+          aria-hidden="true"
+        />
+        <div
+          class="login-transition-outer"
+          :class="{
+            'is-expanding': authTransition === 'expanding',
+            'is-failing': authTransition === 'failed' || authTransition === 'failed-stuck',
+            'is-stuck': authTransition === 'failed-stuck',
+            'is-returning': authTransition === 'failed-return',
+          }"
+        >
           <div class="login-scan-laser" aria-hidden="true" />
         </div>
-        <div class="login-transition-inner" :class="{ 'is-dissolving': authTransition === 'expanding' }">
+        <div
+          class="login-transition-inner"
+          :class="{
+            'is-dissolving':
+              authTransition === 'expanding' || authTransition === 'failed' || authTransition === 'failed-stuck',
+            'is-stuck': authTransition === 'failed-stuck',
+            'is-returning': authTransition === 'failed-return',
+          }"
+        >
           <div class="login-glass-card">
             <form class="relative p-8 md:p-10" @submit.prevent="login">
               <div
@@ -286,7 +323,11 @@ async function login() {
               >
                 <i class="status-hologram" />API {{ apiOnline ? t('apiConnected') : t('apiOffline') }}
               </p>
-              <p v-if="error" class="mt-3 text-sm text-red-400">! {{ error }}</p>
+              <div class="login-error-slot" :class="{ 'is-open': Boolean(error) }">
+                <div class="login-error-clip">
+                  <p class="login-error-text mt-3 text-sm text-red-400">! {{ error }}</p>
+                </div>
+              </div>
               <button
                 class="mt-6 inline-flex w-full items-center justify-between border border-brand/30 bg-transparent px-5 py-4 text-brand transition hover:border-brand hover:bg-brand/10 active:scale-[.99] disabled:opacity-50"
                 :disabled="loading"
@@ -300,6 +341,9 @@ async function login() {
             </form>
           </div>
         </div>
+        <p class="login-scan-error" :class="{ 'is-visible': authTransition === 'failed-stuck' }" aria-hidden="true">
+          [ERROR]
+        </p>
       </div>
     </div>
   </main>
@@ -329,10 +373,17 @@ async function login() {
   pointer-events: none;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: transparent;
+  transition:
+    clip-path 320ms ease,
+    opacity 320ms ease;
 }
 .login-transition-inner {
   position: relative;
   z-index: 3;
+  transition:
+    opacity 320ms ease,
+    transform 320ms ease,
+    filter 320ms ease;
 }
 .login-transition-inner.is-dissolving {
   animation: login-inner-dissolve 120ms steps(1, end) forwards;
@@ -353,6 +404,9 @@ async function login() {
   background: rgba(255, 255, 255, 0.85);
   box-shadow: 0 0 15px 2px rgba(255, 255, 255, 0.7);
   opacity: 0;
+  transition:
+    opacity 240ms ease,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .login-transition-outer.is-expanding {
   animation: login-outer-erase 800ms linear forwards;
@@ -362,6 +416,100 @@ async function login() {
 }
 .login-transition-inner.is-dissolving {
   animation: login-inner-dissolve 400ms ease-out forwards;
+}
+/* 登录失败 复用 */
+.login-transition-outer.is-failing {
+  animation: login-outer-erase 800ms linear forwards;
+}
+.login-transition-outer.is-failing .login-scan-laser {
+  animation: login-laser 800ms linear forwards;
+}
+.login-transition-outer.is-stuck,
+.login-transition-inner.is-stuck {
+  animation-play-state: paused;
+}
+.login-transition-outer.is-stuck .login-scan-laser {
+  /* 钉在 270px */
+  transform: translateY(270px) !important;
+  opacity: 1 !important;
+}
+/* ERROR */
+/* 与扫描线对齐 */
+.login-scan-error {
+  position: absolute;
+  top: 271px;
+  right: 0;
+  left: 0;
+  z-index: 5;
+  pointer-events: none;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  transform: translateY(-50%);
+  color: #f87171;
+  text-shadow: 0 0 18px rgba(248, 113, 113, 0.45);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.login-scan-error.is-visible {
+  opacity: 1;
+  transition-delay: 120ms;
+}
+/* 平滑撑开 */
+.login-error-slot {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.login-error-slot.is-open {
+  grid-template-rows: 1fr;
+}
+.login-error-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+.login-error-text {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 200ms ease,
+    transform 240ms ease;
+}
+.login-error-slot.is-open .login-error-text {
+  opacity: 1;
+  transform: none;
+  transition-delay: 90ms;
+}
+/* 自然归位 半溶解恢复成原样 */
+.login-transition-outer.is-returning {
+  animation: login-outer-return 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.login-transition-inner.is-returning {
+  animation: login-inner-return 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes login-outer-return {
+  from {
+    clip-path: inset(0 0 50% 0);
+    opacity: 1;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+@keyframes login-inner-return {
+  from {
+    opacity: 0.15;
+    transform: translateY(-22px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
 }
 @keyframes login-outer-erase {
   0% {
@@ -402,15 +550,39 @@ async function login() {
     animation: none;
   }
 }
-.login-glass-card::before {
+/* 左上、右下拼成完整矩形 */
+/* 扫描开始 拆开 向左上 / 右下悬浮 */
+/* 这真帅吧 */
+.login-ghost-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.login-ghost-frame::before,
+.login-ghost-frame::after {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: -1;
+  border: 0 solid rgba(255, 255, 255, 0.05);
   transform: translate(10px, 10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
-  pointer-events: none;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.login-ghost-frame::before {
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.login-ghost-frame::after {
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
+.login-ghost-frame.is-splitting::before {
+  /* 与右下角保持一致的 34px 距离 */
+  /* 左上角的额外距离 */
+  transform: translate(-34px, -34px);
+}
+.login-ghost-frame.is-splitting::after {
+  transform: translate(34px, 34px);
 }
 .starfield-container {
   background: var(--background);
