@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import LocalScrollRuler from '~/components/ui/LocalScrollRuler.vue'
+const versionViewport=ref<HTMLElement|null>(null)
+const buildViewport=ref<HTMLElement|null>(null)
 type Core = { id: string; name: string }
 type Selection = { core: string; version: string; build: string }
 
@@ -82,7 +85,9 @@ function chooseBuild(build: string) {
           <p v-if="loading" class="py-8 text-center text-xs text-text-secondary">正在获取最新版本数据...</p>
           <p v-else-if="error" class="py-4 text-center text-xs text-red-300">! {{ error }}</p>
           <p v-else-if="!versions.length" class="py-8 text-center text-xs text-text-secondary">暂无可用版本</p>
-          <div class="grid max-h-96 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
+          <!-- 宽列表使用小刻度尺，保留紧凑选择布局。 -->
+          <div class="relative">
+          <div ref="versionViewport" class="grid max-h-96 grid-cols-3 gap-2 overflow-y-auto pr-6 sm:grid-cols-4">
             <button
               v-for="version in versions"
               :key="version"
@@ -93,6 +98,8 @@ function chooseBuild(build: string) {
             >
               {{ version }}
             </button>
+          </div>
+          <LocalScrollRuler :target="versionViewport"/>
           </div>
         </div>
 
@@ -105,7 +112,8 @@ function chooseBuild(build: string) {
             ← 返回游戏版本
           </button>
           <p class="mb-4 text-xs text-text-secondary">{{ selectedVersion }} 的可用构建版本。</p>
-          <div class="space-y-2">
+          <div class="relative">
+          <div ref="buildViewport" class="max-h-96 space-y-2 overflow-y-auto pr-6">
             <button
               v-for="(build, index) in selectedBuilds"
               :key="build"
@@ -120,6 +128,8 @@ function chooseBuild(build: string) {
                 >NEW</span
               >
             </button>
+          </div>
+          <LocalScrollRuler :target="buildViewport"/>
           </div>
         </div>
       </section>

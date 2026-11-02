@@ -5,7 +5,7 @@ defineEmits<{ select: [] }>()
 <template>
   <button class="core-card-new" @click="$emit('select')">
     <span class="core-card-icon">{{ icon || '✦' }}</span>
-    <span class="core-card-arrow">↗</span>
+
     <strong>{{ name }}</strong>
     <small>{{ description }}</small>
     <em>{{ versions || 0 }} VERSIONS</em>

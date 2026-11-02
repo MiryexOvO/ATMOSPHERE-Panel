@@ -3,8 +3,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE_DIR = Path.cwd() / 'data' if sys.platform.startswith('win') else Path('/opt/mc-panel')
-DB_PATH = ROOT / 'panel.sqlite3'
+BASE_DIR = Path(os.getenv('ATMOSPHERE_DATA_DIR') or (Path.cwd() / 'data' if sys.platform.startswith('win') else Path('/opt/mc-panel')))
+DB_PATH = Path(os.getenv('ATMOSPHERE_DB_PATH') or ROOT / 'panel.sqlite3')
 SERVER_ROOT = BASE_DIR / 'servers'
 BACKUP_ROOT = BASE_DIR / 'backups'
 SYSTEMD_DIR = Path.cwd() / 'data' / 'systemd' if sys.platform.startswith('win') else Path('/etc/systemd/system')

@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import PanelPreferences from '~/components/admin/PanelPreferences.vue'
+import UserManagement from '~/components/admin/UserManagement.vue'
+import ScheduleManager from '~/components/admin/ScheduleManager.vue'
+import BatchOperations from '~/components/admin/BatchOperations.vue'
+import LoginAlert from '~/components/admin/LoginAlert.vue'
 import DashboardBackground from '~/components/ui/DashboardBackground.vue'
 
 definePageMeta({ middleware: 'auth' })
@@ -18,6 +23,7 @@ const mainTabs = [
 type Tab = (typeof mainTabs)[number]['key']
 
 const activeTab = ref<Tab>('dashboard')
+const preferences=useState<Record<string,unknown>>('panel-preferences',()=>({}))
 
 // 主标签高亮：每个标签用左右内边距占住自己的「格」（pl/pr 各 16px，
 // 总间距与原 gap-8 的 32px 一致），高亮线就是标签实际占据的空间，相邻格首尾相接
@@ -46,29 +52,6 @@ const settingsTabs = [
 type SettingsTab = (typeof settingsTabs)[number]['key']
 
 const activeSettings = ref<SettingsTab>('system')
-// 下载源切换（仅界面，暂未接入功能）
-const mirrorSource = ref('default')
-const customMirror = ref('')
-const mirrorOpen = ref(false)
-const mirrorMenu = ref<HTMLElement | null>(null)
-const mirrorOptions = computed(() => [
-  { value: 'default', label: t('mirrorDefault') },
-  { value: 'official', label: t('mirrorOfficial') },
-  { value: 'fastmirror', label: 'fastmirror' },
-  { value: 'polars', label: 'Polars' },
-])
-const currentMirrorLabel = computed(
-  () => mirrorOptions.value.find((option) => option.value === mirrorSource.value)?.label ?? '',
-)
-function chooseMirror(value: string) {
-  mirrorSource.value = value
-  mirrorOpen.value = false
-}
-function closeMirrorMenu(event: MouseEvent) {
-  if (!mirrorOpen.value) return
-  const node = event.target as Node | null
-  if (node && mirrorMenu.value && !mirrorMenu.value.contains(node)) mirrorOpen.value = false
-}
 const activeSettingsTab = computed(
   () => settingsTabs.find((item) => item.key === activeSettings.value) ?? settingsTabs[0],
 )
@@ -112,13 +95,13 @@ async function loadHostMetrics() {
   }
 }
 
+// 面板与实例监测共用采样间隔设置。
+function startPolling(){if(timer)clearInterval(timer);timer=setInterval(()=>{loadInstances();loadHostMetrics()},Number(preferences.value.metrics_interval_seconds||5)*1000)}
+watch(()=>preferences.value.metrics_interval_seconds,startPolling)
 onMounted(() => {
   loadInstances()
   loadHostMetrics()
-  timer = setInterval(() => {
-    loadInstances()
-    loadHostMetrics()
-  }, 5000)
+  startPolling()
   updateIndicator()
   navObserver = new ResizeObserver(updateIndicator)
   if (navEl.value) navObserver.observe(navEl.value)
@@ -127,21 +110,21 @@ onMounted(() => {
 onUnmounted(() => {
   if (timer) clearInterval(timer)
   navObserver?.disconnect()
-  document.removeEventListener('click', closeMirrorMenu)
 })
 
 const summary = computed(() => [
   {
     label: 'ACTIVE INSTANCES',
-    value: String(instances.value.length).padStart(2, '0'),
+    value: String(instances.value.filter(item=>item.status==='running').length).padStart(2, '0'),
     note: t('summaryNoteInstances'),
   },
   { label: 'DEPLOYMENT MODE', value: 'JAR', note: t('summaryNoteDeploy') },
-  { label: 'SESSION', value: '24', note: t('summaryNoteSession') },
+  { label: 'SESSION', value: String(preferences.value.session_hours||24), note: t('summaryNoteSession') },
 ])
 </script>
 
 <template>
+  <div class="min-h-screen">
   <DashboardBackground />
   <main class="relative z-10 mx-auto max-w-7xl px-8 py-14" :class="{ 'dashboard-enter': enteringFromLogin }">
     <header class="border-b border-border pb-8">
@@ -203,6 +186,7 @@ const summary = computed(() => [
       </div>
     </div>
 
+    <LoginAlert/>
     <Transition name="dashboard-panel" mode="out-in">
       <section v-if="activeTab === 'dashboard'" key="dashboard" class="mt-10 space-y-6">
         <div class="grid gap-8 md:grid-cols-3">
@@ -315,59 +299,12 @@ const summary = computed(() => [
         </div>
       </section>
 
-      <section v-else-if="activeTab === 'settings' && activeSettings === 'system'" key="settings-system" class="mt-10">
-        <AtmosphereCard :interactive="false">
-          <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ DOWNLOAD SOURCE</p>
-          <h2 class="mt-3 font-serif text-2xl text-text-primary">{{ t('downloadSourceTitle') }}</h2>
-          <p class="mt-2 text-xs text-text-secondary">{{ t('downloadSourceHint') }}</p>
-          <div class="mt-8 max-w-2xl space-y-6">
-            <div class="block text-xs text-text-secondary">
-              <span>{{ t('mirrorLabel') }}</span>
-              <div ref="mirrorMenu" class="relative mt-2">
-                <button
-                  type="button"
-                  class="mirror-trigger flex w-full items-center justify-between border border-border bg-background/50 px-4 py-3 text-left font-mono text-sm text-text-primary outline-none hover:border-brand focus:border-brand"
-                  @click="mirrorOpen = !mirrorOpen"
-                  @keydown.esc="mirrorOpen = false"
-                >
-                  {{ currentMirrorLabel }}
-                  <span class="text-text-secondary" aria-hidden="true">▾</span>
-                </button>
-                <Transition name="dashboard-panel">
-                  <div
-                    v-if="mirrorOpen"
-                    class="absolute top-full right-0 left-0 z-20 mt-1 border border-border bg-surface p-1 shadow-2xl"
-                  >
-                    <button
-                      v-for="option in mirrorOptions"
-                      :key="option.value"
-                      type="button"
-                      class="block w-full px-3 py-2 text-left font-mono text-sm"
-                      :class="
-                        mirrorSource === option.value
-                          ? 'text-brand'
-                          : 'text-text-secondary hover:bg-background hover:text-text-primary'
-                      "
-                      @click="chooseMirror(option.value)"
-                    >
-                      {{ option.label }}
-                    </button>
-                  </div>
-                </Transition>
-              </div>
-            </div>
-            <label class="block text-xs text-text-secondary">
-              {{ t('customMirrorLabel') }}
-              <input
-                v-model="customMirror"
-                type="text"
-                :placeholder="t('customMirrorPlaceholder')"
-                class="mt-2 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm text-text-primary outline-none placeholder:text-text-secondary placeholder:opacity-50 focus:border-brand"
-              />
-            </label>
-          </div>
-        </AtmosphereCard>
+      <section v-else-if="activeTab === 'settings' && (activeSettings === 'system' || activeSettings === 'basic')" :key="'settings-'+activeSettings" class="mt-10">
+        <PanelPreferences :section="activeSettings" />
+        <BatchOperations v-if="activeSettings==='system'" class="mt-6"/>
       </section>
+      <section v-else-if="activeTab === 'users'" key="users" class="mt-10"><UserManagement /></section>
+      <section v-else-if="activeTab==='settings'&&activeSettings==='schedule'" key="schedule" class="mt-10"><ScheduleManager/></section>
 
       <section v-else-if="placeholder" :key="activeTab" class="mt-10">
         <AtmosphereCard class="dashboard-card py-32 text-center">
@@ -378,6 +315,7 @@ const summary = computed(() => [
       </section>
     </Transition>
   </main>
+  </div>
 </template>
 
 <style scoped>

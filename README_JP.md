@@ -58,6 +58,7 @@ ATMOSPHERE-PANEL は、Web ベースの Minecraft サーバー管理パネルで
 リポジトリをクローンします
   ```bash
   git clone https://github.com/MiryexOvO/ATMOSPHERE-Panel.git
+cd ATMOSPHERE-Panel
   ```
 
 ## フロントエンド開発（[Nuxt 4.6.2](https://nuxt.com/docs/getting-started/introduction)）
@@ -87,27 +88,34 @@ pnpm preview
 
 ### Linux ワンクリックデプロイ（推奨）
 
+Ubuntu 24.04+、Debian 12+、または systemd と Python 3.11+ を備えた dnf 系環境を推奨。専用ユーザー、検証済み Node.js / Java 21、Nuxt ビルド、Nginx を設定します。
+
 ```bash
-# Debian / Ubuntu
-apt update && sudo apt install -y wget
-
-# Red Hat / Fedora
-yum install -y wget
-
-# Arch Linux
-pacman -Syu --noconfirm wget
-
-# インストールスクリプトのダウンロード
-wget -qO install.sh https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh
-
-# ミラーサイトもご利用いただけます
-wget -qO install.sh https://gh-proxy.com/https://raw.githubusercontent.com/Miryex0v0/ATMOSPHERE-Panel/main/install.sh
-
-# 権限を付与してインストールを実行
-bash install.sh
+# Debian / Ubuntu。Fedora では sudo dnf install -y curl を使用
+sudo apt-get update && sudo apt-get install -y curl
+curl -fL --retry 3 https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh -o /tmp/atmosphere-install.sh
+sudo bash /tmp/atmosphere-install.sh
 ```
 
-スクリプトはインストールパスとポートを対話形式で確認し、依存関係、Python 仮想環境、Nuxt のビルド、systemd への登録を自動的に完了します。
+変更なしのプレビューと非対話インストール:
+
+```bash
+bash /tmp/atmosphere-install.sh --plan --no-color
+sudo bash /tmp/atmosphere-install.sh --yes --dir /opt/ATMOSPHERE-Panel --port 5173 --backend-port 27777 --internal-port 3000 --host 127.0.0.1
+```
+
+公開入口は `http://SERVER:5173`。内部 Web (3000) と API (27777) はループバックのみで待機します。ゲーム用ポートも開放してください。Bedrock は IPv4 / IPv6 UDP を別々に使用します。データは標準で `/opt/mc-panel`、DB は `backend/app/panel.sqlite3` に保存。`ATMOSPHERE_DATA_DIR` / `ATMOSPHERE_DB_PATH` で変更できます。
+
+既存データを保持し、ソースに未コミット変更があれば上書きせず停止します。初回資格情報は `sudo journalctl -u atmosphere-panel --no-pager`、インストール詳細は表示された `/tmp/atmosphere-install.*.log` で確認できます。
+
+```bash
+sudo atmosphere status   # 状態
+sudo atmosphere logs     # ログ追跡
+sudo atmosphere restart  # パネル再起動
+sudo atmosphere stop     # パネル停止
+```
+
+Java、アーカイブ取込、公式 BDS、MCDReforged に対応。BDS は対応する Windows / Linux x86_64 が必要。MCDR は個別の `.mcdr-venv` と `mcdr_plugins` を使用。最終確認と準備完了後にインスタンスを登録し、手動で起動します。
 
 ### Linux 手動デプロイ
 
@@ -125,7 +133,8 @@ source .venv/bin/activate  # Windows ユーザーは .venv\Scripts\activate を�
 pip install -r requirements.txt
 
 # 5. 開発サーバーを起動
-uvicorn app.main:app --host 0.0.0.0 --port 27777 --reload
+export ATMOSPHERE_DATA_DIR="$PWD/data"
+python -m app.launcher --host 0.0.0.0 --port 27777
 ```
 
 ### Windows
