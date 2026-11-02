@@ -4,7 +4,7 @@ import RouteSeam from '~/components/ui/RouteSeam.vue'
 const colorMode = useColorMode()
 const defaults = {
   dark: { textPrimary: '#e9dfc6', textSecondary: '#a4aaa3', surface: '#1c252d', background: '#11151b' },
-  light: { textPrimary: '#17233a', textSecondary: '#59636b', surface: '#fffdf7', background: '#e9e4d8' },
+  light: { textPrimary: '#27313b', textSecondary: '#626e78', surface: '#ffffff', background: '#f1f4f6' },
 }
 function applyTheme(colors: typeof defaults.dark) {
   const root = document.documentElement

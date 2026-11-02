@@ -1,14 +1,28 @@
 <script setup lang="ts">
+import WorkspaceBackground from '~/components/ui/WorkspaceBackground.vue'
 import Console from '~/components/instance/Console.vue'
 import Monitor from '~/components/instance/Monitor.vue'
 import FileManager from '~/components/instance/FileManager.vue'
 import Backups from '~/components/instance/Backups.vue'
+import InstanceSettings from '~/components/instance/InstanceSettings.vue'
+import PlayerManager from '~/components/instance/PlayerManager.vue'
 definePageMeta({ middleware: 'auth' })
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const tr=usePanelText()
 const route = useRoute()
 const instanceId = String(route.params.id)
 const instance = ref<import('~/types').InstanceData | null>(null)
 const activeTab = ref('console')
+const tabKeys:Record<string,string>={console:'tabConsole',monitor:'tabMonitor',files:'tabFiles',backups:'tabBackups',settings:'tabInstanceSettings'}
+const tabNav=ref<HTMLElement|null>(null)
+const tabIndicator=ref({left:'0px',width:'0px'})
+let tabObserver:ResizeObserver|undefined
+// 高亮线跟随真实文字宽度与语言变化。
+function updateTabIndicator(){
+ const button=tabNav.value?.querySelector<HTMLElement>(`[data-instance-tab="${activeTab.value}"]`)
+ if(button)tabIndicator.value={left:button.offsetLeft+'px',width:button.offsetWidth+'px'}
+}
+watch([activeTab,locale],()=>nextTick(updateTabIndicator))
 let timer: ReturnType<typeof setInterval> | undefined
 const { request, getErrorMessage } = useApi()
 const toast = ref<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -22,25 +36,6 @@ async function deleteInstance() {
     showToast('error', getErrorMessage(error, '实例删除失败'))
   }
 }
-const settings = reactive({
-  name: '',
-  instance_path: '',
-  java_version: '21',
-  jar_name: 'server.jar',
-  jvm_args: '',
-  port: 0,
-  memory_mb: 4096,
-  memory_unit: 'MB',
-  rcon_enabled: true,
-  rcon_port: 25575,
-  rcon_password: '',
-  auto_restart: false,
-  ignore_eula: false,
-  server_properties: '',
-})
-const settingsNav = ref('instance')
-const settingsLoaded = ref(false)
-
 function showToast(type: 'success' | 'error', message: string) {
   toast.value = { type, message }
   window.setTimeout(() => {
@@ -48,51 +43,35 @@ function showToast(type: 'success' | 'error', message: string) {
   }, 3500)
 }
 
-async function loadSettings() {
-  try {
-    const response = await request<{ settings: typeof settings }>(
-      '/api/instances/' + encodeURIComponent(instanceId) + '/settings',
-    )
-    Object.assign(settings, response.settings)
-    settingsLoaded.value = true
-  } catch (error: unknown) {
-    showToast('error', getErrorMessage(error, '设置加载失败'))
-  }
-}
-
-async function saveSettings() {
-  try {
-    const response = await request<{ restart_required?: boolean }>(
-      '/api/instances/' + encodeURIComponent(instanceId) + '/settings',
-      { method: 'PUT', body: settings },
-    )
-    showToast('success', response.restart_required ? '配置已保存，内存修改需重启实例生效' : '配置已保存')
-    await load()
-  } catch (error: unknown) {
-    showToast('error', getErrorMessage(error, '配置保存失败'))
-  }
-}
 async function load() {
   instance.value = await request<import('~/types').InstanceData>('/api/instances/' + encodeURIComponent(instanceId))
 }
+const powerBusy = ref(false)
 async function power(action: 'start' | 'stop' | 'restart') {
+  if (powerBusy.value) return
+  powerBusy.value = true
   try {
     await request('/api/instances/' + encodeURIComponent(instanceId) + '/power', { method: 'POST', body: { action } })
     await load()
   } catch (error: unknown) {
-    console.error(getErrorMessage(error, '电源操作失败'))
-  }
+    showToast('error', getErrorMessage(error, t('instancePowerError')))
+  } finally { powerBusy.value = false }
 }
 onMounted(() => {
   load()
-  loadSettings()
+  nextTick(updateTabIndicator)
+  tabObserver=new ResizeObserver(updateTabIndicator)
+  if(tabNav.value)tabObserver.observe(tabNav.value)
   timer = setInterval(load, 10000)
 })
 onUnmounted(() => {
   if (timer) clearInterval(timer)
+  tabObserver?.disconnect()
 })
 </script>
 <template>
+  <div class="min-h-screen">
+  <WorkspaceBackground/>
   <main class="relative z-10 mx-auto max-w-7xl px-8 py-12">
     <header class="flex flex-wrap items-end justify-between gap-6 border-b border-border pb-7">
       <div>
@@ -108,9 +87,11 @@ onUnmounted(() => {
           :key="action"
           type="button"
           class="border border-border px-4 py-2 font-mono text-[10px] text-text-secondary uppercase hover:border-brand hover:text-brand"
+          :disabled="powerBusy || instance?.status === 'deploying'"
+          :aria-busy="powerBusy"
           @click="power(action as 'start' | 'stop' | 'restart')"
         >
-          {{ action }}
+          {{ t(action === 'start' ? 'instanceStart' : action === 'stop' ? 'instanceStop' : 'instanceRestart') }}
         </button>
         <button
           type="button"
@@ -151,21 +132,23 @@ onUnmounted(() => {
         </div>
       </AtmosphereCard>
     </div>
-    <nav class="mt-8 flex flex-wrap gap-6 border-b border-border font-mono text-xs">
+    <nav ref="tabNav" class="relative mt-8 flex flex-wrap gap-6 border-b border-border font-mono text-xs">
       <button
-        v-for="tab in ['console', 'monitor', 'files', 'backups', 'settings']"
+        v-for="tab in ['console', 'monitor', 'players', 'files', 'backups', 'settings']"
         :key="tab"
+        :data-instance-tab="tab"
         type="button"
-        class="border-b-2 pb-3"
+        class="pb-3 uppercase tracking-wider transition-colors duration-300"
         :class="
           activeTab === tab
-            ? 'border-brand text-text-primary'
-            : 'border-transparent text-text-secondary hover:text-text-primary'
+            ? 'text-brand'
+            : 'text-text-secondary hover:text-text-primary'
         "
         @click="activeTab = tab"
       >
-        {{ tab }}
+        {{ tab==='players'?tr('玩家管理','PLAYERS','プレイヤー'):t(tabKeys[tab]!) }}
       </button>
+      <span aria-hidden="true" class="instance-tab-indicator" :style="tabIndicator" />
     </nav>
     <section class="mt-8">
       <Console v-if="activeTab === 'console'" :instance-id="instanceId" :status="instance?.status" /><Monitor
@@ -175,151 +158,8 @@ onUnmounted(() => {
         v-else-if="activeTab === 'backups'"
         :instance-id="instanceId"
       />
-      <div v-else class="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <AtmosphereCard>
-          <nav class="space-y-2" aria-label="设置分类">
-            <p class="font-mono text-[10px] tracking-[0.2em] text-text-secondary">/ CONFIGURATION</p>
-            <button
-              type="button"
-              class="flex w-full items-center justify-between px-4 py-3 text-left font-mono text-xs"
-              :class="
-                settingsNav === 'instance'
-                  ? 'border-brand text-text-primary'
-                  : 'border-transparent text-text-secondary hover:text-text-primary'
-              "
-              @click="settingsNav = 'instance'"
-            >
-              实例设置 <span>→</span>
-            </button>
-            <button
-              type="button"
-              class="flex w-full items-center justify-between px-4 py-3 text-left font-mono text-xs"
-              :class="
-                settingsNav === 'properties'
-                  ? 'border-brand text-text-primary'
-                  : 'border-transparent text-text-secondary hover:text-text-primary'
-              "
-              @click="settingsNav = 'properties'"
-            >
-              服务端属性 <span>→</span>
-            </button>
-          </nav>
-        </AtmosphereCard>
-        <AtmosphereCard>
-          <div class="settings-panel">
-            <div class="settings-slot" :class="{ 'is-active': settingsNav === 'instance' }">
-              <div class="settings-clip">
-                <form :inert="settingsNav !== 'instance'" class="space-y-6" @submit.prevent="saveSettings">
-                  <div>
-                    <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ INSTANCE SETTINGS</p>
-                    <h2 class="mt-3 font-serif text-2xl text-text-primary">实例设置</h2>
-                  </div>
-                  <div class="grid gap-5 md:grid-cols-2">
-                    <label class="space-y-2"
-                      ><span class="font-mono text-xs text-text-secondary">实例名称</span
-                      ><input
-                        v-model="settings.name"
-                        required
-                        class="w-full border border-border bg-background px-3 py-2 text-text-primary outline-none focus:border-brand"
-                    /></label>
-                    <label class="space-y-2"
-                      ><span class="font-mono text-xs text-text-secondary">服务端端口</span
-                      ><input
-                        v-model.number="settings.port"
-                        type="number"
-                        min="1"
-                        max="65535"
-                        required
-                        class="w-full border border-border bg-background px-3 py-2 text-text-primary outline-none focus:border-brand"
-                    /></label>
-                    <label class="space-y-2"
-                      ><span class="font-mono text-xs text-text-secondary">内存分配 (MB)</span
-                      ><input
-                        v-model.number="settings.memory_mb"
-                        type="number"
-                        min="512"
-                        required
-                        class="w-full border border-border bg-background px-3 py-2 text-text-primary outline-none focus:border-brand"
-                      /><span class="block text-xs text-text-secondary">修改后需重启实例生效</span></label
-                    >
-                    <label class="space-y-2"
-                      ><span class="font-mono text-xs text-text-secondary">RCON 端口</span
-                      ><input
-                        v-model.number="settings.rcon_port"
-                        type="number"
-                        min="1"
-                        max="65535"
-                        required
-                        class="w-full border border-border bg-background px-3 py-2 text-text-primary outline-none focus:border-brand"
-                    /></label>
-                    <label class="space-y-2 md:col-span-2"
-                      ><span class="font-mono text-xs text-text-secondary">RCON 密码</span
-                      ><input
-                        v-model="settings.rcon_password"
-                        type="password"
-                        required
-                        class="w-full border border-border bg-background px-3 py-2 text-text-primary outline-none focus:border-brand"
-                    /></label>
-                  </div>
-                  <div class="grid gap-4 pt-6 md:grid-cols-3">
-                    <label
-                      class="flex items-center justify-between border border-border bg-background px-4 py-3 text-xs text-text-secondary"
-                      >RCON 通讯模式 <input v-model="settings.rcon_enabled" type="checkbox" class="accent-brand"
-                    /></label>
-                    <label
-                      class="flex items-center justify-between border border-border bg-background px-4 py-3 text-xs text-text-secondary"
-                      >自动重启 <input v-model="settings.auto_restart" type="checkbox" class="accent-brand"
-                    /></label>
-                    <label
-                      class="flex items-center justify-between border border-border bg-background px-4 py-3 text-xs text-text-secondary"
-                      >忽略 EULA <input v-model="settings.ignore_eula" type="checkbox" class="accent-brand"
-                    /></label>
-                  </div>
-                  <label v-if="settings.rcon_enabled" class="block space-y-2"
-                    ><span class="font-mono text-xs text-text-secondary">RCON 密码</span
-                    ><input
-                      v-model="settings.rcon_password"
-                      type="password"
-                      required
-                      class="w-full border border-border bg-background px-3 py-2 text-text-primary outline-none focus:border-brand"
-                  /></label>
-                  <button
-                    type="submit"
-                    :disabled="!settingsLoaded"
-                    class="border border-border px-5 py-3 font-mono text-xs tracking-[0.14em] text-text-primary transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    [ SAVE ]
-                  </button>
-                </form>
-              </div>
-            </div>
-            <div class="settings-slot" :class="{ 'is-active': settingsNav === 'properties' }">
-              <div class="settings-clip">
-                <form :inert="settingsNav !== 'properties'" class="space-y-6" @submit.prevent="saveSettings">
-                  <div class="flex items-start justify-between pb-5">
-                    <div>
-                      <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ SERVER.PROPERTIES</p>
-                      <h2 class="mt-3 font-serif text-2xl text-text-primary">服务端属性</h2>
-                    </div>
-                    <button
-                      type="submit"
-                      class="border border-border px-4 py-2 font-mono text-[10px] text-text-primary hover:border-brand hover:text-brand"
-                    >
-                      [ SAVE ]
-                    </button>
-                  </div>
-                  <textarea
-                    v-model="settings.server_properties"
-                    rows="22"
-                    spellcheck="false"
-                    class="w-full resize-y border border-border bg-background p-4 font-mono text-xs leading-6 text-text-primary outline-none focus:border-brand"
-                  />
-                </form>
-              </div>
-            </div>
-          </div>
-        </AtmosphereCard>
-      </div>
+      <PlayerManager v-else-if="activeTab==='players'" :instance-id="instanceId"/>
+      <InstanceSettings v-else :instance-id="instanceId" :status="instance?.status" @saved="load" />
       <div
         v-if="toast"
         class="fixed right-6 bottom-6 z-50 border border-border px-5 py-3 font-mono text-xs text-text-primary backdrop-blur-md"
@@ -328,43 +168,19 @@ onUnmounted(() => {
       </div>
     </section>
     <div class="mt-10">
-      <NuxtLink to="/dashboard" class="font-mono text-sm tracking-[0.18em] text-text-secondary hover:text-brand">
+      <a href="/dashboard" class="font-mono text-sm tracking-[0.18em] text-text-secondary hover:text-brand">
         ← {{ t('backToControlRoom') }}
-      </NuxtLink>
+      </a>
     </div>
   </main>
+  </div>
 </template>
 
 <style scoped>
-.settings-panel {
-  display: grid;
-}
-/* 两个子分类共用容器：收起的一行高度为 0，切换时两行同时收缩/展开，容器高度平滑变化 */
-.settings-slot {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 380ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.settings-slot.is-active {
-  grid-template-rows: 1fr;
-}
-.settings-clip {
-  min-height: 0;
-  overflow: hidden;
-}
-/* 收起时内容淡出上移，展开时稍作延迟后淡入，视觉上先撑开容器再出现内容 */
-.settings-slot form {
-  opacity: 0;
-  transform: translateY(8px);
-  transition:
-    opacity 180ms ease,
-    transform 220ms ease;
-}
-.settings-slot.is-active form {
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 280ms ease 80ms,
-    transform 360ms cubic-bezier(0.22, 1, 0.36, 1) 80ms;
+.instance-tab-indicator { position:absolute; bottom:-1px; height:2px; background:var(--brand); box-shadow:0 0 10px color-mix(in srgb,var(--brand) 20%,transparent); transition:left 320ms cubic-bezier(.22,1,.36,1),width 320ms cubic-bezier(.22,1,.36,1); pointer-events:none; }
+/* 保留样式入口，兼容开发环境的旧 HMR 引用。 */
+button[aria-busy='true'] {
+  cursor: wait;
+  opacity: 0.5;
 }
 </style>

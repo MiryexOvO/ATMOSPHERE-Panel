@@ -31,6 +31,8 @@ def is_special_or_unsafe(mode: int) -> bool:
 def extract_zip(archive: Path, destination: Path) -> int:
     count = 0
     with zipfile.ZipFile(archive) as source:
+        if sum(info.file_size for info in source.infolist()) > 10 * 1024 ** 3:
+            raise ValueError('解压后超过 10GB 限制')
         for info in source.infolist():
             count += 1
             if count > MAX_MEMBERS:
@@ -52,8 +54,11 @@ def extract_zip(archive: Path, destination: Path) -> int:
 
 def extract_tar_gz(archive: Path, destination: Path) -> int:
     count = 0
+    expanded = 0
     with tarfile.open(archive, "r:gz") as source:
         for member in source:
+            expanded += member.size
+            if expanded > 10 * 1024 ** 3: raise ValueError('解压后超过 10GB 限制')
             count += 1
             if count > MAX_MEMBERS:
                 raise ValueError("归档文件包含过多条目")
@@ -87,6 +92,12 @@ def extract_archive(archive: Path, destination: Path) -> int:
 def find_core_candidates(root: Path) -> list[dict]:
     candidates: list[dict] = []
     for path in root.rglob("*"):
+        # Forge 的真实启动目标在 libraries 中，优先识别。
+        args_name = 'win_args.txt' if os.name == 'nt' else 'unix_args.txt'
+        relative_path = path.relative_to(root)
+        if path.is_file() and path.name == args_name and 'libraries' in relative_path.parts and any(part in {'minecraftforge','neoforged'} for part in relative_path.parts):
+            candidates.append({'path':'@' + relative_path.as_posix(),'kind':'args','size':path.stat().st_size,'score':100,'recommended':False})
+            continue
         if not path.is_file() or any(part.lower() in IGNORED_DIRS for part in path.relative_to(root).parts[:-1]):
             continue
         relative = path.relative_to(root).as_posix()
@@ -98,7 +109,10 @@ def find_core_candidates(root: Path) -> list[dict]:
             candidates.append({"path": relative, "kind": "jar", "size": path.stat().st_size, "score": score, "recommended": False})
     if candidates:
         scripts = [item for item in candidates if item["kind"] == "script"]
-        if scripts:
+        runnable = [item for item in candidates if item["kind"] in {"jar", "args"}]
+        if runnable:
+            max(runnable, key=lambda item: item.get("score", 0))["recommended"] = True
+        elif scripts:
             for item in scripts:
                 item["recommended"] = True
         else:

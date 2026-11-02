@@ -58,6 +58,7 @@ The project consists of two parts:
 Clone the repository
   ```bash
   git clone https://github.com/MiryexOvO/ATMOSPHERE-Panel.git
+cd ATMOSPHERE-Panel
   ```
 
 ## Frontend Development ([Nuxt 4.6.2](https://nuxt.com/docs/getting-started/introduction))
@@ -88,27 +89,34 @@ On the first startup, the terminal prints the 20-character initial password only
 
 ### One-click Linux Deployment (Recommended)
 
+Use Ubuntu 24.04+, Debian 12+, or a dnf distribution with systemd and Python 3.11+. The installer provisions a dedicated service account, verifies Node.js / Java 21 downloads, builds Nuxt and configures Nginx.
+
 ```bash
-# Debian / Ubuntu
-apt update && sudo apt install -y wget
-
-# Red Hat / Fedora
-yum install -y wget
-
-# Arch Linux
-pacman -Syu --noconfirm wget
-
-# Download the installation script
-wget -qO install.sh https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh
-
-# You can also use a mirror
-wget -qO install.sh https://gh-proxy.com/https://raw.githubusercontent.com/Miryex0v0/ATMOSPHERE-Panel/main/install.sh
-
-# Grant permissions and run the installation
-bash install.sh
+# Debian / Ubuntu; on Fedora use: sudo dnf install -y curl
+sudo apt-get update && sudo apt-get install -y curl
+curl -fL --retry 3 https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh -o /tmp/atmosphere-install.sh
+sudo bash /tmp/atmosphere-install.sh
 ```
 
-The script interactively asks for the installation path and port, then automatically completes dependency installation, Python virtual environment creation, Nuxt build, and systemd registration.
+Preview without changes, or configure a noninteractive installation:
+
+```bash
+bash /tmp/atmosphere-install.sh --plan --no-color
+sudo bash /tmp/atmosphere-install.sh --yes --dir /opt/ATMOSPHERE-Panel --port 5173 --backend-port 27777 --internal-port 3000 --host 127.0.0.1
+```
+
+Open `http://SERVER:5173`. Internal Web (3000) and API (27777) bind to loopback. Open the public panel port and each game port; Bedrock uses separate IPv4 / IPv6 UDP ports. Runtime data defaults to `/opt/mc-panel`; the database remains at `backend/app/panel.sqlite3`. `ATMOSPHERE_DATA_DIR` and `ATMOSPHERE_DB_PATH` can override these paths.
+
+Existing data is preserved. Uncommitted source changes stop upgrades rather than being overwritten. Initial credentials appear only during first initialization: `sudo journalctl -u atmosphere-panel --no-pager`. Installation errors are saved in the displayed `/tmp/atmosphere-install.*.log` file.
+
+```bash
+sudo atmosphere status   # Service status
+sudo atmosphere logs     # Follow backend logs
+sudo atmosphere restart  # Restart panel services
+sudo atmosphere stop     # Stop panel services
+```
+
+Supported modes: Java, archive imports, official BDS and MCDReforged. BDS needs an officially supported Windows / Linux x86_64 host. MCDR uses an instance-local `.mcdr-venv` and `mcdr_plugins`. Instances appear only after final confirmation and successful preparation, and are started manually.
 
 ### Manual Linux Deployment
 
@@ -126,7 +134,8 @@ source .venv/bin/activate  # Windows users should use: .venv\Scripts\activate
 pip install -r requirements.txt
 
 # 5. Start the development server
-uvicorn app.main:app --host 0.0.0.0 --port 27777 --reload
+export ATMOSPHERE_DATA_DIR="$PWD/data"
+python -m app.launcher --host 0.0.0.0 --port 27777
 ```
 
 ### Windows

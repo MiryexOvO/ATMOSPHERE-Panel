@@ -57,6 +57,7 @@ ATMOSPHERE-PANEL 是一个基于 Web 的 Minecraft 服务器管理面板。通�
 克隆仓库
   ```bash
   git clone https://github.com/MiryexOvO/ATMOSPHERE-Panel.git
+cd ATMOSPHERE-Panel
   ```
 
 ## 前端开发（[Nuxt 4.6.2](https://nuxt.com/docs/getting-started/introduction)）
@@ -78,7 +79,7 @@ pnpm build
 pnpm preview
 ```
 
-默认面板端口：`27777` 可配置项  
+开发 Web 端口：`5173`；后端 API：`27777`
 访问 `http://127.0.0.1:5173`。当前 Nuxt 使用客户端渲染，API 通过 `/api` 代理到 FastAPI `27777`  
 首次启动时，终端只打印一次 20 位初始密码
 
@@ -86,27 +87,36 @@ pnpm preview
 
 ### Linux 一键部署（推荐）
 
+推荐 Ubuntu 24.04+、Debian 12+ 或使用 dnf 的发行版；需要 systemd、Python 3.11+。安装器使用独立服务账号，安装与校验 Node.js、Java 21，构建前端并配置 Nginx。实例不会在安装时自动创建或启动。
+
 ```bash
-# Debian / Ubuntu
-apt update && sudo apt install -y wget
-
-# Red Hat / Fedora
-yum install -y wget
-
-# Arch Linux
-pacman -Syu --noconfirm wget
-
-# 下载安装脚本
-wget -qO install.sh https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh
-
-# 你也可以使用镜像
-wget -qO install.sh https://gh-proxy.com/https://raw.githubusercontent.com/Miryex0v0/ATMOSPHERE-Panel/main/install.sh
-
-# 赋予权限并执行安装
-bash install.sh
+# Debian / Ubuntu：先准备下载工具
+sudo apt-get update && sudo apt-get install -y curl
+# 下载当前分支的安装器，再执行交互向导
+curl -fL --retry 3 https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh -o /tmp/atmosphere-install.sh
+sudo bash /tmp/atmosphere-install.sh
 ```
 
-脚本会交互式询问安装路径和端口，自动完成依赖、Python 虚拟环境、Nuxt 构建和 systemd 注册
+Fedora 等 dnf 系统可先执行 `sudo dnf install -y curl`，然后使用同一下载与安装命令。仅预览、不更改系统：
+
+```bash
+bash /tmp/atmosphere-install.sh --plan --no-color
+# 无交互安装示例；三个端口必须不同
+sudo bash /tmp/atmosphere-install.sh --yes --dir /opt/ATMOSPHERE-Panel --port 5173 --backend-port 27777 --internal-port 3000 --host 127.0.0.1
+```
+
+默认访问 `http://服务器地址:5173`；3000 为内部 Web 端口，27777 为内部 API，均仅监听回环地址。仅需放行面板入口及各实例的游戏端口；基岩版需要 UDP IPv4 / IPv6 端口。实例数据默认在 `/opt/mc-panel`，数据库保留在 `backend/app/panel.sqlite3`；可通过 `ATMOSPHERE_DATA_DIR` / `ATMOSPHERE_DB_PATH` 指定运行路径。
+
+安装会保留已有实例和数据库，仓库有未提交修改时停止并提示，不会强制覆盖。首次密码见 `sudo atmosphere logs` 或 `sudo journalctl -u atmosphere-panel --no-pager`，请登录后修改。安装失败的详细日志位于终端提示的 `/tmp/atmosphere-install.*.log`。
+
+```bash
+sudo atmosphere status    # 查看服务状态
+sudo atmosphere logs      # 跟踪后端日志
+sudo atmosphere restart   # 重启面板服务
+sudo atmosphere stop      # 停止面板服务
+```
+
+服务端模式：Java 在线部署、整合包导入、官方 BDS、MCDReforged。BDS 仅支持官方提供的 Windows / Linux x86_64 包；MCDR 在实例内建立 `.mcdr-venv`，使用 `mcdr_plugins` 存放自身插件。所有模式均在最终确认且下载、准备完成后才显示实例，由用户手动启动。
 
 ### Linux 手动部署
 
@@ -124,7 +134,8 @@ source .venv/bin/activate  # Windows 用户请使用: .venv\Scripts\activate
 pip install -r requirements.txt
 
 # 5.启动开发服务器
-uvicorn app.main:app --host 0.0.0.0 --port 27777 --reload
+export ATMOSPHERE_DATA_DIR="$PWD/data"
+python -m app.launcher --host 0.0.0.0 --port 27777
 ```
 
 ### Windows

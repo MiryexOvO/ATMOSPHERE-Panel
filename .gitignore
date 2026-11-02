@@ -69,3 +69,18 @@ Thumbs.db
 # =========================
 coverage/
 .nyc_output/
+# 安装工具、运行快照与本地密钥
+.tools/
+.install-state/
+*.sqlite*
+*.db.bak*
+*.pem
+*.key
+*.p12
+*.pfx
+.env.*
+!.env.example
+!.env.*.example
+.codex/
+.agents/
+*.part

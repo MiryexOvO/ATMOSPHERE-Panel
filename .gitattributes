@@ -1,0 +1,2 @@
+# Linux 安装脚本在 Windows 检出时仍保留 LF。
+*.sh text eol=lf

@@ -16,8 +16,8 @@ export function useApi() {
   }
 
   const getErrorMessage = (cause: unknown, fallback = '请求失败') => {
-    const err = cause as { data?: { message?: string }; message?: string }
-    return err.data?.message || err.message || fallback
+    const err = cause as { data?: { message?: string;detail?:string|{msg:string}[] }; message?: string }
+    return err.data?.message || (typeof err.data?.detail==='string'?err.data.detail:Array.isArray(err.data?.detail)?err.data.detail.map(item=>item.msg).join('; '):'') || err.message || fallback
   }
 
   return { request, getErrorMessage }

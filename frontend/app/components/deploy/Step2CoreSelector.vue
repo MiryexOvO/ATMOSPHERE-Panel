@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import VersionWizardModal from './VersionWizardModal.vue'
 type Core = { id: string; name: string; desc: string; category: string }
-type Selection = { core: string; version: string; build: string }
+type Selection = { core: string; version: string; build: string; source?: string }
 const categories = ['插件服务端', '模组服务端', '代理服务端', '基岩服务端', '原版服务端', '混合服务端']
 const cores: Core[] = [
   { id: 'arclight', name: 'Arclight', desc: '混合端（推荐）', category: '混合服务端' },
@@ -26,9 +26,10 @@ const cores: Core[] = [
 ]
 const versions = ref<string[]>([])
 const builds = ref<Record<string, string[]>>({})
+const buildSources = ref<Record<string, string>>({})
 const loadError = ref('')
 const isLoading = ref(false)
-const { request } = useApi()
+const { request, getErrorMessage } = useApi()
 async function loadVersions(core: Core) {
   loadError.value = ''
   versions.value = []
@@ -40,7 +41,7 @@ async function loadVersions(core: Core) {
     const rawVersions = Array.isArray(response) ? response : (response.versions ?? [])
     versions.value = rawVersions.map((item) => (typeof item === 'string' ? item : (item.id ?? ''))).filter(Boolean)
   } catch (error: unknown) {
-    loadError.value = error instanceof Error ? error.message : '版本加载失败'
+    loadError.value = getErrorMessage(error, '版本加载失败')
     versions.value = []
   } finally {
     isLoading.value = false
@@ -49,16 +50,19 @@ async function loadVersions(core: Core) {
 async function loadBuilds(core: Core, version: string) {
   loadError.value = ''
   try {
-    const response = await request<{ builds?: ({ id?: string } | string)[] } | ({ id?: string } | string)[]>(
+    const response = await request<{ builds?: ({ id?: string; source?: string } | string)[] } | ({ id?: string; source?: string } | string)[]>(
       `/api/resources/cores/${core.id}/versions/${encodeURIComponent(version)}/builds`,
     )
     const rawBuilds = Array.isArray(response) ? response : (response.builds ?? [])
+    for (const item of rawBuilds) {
+      if (typeof item !== 'string' && item.id) buildSources.value[`${core.id}:${version}:${item.id}`] = item.source || 'fastmirror'
+    }
     builds.value = {
       ...builds.value,
       [version]: rawBuilds.map((item) => (typeof item === 'string' ? item : (item.id ?? ''))).filter(Boolean),
     }
   } catch (error: unknown) {
-    loadError.value = error instanceof Error ? error.message : '构建加载失败'
+    loadError.value = getErrorMessage(error, '构建加载失败')
     builds.value = { ...builds.value, [version]: [] }
   }
 }
@@ -68,6 +72,8 @@ const selected = ref<Selection | null>(null)
 const isModalOpen = ref(false)
 const filteredCores = computed(() => cores.filter((core) => core.category === activeCategory.value))
 async function openWizard(core: Core) {
+  builds.value = {}
+  buildSources.value = {}
   selectedCore.value = core
   isModalOpen.value = true
   await loadVersions(core)
@@ -75,7 +81,7 @@ async function openWizard(core: Core) {
 function handleSelection(value: Selection) {
   selected.value = value
   isModalOpen.value = false
-  emit('select', value)
+  emit('select', { ...value, source: buildSources.value[`${value.core.toLowerCase()}:${value.version}:${value.build}`] || 'fastmirror' })
 }
 const emit = defineEmits<{ select: [value: Selection] }>()
 </script>

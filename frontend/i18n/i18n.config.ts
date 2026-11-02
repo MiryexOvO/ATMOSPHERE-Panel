@@ -1,9 +1,13 @@
+import { instanceMessages } from './instance'
+import { panelMessages } from './panel'
 type Locale = 'zh' | 'en' | 'ja'
 
 // 每个文案键都必须同时提供 zh / en / ja
 type I18nMessagesSatisfiesType = Record<string, Record<Locale, () => string>>
 
 export const i18nMessages = {
+  ...instanceMessages,
+  ...panelMessages,
   authRequired: {
     zh: () => '/ 需要身份验证',
     en: () => '/ AUTHENTICATION REQUIRED',

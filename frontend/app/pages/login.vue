@@ -6,6 +6,9 @@ definePageMeta({ layout: 'auth' })
 
 const username = ref('Atmo7')
 const password = ref('')
+const verificationCode=ref('')
+const totpRequired=ref(false)
+watch(username,()=>{totpRequired.value=false;verificationCode.value=''})
 const error = ref('')
 const loading = ref(false)
 const apiOnline = ref(false)
@@ -34,9 +37,10 @@ const themeOptions = [
 function selectTheme(value: 'system' | 'dark' | 'light') {
   colorMode.preference = value
   localStorage.removeItem('custom-theme')
+  const resolved=value==='system'?(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):value
   const colors =
-    value === 'light'
-      ? { textPrimary: '#17233a', textSecondary: '#59636b', surface: '#fffdf7', background: '#e9e4d8' }
+    resolved === 'light'
+      ? { textPrimary: '#27313b', textSecondary: '#626e78', surface: '#ffffff', background: '#f1f4f6' }
       : { textPrimary: '#e9dfc6', textSecondary: '#a4aaa3', surface: '#1c252d', background: '#11151b' }
   customColors.value = colors
   for (const field of colorFields) document.documentElement.style.setProperty('--' + field.variable, colors[field.key])
@@ -84,6 +88,11 @@ onMounted(() => {
     try {
       customColors.value = JSON.parse(saved)
     } catch {}
+  } else {
+    // 登录页晚于应用挂载时，仍使用当前主题而非固定深色。
+    customColors.value=colorMode.value==='light'
+      ?{textPrimary:'#27313b',textSecondary:'#626e78',surface:'#ffffff',background:'#f1f4f6'}
+      :{textPrimary:'#e9dfc6',textSecondary:'#a4aaa3',surface:'#1c252d',background:'#11151b'}
   }
   for (const field of colorFields)
     document.documentElement.style.setProperty(`--${field.variable}`, customColors.value[field.key])
@@ -123,7 +132,7 @@ async function login() {
     await request('/api/login', {
       method: 'POST',
       timeout: 8000,
-      body: { username: username.value, password: password.value },
+      body: { username: username.value, password: password.value,code:verificationCode.value },
     })
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reducedMotion) {
@@ -162,7 +171,9 @@ async function login() {
       seam.value.phase = 'idle'
     }
   } catch (cause: unknown) {
-    const err = cause as { data?: { message?: string }; message?: string }
+    const err = cause as { data?: { message?: string;totp_required?:boolean }; message?: string }
+    // 密码验证通过后才展示二步验证，避免公开账户安全设置。
+    if(err.data?.totp_required){totpRequired.value=true;error.value=getErrorMessage(cause);await nextTick();document.getElementById('login-totp')?.focus();return}
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (!reducedMotion && apiOnline.value) {
       // 复用扫描激光 卡一半暂停
@@ -280,7 +291,7 @@ async function login() {
       <section class="intro">
         <span class="font-mono text-xs tracking-[.2em] text-text-secondary">{{ t('authRequired') }}</span>
         <h1 class="mt-8 font-serif text-6xl leading-[.88] font-light tracking-tight text-text-primary md:text-8xl">
-          <span class="hand-title text-text-primary">{{ t('titleEnter') }}</span
+          <span class="sf-title text-text-primary">{{ t('titleEnter') }}</span
           ><br /><em class="sf-title text-text-primary">{{ t('titleAtmosphere') }}</em>
         </h1>
         <p class="mt-10 max-w-md text-sm leading-8 text-text-secondary">{{ t('desc1') }}<br />{{ t('desc2') }}</p>
@@ -345,6 +356,8 @@ async function login() {
                     <Icon :icon="showPassword ? 'line-md:sunny-filled-loop' : 'line-md:moon-filled-loop'" width="18" />
                   </button></div
               ></label>
+              <!-- 已启用二步验证的账户填写一次性验证码。 -->
+              <label v-if="totpRequired" class="mt-6 block text-xs text-text-secondary">TOTP · {{ locale==='zh'?'验证码':locale==='ja'?'認証コード':'VERIFICATION CODE' }}<input id="login-totp" v-model="verificationCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" class="mt-2 w-full border-b border-border bg-transparent py-2 font-mono outline-none focus:border-brand"/></label>
               <p
                 class="mt-5 flex items-center gap-2 font-mono text-xs"
                 :class="apiOnline ? 'api-online' : 'api-offline'"
@@ -382,9 +395,9 @@ async function login() {
   position: relative;
   isolation: isolate;
   padding: 2rem;
-  background: rgba(0, 0, 0, 0.3);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--login-glass, rgba(0, 0, 0, 0.3));
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
   backdrop-filter: blur(16px);
   transition:
     transform 300ms ease,
@@ -399,7 +412,7 @@ async function login() {
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border);
   background: transparent;
   transition:
     clip-path 320ms ease,
