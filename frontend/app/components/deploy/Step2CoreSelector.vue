@@ -50,12 +50,13 @@ async function loadVersions(core: Core) {
 async function loadBuilds(core: Core, version: string) {
   loadError.value = ''
   try {
-    const response = await request<{ builds?: ({ id?: string; source?: string } | string)[] } | ({ id?: string; source?: string } | string)[]>(
-      `/api/resources/cores/${core.id}/versions/${encodeURIComponent(version)}/builds`,
-    )
+    const response = await request<
+      { builds?: ({ id?: string; source?: string } | string)[] } | ({ id?: string; source?: string } | string)[]
+    >(`/api/resources/cores/${core.id}/versions/${encodeURIComponent(version)}/builds`)
     const rawBuilds = Array.isArray(response) ? response : (response.builds ?? [])
     for (const item of rawBuilds) {
-      if (typeof item !== 'string' && item.id) buildSources.value[`${core.id}:${version}:${item.id}`] = item.source || 'fastmirror'
+      if (typeof item !== 'string' && item.id)
+        buildSources.value[`${core.id}:${version}:${item.id}`] = item.source || 'fastmirror'
     }
     builds.value = {
       ...builds.value,
@@ -81,7 +82,10 @@ async function openWizard(core: Core) {
 function handleSelection(value: Selection) {
   selected.value = value
   isModalOpen.value = false
-  emit('select', { ...value, source: buildSources.value[`${value.core.toLowerCase()}:${value.version}:${value.build}`] || 'fastmirror' })
+  emit('select', {
+    ...value,
+    source: buildSources.value[`${value.core.toLowerCase()}:${value.version}:${value.build}`] || 'fastmirror',
+  })
 }
 const emit = defineEmits<{ select: [value: Selection] }>()
 </script>

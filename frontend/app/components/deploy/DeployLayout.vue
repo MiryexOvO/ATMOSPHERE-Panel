@@ -148,7 +148,6 @@ function handleSelection(selection: Selection) {
         >
           <div class="mb-8 flex items-start justify-between">
             <span class="font-mono text-lg font-bold text-text-primary">{{ core.name }}</span>
-
           </div>
           <p class="text-xs text-text-secondary">{{ core.desc }}</p>
         </button>
