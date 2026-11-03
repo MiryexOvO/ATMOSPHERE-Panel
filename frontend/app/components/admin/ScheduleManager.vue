@@ -108,7 +108,7 @@ onMounted(load)
     <AtmosphereCard :interactive="false"
       ><header class="flex justify-between gap-4">
         <div>
-          <p class="font-mono text-xs tracking-widest text-brand">/ SCHEDULE OPERATIONS</p>
+          <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ SCHEDULE OPERATIONS</p>
           <h2 class="mt-3 font-serif text-2xl">{{ tr('全局定时任务', 'GLOBAL SCHEDULES', 'グローバル定期タスク') }}</h2>
           <p class="mt-3 text-xs text-text-secondary">
             {{
