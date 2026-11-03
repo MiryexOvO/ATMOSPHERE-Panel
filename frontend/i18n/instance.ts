@@ -1,93 +1,264 @@
 type Locale = 'zh' | 'en' | 'ja'
-const text: Record<string, [string, string, string]> = {
-  settingsBackendOutdated: [
-    '后端仍在运行旧代码：请重启原后端终端后刷新页面。完整属性可预览，保存将在重启后启用。',
-    'The backend is running older code. Restart it in its original terminal and refresh. Properties can be previewed; saving is available after restart.',
-    'バックエンドが旧コードで動作しています。元のターミナルで再起動し、ページを更新してください。設定の表示は可能ですが、保存には再起動が必要です。',
-  ],
-  settingsInstance: ['实例设置', 'Instance settings', 'インスタンス設定'],
-  settingsProperties: ['服务端属性', 'Server properties', 'サーバープロパティ'],
-  settingsSave: ['保存设置', 'Save settings', '設定を保存'],
-  settingsSaving: ['正在保存…', 'Saving…', '保存中…'],
-  settingsLoading: ['正在加载设置…', 'Loading settings…', '設定を読み込み中…'],
-  settingsSaved: [
-    '设置已保存，下次启动生效',
-    'Saved. Applies on next start.',
-    '保存しました。次回起動時に反映されます。',
-  ],
-  settingsLoadError: ['设置加载失败', 'Could not load settings', '設定を読み込めませんでした'],
-  settingsSaveError: ['设置保存失败', 'Could not save settings', '設定を保存できませんでした'],
-  settingsStopFirst: [
-    '请先停止实例再保存。游戏进程可能在关闭时覆盖配置。',
-    'Stop the instance before saving. The server may overwrite configuration on shutdown.',
-    '保存前に停止してください。終了時にサーバーが設定を上書きする場合があります。',
-  ],
-  settingsSearch: ['搜索属性名称或配置键…', 'Search names or property keys…', '設定名・キーで検索…'],
-  settingsEmpty: ['没有匹配的属性', 'No matching properties', '一致する項目がありません'],
-  settingsPresent: [
-    '仅显示此服务端已有的属性；未知属性也会保留。',
-    'Showing properties present in this server. Additional properties are preserved.',
-    'このサーバーに存在する設定を表示します。追加の設定も保持されます。',
-  ],
-  settingsWorldHint: [
-    '种子、世界类型和生成选项主要影响新世界，不会重置已有世界。',
-    'Seed, world type and generation settings mainly affect new worlds. Existing worlds are preserved.',
-    'シード・ワールドタイプ・生成設定は主に新規ワールドに適用されます。既存のワールドは保持されます。',
-  ],
-  settingsPath: ['实例目录', 'Instance directory', 'インスタンスディレクトリ'],
-  settingsName: ['实例名称', 'Instance name', 'インスタンス名'],
-  settingsPort: ['游戏端口', 'Game port', 'ゲームポート'],
-  settingsMemory: ['最大内存（MB）', 'Maximum memory (MB)', '最大メモリ（MB）'],
-  settingsJava: ['Java 版本', 'Java version', 'Java バージョン'],
-  settingsJavaPath: ['Java 可执行文件（可选）', 'Java executable (optional)', 'Java 実行ファイル（任意）'],
-  settingsJavaHint: [
-    '留空时查找对应版本的 Java；填写完整 java.exe / java 路径。',
-    'Leave blank to find the selected Java version, or enter the full java.exe / java path.',
-    '空欄の場合は選択したバージョンを検索します。指定する場合は java.exe / java の絶対パスを入力してください。',
-  ],
+const text: Record<string, Record<Locale, () => string>> = {
+  settingsBackendOutdated: {
+    zh: () => '后端仍在运行旧代码：请重启原后端终端后刷新页面。完整属性可预览，保存将在重启后启用。',
+    en: () =>
+      'The backend is running older code. Restart it in its original terminal and refresh. Properties can be previewed; saving is available after restart.',
+    ja: () =>
+      'バックエンドが旧コードで動作しています。元のターミナルで再起動し、ページを更新してください。設定の表示は可能ですが、保存には再起動が必要です。',
+  },
+  settingsInstance: {
+    zh: () => '实例设置',
+    en: () => 'Instance settings',
+    ja: () => 'インスタンス設定',
+  },
+  settingsProperties: {
+    zh: () => '服务端属性',
+    en: () => 'Server properties',
+    ja: () => 'サーバープロパティ',
+  },
+  settingsSave: {
+    zh: () => '保存设置',
+    en: () => 'Save settings',
+    ja: () => '設定を保存',
+  },
+  settingsSaving: {
+    zh: () => '正在保存…',
+    en: () => 'Saving…',
+    ja: () => '保存中…',
+  },
+  settingsLoading: {
+    zh: () => '正在加载设置…',
+    en: () => 'Loading settings…',
+    ja: () => '設定を読み込み中…',
+  },
+  settingsSaved: {
+    zh: () => '设置已保存，下次启动生效',
+    en: () => 'Saved. Applies on next start.',
+    ja: () => '保存しました。次回起動時に反映されます。',
+  },
+  settingsLoadError: {
+    zh: () => '设置加载失败',
+    en: () => 'Could not load settings',
+    ja: () => '設定を読み込めませんでした',
+  },
+  settingsSaveError: {
+    zh: () => '设置保存失败',
+    en: () => 'Could not save settings',
+    ja: () => '設定を保存できませんでした',
+  },
+  settingsStopFirst: {
+    zh: () => '请先停止实例再保存。游戏进程可能在关闭时覆盖配置。',
+    en: () => 'Stop the instance before saving. The server may overwrite configuration on shutdown.',
+    ja: () => '保存前に停止してください。終了時にサーバーが設定を上書きする場合があります。',
+  },
+  settingsSearch: {
+    zh: () => '搜索属性名称或配置键…',
+    en: () => 'Search names or property keys…',
+    ja: () => '設定名・キーで検索…',
+  },
+  settingsEmpty: {
+    zh: () => '没有匹配的属性',
+    en: () => 'No matching properties',
+    ja: () => '一致する項目がありません',
+  },
+  settingsPresent: {
+    zh: () => '仅显示此服务端已有的属性；未知属性也会保留。',
+    en: () => 'Showing properties present in this server. Additional properties are preserved.',
+    ja: () => 'このサーバーに存在する設定を表示します。追加の設定も保持されます。',
+  },
+  settingsWorldHint: {
+    zh: () => '种子、世界类型和生成选项主要影响新世界，不会重置已有世界。',
+    en: () => 'Seed, world type and generation settings mainly affect new worlds. Existing worlds are preserved.',
+    ja: () => 'シード・ワールドタイプ・生成設定は主に新規ワールドに適用されます。既存のワールドは保持されます。',
+  },
+  settingsPath: {
+    zh: () => '实例目录',
+    en: () => 'Instance directory',
+    ja: () => 'インスタンスディレクトリ',
+  },
+  settingsName: {
+    zh: () => '实例名称',
+    en: () => 'Instance name',
+    ja: () => 'インスタンス名',
+  },
+  settingsPort: {
+    zh: () => '游戏端口',
+    en: () => 'Game port',
+    ja: () => 'ゲームポート',
+  },
+  settingsMemory: {
+    zh: () => '最大内存（MB）',
+    en: () => 'Maximum memory (MB)',
+    ja: () => '最大メモリ（MB）',
+  },
+  settingsJava: {
+    zh: () => 'Java 版本',
+    en: () => 'Java version',
+    ja: () => 'Java バージョン',
+  },
+  settingsJavaPath: {
+    zh: () => 'Java 可执行文件（可选）',
+    en: () => 'Java executable (optional)',
+    ja: () => 'Java 実行ファイル（任意）',
+  },
+  settingsJavaHint: {
+    zh: () => '留空时查找对应版本的 Java；填写完整 java.exe / java 路径。',
+    en: () => 'Leave blank to find the selected Java version, or enter the full java.exe / java path.',
+    ja: () =>
+      '空欄の場合は選択したバージョンを検索します。指定する場合は java.exe / java の絶対パスを入力してください。',
+  },
   // 避免文案中的 @ 被 i18n 识别为链接语法。
-  settingsTarget: [
-    '启动目标（JAR 或参数文件）',
-    'Launch target (JAR or argument file)',
-    '起動対象（JAR または引数ファイル）',
-  ],
-  settingsJvm: ['额外 JVM 参数', 'Additional JVM arguments', '追加 JVM 引数'],
-  settingsJvmHint: [
-    '参数按空格分隔；路径含空格时加引号。内存由上方设置管理。',
-    'Separate arguments with spaces; quote paths containing spaces. Memory is managed above.',
-    '引数は空白で区切り、空白を含むパスは引用符で囲んでください。メモリは上の項目で設定します。',
-  ],
-  settingsRcon: ['启用 RCON', 'Enable RCON', 'RCON を有効にする'],
-  settingsRconPort: ['RCON 端口', 'RCON port', 'RCON ポート'],
-  settingsRconPassword: ['RCON 密码', 'RCON password', 'RCON パスワード'],
-  settingsRestart: ['异常退出后自动重启', 'Restart after a crash', '異常終了後に自動再起動'],
-  settingsRestartHint: [
-    '异常退出最多连续重试 3 次；正常停服不会触发重启。',
-    'Retries up to 3 times after a crash. A manual stop does not trigger a restart.',
-    '異常終了時に最大3回再起動します。手動停止では再起動しません。',
-  ],
-  settingsEula: ['同意 Minecraft EULA', 'Accept the Minecraft EULA', 'Minecraft EULA に同意する'],
-  settingsOn: ['已启用', 'Enabled', '有効'],
-  settingsOff: ['已关闭', 'Disabled', '無効'],
-  settingsGroupGeneral: ['基本信息', 'General', '基本情報'],
-  settingsGroupGame: ['游戏规则', 'Gameplay', 'ゲーム設定'],
-  settingsGroupWorld: ['世界生成', 'World generation', 'ワールド生成'],
-  settingsGroupPerformance: ['性能与距离', 'Performance and distances', 'パフォーマンス・距離'],
-  settingsGroupNetwork: ['网络与访问', 'Network and access', 'ネットワーク・アクセス'],
-  settingsGroupResource: ['资源包', 'Resource pack', 'リソースパック'],
-  settingsGroupAdvanced: ['其他属性', 'Additional properties', 'その他のプロパティ'],
-  optionSurvival: ['生存', 'Survival', 'サバイバル'],
-  optionCreative: ['创造', 'Creative', 'クリエイティブ'],
-  optionAdventure: ['冒险', 'Adventure', 'アドベンチャー'],
-  optionSpectator: ['旁观', 'Spectator', 'スペクテイター'],
-  optionPeaceful: ['和平', 'Peaceful', 'ピースフル'],
-  optionEasy: ['简单', 'Easy', 'イージー'],
-  optionNormal: ['普通', 'Normal', 'ノーマル'],
-  optionHard: ['困难', 'Hard', 'ハード'],
-  instanceStart: ['启动', 'Start', '起動'],
-  instanceStop: ['停止', 'Stop', '停止'],
-  instanceRestart: ['重启', 'Restart', '再起動'],
-  instancePowerError: ['电源操作失败', 'Power action failed', '電源操作に失敗しました'],
+  settingsTarget: {
+    zh: () => '启动目标（JAR 或参数文件）',
+    en: () => 'Launch target (JAR or argument file)',
+    ja: () => '起動対象（JAR または引数ファイル）',
+  },
+  settingsJvm: {
+    zh: () => '额外 JVM 参数',
+    en: () => 'Additional JVM arguments',
+    ja: () => '追加 JVM 引数',
+  },
+  settingsJvmHint: {
+    zh: () => '参数按空格分隔；路径含空格时加引号。内存由上方设置管理。',
+    en: () => 'Separate arguments with spaces; quote paths containing spaces. Memory is managed above.',
+    ja: () => '引数は空白で区切り、空白を含むパスは引用符で囲んでください。メモリは上の項目で設定します。',
+  },
+  settingsRcon: {
+    zh: () => '启用 RCON',
+    en: () => 'Enable RCON',
+    ja: () => 'RCON を有効にする',
+  },
+  settingsRconPort: {
+    zh: () => 'RCON 端口',
+    en: () => 'RCON port',
+    ja: () => 'RCON ポート',
+  },
+  settingsRconPassword: {
+    zh: () => 'RCON 密码',
+    en: () => 'RCON password',
+    ja: () => 'RCON パスワード',
+  },
+  settingsRestart: {
+    zh: () => '异常退出后自动重启',
+    en: () => 'Restart after a crash',
+    ja: () => '異常終了後に自動再起動',
+  },
+  settingsRestartHint: {
+    zh: () => '异常退出最多连续重试 3 次；正常停服不会触发重启。',
+    en: () => 'Retries up to 3 times after a crash. A manual stop does not trigger a restart.',
+    ja: () => '異常終了時に最大3回再起動します。手動停止では再起動しません。',
+  },
+  settingsEula: {
+    zh: () => '同意 Minecraft EULA',
+    en: () => 'Accept the Minecraft EULA',
+    ja: () => 'Minecraft EULA に同意する',
+  },
+  settingsOn: {
+    zh: () => '已启用',
+    en: () => 'Enabled',
+    ja: () => '有効',
+  },
+  settingsOff: {
+    zh: () => '已关闭',
+    en: () => 'Disabled',
+    ja: () => '無効',
+  },
+  settingsGroupGeneral: {
+    zh: () => '基本信息',
+    en: () => 'General',
+    ja: () => '基本情報',
+  },
+  settingsGroupGame: {
+    zh: () => '游戏规则',
+    en: () => 'Gameplay',
+    ja: () => 'ゲーム設定',
+  },
+  settingsGroupWorld: {
+    zh: () => '世界生成',
+    en: () => 'World generation',
+    ja: () => 'ワールド生成',
+  },
+  settingsGroupPerformance: {
+    zh: () => '性能与距离',
+    en: () => 'Performance and distances',
+    ja: () => 'パフォーマンス・距離',
+  },
+  settingsGroupNetwork: {
+    zh: () => '网络与访问',
+    en: () => 'Network and access',
+    ja: () => 'ネットワーク・アクセス',
+  },
+  settingsGroupResource: {
+    zh: () => '资源包',
+    en: () => 'Resource pack',
+    ja: () => 'リソースパック',
+  },
+  settingsGroupAdvanced: {
+    zh: () => '其他属性',
+    en: () => 'Additional properties',
+    ja: () => 'その他のプロパティ',
+  },
+  optionSurvival: {
+    zh: () => '生存',
+    en: () => 'Survival',
+    ja: () => 'サバイバル',
+  },
+  optionCreative: {
+    zh: () => '创造',
+    en: () => 'Creative',
+    ja: () => 'クリエイティブ',
+  },
+  optionAdventure: {
+    zh: () => '冒险',
+    en: () => 'Adventure',
+    ja: () => 'アドベンチャー',
+  },
+  optionSpectator: {
+    zh: () => '旁观',
+    en: () => 'Spectator',
+    ja: () => 'スペクテイター',
+  },
+  optionPeaceful: {
+    zh: () => '和平',
+    en: () => 'Peaceful',
+    ja: () => 'ピースフル',
+  },
+  optionEasy: {
+    zh: () => '简单',
+    en: () => 'Easy',
+    ja: () => 'イージー',
+  },
+  optionNormal: {
+    zh: () => '普通',
+    en: () => 'Normal',
+    ja: () => 'ノーマル',
+  },
+  optionHard: {
+    zh: () => '困难',
+    en: () => 'Hard',
+    ja: () => 'ハード',
+  },
+  instanceStart: {
+    zh: () => '启动',
+    en: () => 'Start',
+    ja: () => '起動',
+  },
+  instanceStop: {
+    zh: () => '停止',
+    en: () => 'Stop',
+    ja: () => '停止',
+  },
+  instanceRestart: {
+    zh: () => '重启',
+    en: () => 'Restart',
+    ja: () => '再起動',
+  },
+  instancePowerError: {
+    zh: () => '电源操作失败',
+    en: () => 'Power action failed',
+    ja: () => '電源操作に失敗しました',
+  },
 }
 
 type Definition = [string, string, string, string, string, string?, number?, number?]
@@ -295,7 +466,7 @@ const booleanKeys = new Set([
 ])
 export const propertyFields = definitions.map(([key, group, zh, en, ja, type, min, max]) => {
   const label = 'property_' + key.replace(/[.-]/g, '_')
-  text[label] = [zh, en, ja]
+  text[label] = { zh: () => zh, en: () => en, ja: () => ja }
   return {
     key,
     group: 'settingsGroup' + group,
@@ -306,6 +477,4 @@ export const propertyFields = definitions.map(([key, group, zh, en, ja, type, mi
   }
 })
 
-export const instanceMessages = Object.fromEntries(
-  Object.entries(text).map(([key, values]) => [key, { zh: () => values[0], en: () => values[1], ja: () => values[2] }]),
-) as Record<string, Record<Locale, () => string>>
+export const instanceMessages: Record<string, Record<Locale, () => string>> = text

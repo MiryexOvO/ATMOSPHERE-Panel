@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LocalScrollRuler from '~/components/ui/LocalScrollRuler.vue'
 const tr = usePanelText(),
   { request, getErrorMessage } = useApi()
 const enabled = ref(false),
@@ -11,6 +12,7 @@ const enabled = ref(false),
 const events = ref<
   { id: number; ip: string; network: string; success: boolean; unusual: boolean; created_at: number }[]
 >([])
+const eventsViewport = ref<HTMLElement | null>(null)
 async function load() {
   try {
     const data = await request<{ totp_enabled: boolean; events: typeof events.value }>('/api/account/security')
@@ -110,19 +112,25 @@ onMounted(load)
         </button>
       </div>
       <p v-if="message" role="status" class="text-sm text-brand">{{ message }}</p>
-      <div class="max-h-64 overflow-y-auto border-t border-border pt-3">
-        <div
-          v-for="event in events"
-          :key="event.id"
-          class="flex flex-wrap justify-between gap-3 border-b border-border py-3 font-mono text-xs"
-        >
-          <span>{{ new Date(event.created_at * 1000).toLocaleString() }}</span
-          ><span>{{ event.ip }}</span
-          ><span :class="event.unusual ? 'text-amber-300' : event.success ? 'text-text-secondary' : 'text-red-400'">{{
-            event.unusual ? tr('新网络登录', 'NEW NETWORK', '新しいネットワーク') : event.success ? 'OK' : 'FAILED'
-          }}</span>
+      <div class="relative">
+        <div ref="eventsViewport" class="max-h-64 overflow-y-auto border-t border-border pt-3 pr-6">
+          <div
+            v-for="event in events"
+            :key="event.id"
+            class="flex flex-wrap justify-between gap-3 border-b border-border py-3 font-mono text-xs"
+          >
+            <span>{{ new Date(event.created_at * 1000).toLocaleString() }}</span
+            ><span>{{ event.ip }}</span
+            ><span
+              class="pr-6"
+              :class="event.unusual ? 'text-amber-300' : event.success ? 'text-text-secondary' : 'text-red-400'"
+              >{{
+                event.unusual ? tr('新网络登录', 'NEW NETWORK', '新しいネットワーク') : event.success ? 'OK' : 'FAILED'
+              }}</span
+            >
+          </div>
         </div>
-      </div>
-    </section></AtmosphereCard
-  >
+        <LocalScrollRuler :target="eventsViewport" />
+      </div></section
+  ></AtmosphereCard>
 </template>

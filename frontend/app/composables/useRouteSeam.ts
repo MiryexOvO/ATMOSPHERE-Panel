@@ -1,4 +1,14 @@
-export type SeamPhase = 'idle' | 'at-card' | 'away' | 'clearing' | 'completed' | 'retracting'
+export type SeamPhase =
+  | 'idle'
+  | 'at-card'
+  | 'away'
+  | 'clearing'
+  | 'completed'
+  | 'retracting'
+  // 登出反向动画：覆盖仪表盘 → 收拢回登录卡片
+  | 'sealing'
+  | 'sealed'
+  | 'returning'
 
 // 无缝路由
 // 半透明矩形从卡片中心铺满屏幕

@@ -6,7 +6,7 @@ const EDGE = 0
 
 const styles = computed(() => {
   const s = seam.value
-  if (s.phase === 'at-card') {
+  if (s.phase === 'at-card' || s.phase === 'returning') {
     return {
       tl: { left: `${s.x - 34}px`, top: `${s.y - 34}px`, width: `${s.w}px`, height: `${s.h}px` },
       br: { left: `${s.x + 34}px`, top: `${s.y + 34}px`, width: `${s.w}px`, height: `${s.h}px` },
@@ -35,10 +35,15 @@ const styles = computed(() => {
     class="route-seam-veil-layer"
     :class="{
       'is-away':
-        seam.phase === 'away' || seam.phase === 'clearing' || seam.phase === 'completed' || seam.phase === 'retracting',
+        seam.phase === 'away' ||
+        seam.phase === 'clearing' ||
+        seam.phase === 'completed' ||
+        seam.phase === 'retracting' ||
+        seam.phase === 'sealed' ||
+        seam.phase === 'returning',
       'is-clearing': seam.phase === 'clearing',
       'is-completed': seam.phase === 'completed',
-      'is-retracting': seam.phase === 'retracting',
+      'is-retracting': seam.phase === 'retracting' || seam.phase === 'sealing',
     }"
     aria-hidden="true"
   >
@@ -50,10 +55,15 @@ const styles = computed(() => {
     class="route-seam"
     :class="{
       'is-away':
-        seam.phase === 'away' || seam.phase === 'clearing' || seam.phase === 'completed' || seam.phase === 'retracting',
+        seam.phase === 'away' ||
+        seam.phase === 'clearing' ||
+        seam.phase === 'completed' ||
+        seam.phase === 'retracting' ||
+        seam.phase === 'sealed' ||
+        seam.phase === 'returning',
       'is-clearing': seam.phase === 'clearing',
       'is-completed': seam.phase === 'completed',
-      'is-retracting': seam.phase === 'retracting',
+      'is-retracting': seam.phase === 'retracting' || seam.phase === 'sealing',
     }"
     aria-hidden="true"
   >
@@ -72,10 +82,10 @@ const styles = computed(() => {
       <span
         class="route-seam-status-text"
         :class="{
-          'is-auth': seam.phase === 'away' || seam.phase === 'clearing',
+          'is-auth': seam.phase === 'away' || seam.phase === 'clearing' || seam.phase === 'sealed',
           'is-blinking': seam.phase === 'completed',
         }"
-        >Authenticating...</span
+        >{{ seam.phase === 'sealed' ? 'Signing out...' : 'Authenticating...' }}</span
       >
       <span
         class="route-seam-status-text is-done"

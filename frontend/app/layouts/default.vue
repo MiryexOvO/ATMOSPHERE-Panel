@@ -6,6 +6,7 @@ import { useSmoothScroll } from '~/composables/useSmoothScroll'
 useSmoothScroll()
 
 const seam = useRouteSeam()
+const authTransition = useState('auth-transition', () => 'idle')
 // 从登录页进入时，顶栏与页面内容一起延后淡入
 const enteringFromLogin = seam.value.phase === 'away' || seam.value.phase === 'clearing'
 
@@ -120,9 +121,54 @@ function selectTheme(value: 'system' | 'dark' | 'light') {
   paletteOpen.value = true
 }
 
+// 登出：反向播放登录交接，框线从视口收拢回登录卡片，卡片由擦除状态还原
 async function logout() {
-  await $fetch('/api/logout', { method: 'POST', credentials: 'include' })
-  await navigateTo('/login')
+  if (authTransition.value !== 'idle' || seam.value.phase !== 'idle') return
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (reducedMotion) {
+    await $fetch('/api/logout', { method: 'POST', credentials: 'include' })
+    await navigateTo('/login')
+    return
+  }
+  // 覆盖阶段先沿用上次登录卡片尺寸，刷新后回退到常见尺寸
+  const previous = seam.value
+  const width = previous.w || Math.min(448, window.innerWidth - 64)
+  const height = previous.h || 540
+  const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+  const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+  try {
+    // 1. 框线伸展开来、遮罩淡入，盖住仪表盘
+    seam.value = { phase: 'sealing', x: 0, y: 0, w: width, h: height }
+    await nextTick()
+    await nextFrame()
+    seam.value.phase = 'sealed'
+    await wait(560)
+    await $fetch('/api/logout', { method: 'POST', credentials: 'include' })
+    // 2. 登录页先以擦除状态挂载，路由切换藏在遮罩后
+    authTransition.value = 'restoring'
+    await navigateTo('/login')
+    await nextTick()
+    let stage: DOMRect | undefined
+    for (let frame = 0; frame < 12 && !stage; frame++) {
+      stage = document.querySelector('.login-transition-stage')?.getBoundingClientRect()
+      if (!stage) await nextFrame()
+    }
+    if (!stage) throw new Error('login stage missing')
+    // 3. 框线飞回登录卡片两角，遮罩同步收拢
+    seam.value = { phase: 'returning', x: stage.x, y: stage.y, w: stage.width, h: stage.height }
+    await wait(800)
+    // 4. 遮罩淡出，卡片反向还原
+    seam.value.phase = 'at-card'
+    authTransition.value = 'restoring-run'
+    await wait(800)
+  } catch {
+    // 登出失败或页面结构异常时收回覆盖
+    authTransition.value = 'idle'
+    seam.value.phase = 'sealing'
+    await wait(560)
+  }
+  seam.value.phase = 'idle'
+  authTransition.value = 'idle'
 }
 </script>
 

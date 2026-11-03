@@ -312,7 +312,11 @@ async function login() {
           class="login-ghost-frame"
           :class="{
             'is-splitting':
-              authTransition === 'expanding' || authTransition === 'failed' || authTransition === 'failed-stuck',
+              authTransition === 'expanding' ||
+              authTransition === 'failed' ||
+              authTransition === 'failed-stuck' ||
+              authTransition === 'restoring' ||
+              authTransition === 'restoring-run',
             'is-hidden': seam.phase !== 'idle',
           }"
           aria-hidden="true"
@@ -324,6 +328,8 @@ async function login() {
             'is-failing': authTransition === 'failed' || authTransition === 'failed-stuck',
             'is-stuck': authTransition === 'failed-stuck',
             'is-returning': authTransition === 'failed-return',
+            'is-erased': authTransition === 'restoring',
+            'is-restoring': authTransition === 'restoring-run',
           }"
         >
           <div class="login-scan-laser" aria-hidden="true" />
@@ -335,6 +341,8 @@ async function login() {
               authTransition === 'expanding' || authTransition === 'failed' || authTransition === 'failed-stuck',
             'is-stuck': authTransition === 'failed-stuck',
             'is-returning': authTransition === 'failed-return',
+            'is-dissolved': authTransition === 'restoring',
+            'is-restoring': authTransition === 'restoring-run',
           }"
         >
           <div class="login-glass-card">
@@ -606,10 +614,50 @@ async function login() {
     filter: blur(3px);
   }
 }
+/* 登出反向：先以擦除状态挂载，再反向还原卡片 */
+.login-transition-outer.is-erased {
+  clip-path: inset(0 0 100% 0);
+  opacity: 0;
+}
+.login-transition-inner.is-dissolved {
+  opacity: 0.15;
+  transform: translateY(-22px);
+  filter: blur(3px);
+}
+.login-transition-outer.is-restoring {
+  animation: login-outer-restore 800ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.login-transition-inner.is-restoring {
+  animation: login-inner-restore 800ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes login-outer-restore {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+@keyframes login-inner-restore {
+  from {
+    opacity: 0.15;
+    transform: translateY(-22px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .login-transition-outer.is-expanding,
   .login-transition-inner.is-dissolving,
-  .login-transition-outer.is-expanding .login-scan-laser {
+  .login-transition-outer.is-expanding .login-scan-laser,
+  .login-transition-outer.is-restoring,
+  .login-transition-inner.is-restoring {
     animation: none;
   }
 }
