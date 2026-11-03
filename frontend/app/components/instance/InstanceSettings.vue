@@ -223,6 +223,10 @@ onMounted(load)
 .switch-thumb { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 0; background: var(--brand); opacity: .55; transition: transform 320ms cubic-bezier(.22,1,.36,1), opacity 260ms ease, box-shadow 260ms ease; }
 .instance-switch.is-on { border-color: #67e8ad99; background: #40ed9a14; box-shadow: inset 0 1px 5px #0003, 0 0 12px #40ed9a12; }
 .instance-switch.is-on .switch-thumb { transform: translateX(22px); opacity: 1; background: #c9ffe2; box-shadow: 0 0 7px #53ffa683; }
+/* 按住时方块反色代替按钮下沉。 */
+.instance-switch:active { transform: none; }
+.instance-switch:active .switch-thumb { background: #c9ffe2; opacity: 1; transition: transform 320ms cubic-bezier(.22,1,.36,1), opacity .12s ease, background .12s ease, box-shadow .12s ease; }
+.instance-switch.is-on:active .switch-thumb { background: var(--text-secondary); opacity: .55; box-shadow: none; }
 .instance-switch:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .instance-switch, .switch-thumb { transition: none; } }
 </style>

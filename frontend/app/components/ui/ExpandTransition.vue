@@ -4,6 +4,7 @@ const shell=ref<HTMLElement|null>(null)
 let contentObserver:ResizeObserver|undefined
 let contentMotion:Animation|undefined
 let panelMotion:Animation|undefined
+let gapMotion:Animation|undefined
 let panelVersion=0
 // 异步列表与分页改变高度时，卡片继续平滑伸缩。
 function followContent(node:HTMLElement){
@@ -26,7 +27,7 @@ function followContent(node:HTMLElement){
   contentObserver.observe(node)
 }
 onMounted(()=>{const node=shell.value?.firstElementChild;if(node instanceof HTMLElement)followContent(node)})
-onUnmounted(()=>{panelVersion++;contentObserver?.disconnect();contentMotion?.cancel();panelMotion?.cancel()})
+onUnmounted(()=>{panelVersion++;contentObserver?.disconnect();contentMotion?.cancel();panelMotion?.cancel();gapMotion?.cancel()})
 // 高度参与布局，让卡片随内容展开和收起。
 function animate(element: Element, done: () => void, entering: boolean) {
   const node = element as HTMLElement
@@ -64,11 +65,33 @@ function animate(element: Element, done: () => void, entering: boolean) {
     }
     return
   }
+  // 内容移除后空容器的上下外边距会合并塌陷，间距需与高度同步收缩。
+  const wrapper = shell.value
+  gapMotion?.cancel(); gapMotion = undefined
+  let gap = 0
+  if (wrapper) {
+    wrapper.style.marginBlockEnd = ''
+    gap = parseFloat(getComputedStyle(wrapper).marginBlockEnd) || 0
+    if (gap > 0) {
+      wrapper.style.marginBlockEnd = (entering ? 0 : gap) + 'px'
+      gapMotion = wrapper.animate(
+        entering
+          ? [{ marginBlockEnd: '0px' }, { marginBlockEnd: gap + 'px' }]
+          : [{ marginBlockEnd: gap + 'px' }, { marginBlockEnd: '0px' }],
+        { duration: entering ? 650 : 360, easing: 'cubic-bezier(.4,0,.2,1)' },
+      )
+    }
+  }
   const frames = entering
     ? [{ height: '0px', opacity: 0, transform: 'translateY(8px)' }, { height: height + 'px', opacity: 1, transform: 'translateY(0)' }]
     : [{ height: height + 'px', opacity: 1 }, { height: '0px', opacity: 0 }]
   const animation = node.animate(frames, { duration: entering ? 650 : 360, easing: 'cubic-bezier(.4,0,.2,1)' })
-  const finish = () => { node.style.overflow = ''; done() }
+  const finish = () => {
+    node.style.overflow = ''
+    gapMotion?.cancel(); gapMotion = undefined
+    done()
+    if (wrapper) wrapper.style.marginBlockEnd = ''
+  }
   animation.onfinish = finish
   animation.oncancel = finish
 }
