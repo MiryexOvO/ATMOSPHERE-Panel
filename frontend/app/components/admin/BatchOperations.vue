@@ -43,7 +43,12 @@ onMounted(load)
 <template>
   <AtmosphereCard :interactive="false" class="w-full max-w-3xl" data-batch-operations
     ><div class="space-y-5">
-      <h3 class="font-serif text-xl">{{ tr('多实例批量操作', 'MULTI-SERVER OPERATIONS', '複数サーバー操作') }}</h3>
+      <div>
+        <p class="font-mono text-[10px] tracking-widest text-brand">/ BATCH OPERATIONS</p>
+        <h3 class="mt-3 font-serif text-xl">
+          {{ tr('多实例批量操作', 'MULTI-SERVER OPERATIONS', '複数サーバー操作') }}
+        </h3>
+      </div>
       <div class="flex flex-wrap gap-5">
         <label v-for="instance in instances" :key="instance.id" class="flex items-center gap-2 text-xs"
           ><input v-model="selected" type="checkbox" :value="instance.id" class="accent-brand" />{{
@@ -69,7 +74,7 @@ onMounted(load)
           v-model="command"
           maxlength="512"
           :placeholder="tr('单行服务器命令', 'SINGLE SERVER COMMAND', 'サーバーコマンド')"
-          class="min-w-0 flex-1 border border-border bg-transparent p-3 font-mono text-xs"
+          class="min-w-0 flex-1 border border-border bg-transparent p-3 font-mono text-sm"
         /><button
           :disabled="busy || !selected.length || (action === 'command' && !command.trim())"
           class="min-h-[46px] border border-brand px-5 text-xs text-brand disabled:opacity-40"

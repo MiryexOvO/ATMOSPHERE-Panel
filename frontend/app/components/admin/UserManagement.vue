@@ -203,7 +203,10 @@ onMounted(load)
       </div>
     </AtmosphereCard>
     <AtmosphereCard v-if="adminAccess" :interactive="false"
-      ><h3 class="font-serif text-xl">{{ t('usersAudit') }}</h3>
+      ><div>
+        <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ ADMIN ACTIVITY</p>
+        <h3 class="mt-2 font-serif text-xl">{{ t('usersAudit') }}</h3>
+      </div>
       <div class="relative mt-5">
         <div ref="auditViewport" class="max-h-80 overflow-y-auto pr-6">
           <div
@@ -222,7 +225,10 @@ onMounted(load)
       ><div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-5">
         <AtmosphereCard :interactive="false" class="max-h-[90vh] w-full max-w-2xl overflow-y-auto"
           ><form class="space-y-5" @submit.prevent="save">
-            <h3 class="font-serif text-xl">{{ t(editing ? 'usersEdit' : 'usersNew') }}</h3>
+            <div>
+              <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ USER RECORD</p>
+              <h3 class="mt-2 font-serif text-xl">{{ t(editing ? 'usersEdit' : 'usersNew') }}</h3>
+            </div>
             <label class="block space-y-2"
               ><span class="text-xs text-text-secondary">{{ t('usersName') }}</span
               ><input

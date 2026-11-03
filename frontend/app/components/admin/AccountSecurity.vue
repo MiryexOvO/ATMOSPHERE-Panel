@@ -25,7 +25,10 @@ async function save() {
 <template>
   <AtmosphereCard :interactive="false"
     ><form class="space-y-5" @submit.prevent="save">
-      <h2 class="font-serif text-2xl">{{ t('accountSecurity') }}</h2>
+      <div>
+        <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ ACCOUNT SECURITY</p>
+        <h2 class="mt-3 font-serif text-2xl">{{ t('accountSecurity') }}</h2>
+      </div>
       <div class="grid gap-4 md:grid-cols-3">
         <label
           v-for="field in [
