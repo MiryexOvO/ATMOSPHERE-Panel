@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import PanelPreferences from '~/components/admin/PanelPreferences.vue'
 import UserManagement from '~/components/admin/UserManagement.vue'
+import AboutPanel from '~/components/admin/AboutPanel.vue'
 import ScheduleManager from '~/components/admin/ScheduleManager.vue'
 import BatchOperations from '~/components/admin/BatchOperations.vue'
 import LoginAlert from '~/components/admin/LoginAlert.vue'
@@ -213,7 +214,7 @@ const summary = computed(() => [
               <div>
                 <header class="flex items-center justify-between pb-4">
                   <div>
-                    <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ HOST TELEMETRY</p>
+                    <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ LIVE READOUT</p>
                     <h2 class="mt-2 font-serif text-2xl text-text-primary">{{ t('hostTelemetryTitle') }}</h2>
                   </div>
                   <span class="font-mono text-[10px] text-data-live">● LIVE / 5S</span>
@@ -255,7 +256,7 @@ const summary = computed(() => [
 
             <AtmosphereCard class="p-8">
               <div>
-                <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ SYSTEM IDENTITY</p>
+                <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ NODE PROFILE</p>
                 <h2 class="mt-2 font-serif text-2xl text-text-primary">{{ t('hostIdentityTitle') }}</h2>
                 <dl class="mt-7 font-mono text-xs">
                   <div class="flex justify-between border-b border-white/10 py-4 last:border-b-0">
@@ -322,6 +323,10 @@ const summary = computed(() => [
         <section v-else-if="activeTab === 'users'" key="users" class="mt-10"><UserManagement /></section>
         <section v-else-if="activeTab === 'settings' && activeSettings === 'schedule'" key="schedule" class="mt-10">
           <ScheduleManager />
+        </section>
+
+        <section v-else-if="activeTab === 'about'" key="about" class="mt-10">
+          <AboutPanel :version="host.panel" />
         </section>
 
         <section v-else-if="placeholder" :key="activeTab" class="mt-10">

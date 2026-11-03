@@ -76,7 +76,7 @@ onUnmounted(() => {
   <section class="space-y-6">
     <header class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ LIVE RESOURCE TELEMETRY</p>
+        <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ LIVE SAMPLING</p>
         <h2 class="mt-2 font-serif text-2xl">{{ t('monitorTitle') }}</h2>
       </div>
       <span class="font-mono text-xs text-text-secondary"

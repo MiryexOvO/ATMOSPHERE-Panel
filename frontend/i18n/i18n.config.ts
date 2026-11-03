@@ -1,3 +1,4 @@
+import { aboutMessages } from './about'
 import { instanceMessages } from './instance'
 import { panelMessages } from './panel'
 type Locale = 'zh' | 'en' | 'ja'
@@ -8,6 +9,7 @@ type I18nMessagesSatisfiesType = Record<string, Record<Locale, () => string>>
 export const i18nMessages = {
   ...instanceMessages,
   ...panelMessages,
+  ...aboutMessages,
   authRequired: {
     zh: () => '/ 需要身份验证',
     en: () => '/ AUTHENTICATION REQUIRED',

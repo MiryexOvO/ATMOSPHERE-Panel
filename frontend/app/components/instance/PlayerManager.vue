@@ -61,7 +61,7 @@ onUnmounted(() => {
   <AtmosphereCard :interactive="false"
     ><header class="flex justify-between">
       <div>
-        <p class="font-mono text-xs tracking-widest text-brand">/ PLAYER OPERATIONS</p>
+        <p class="font-mono text-xs tracking-widest text-brand">/ ONLINE ROSTER</p>
         <h2 class="mt-3 font-serif text-2xl">
           {{ tr('在线玩家', 'ONLINE PLAYERS', 'オンラインプレイヤー') }}
           <small class="ml-2 font-mono text-sm text-text-secondary">{{ names.length }}</small>
