@@ -86,10 +86,10 @@ onUnmounted(() => {
       aria-haspopup="listbox"
       :aria-expanded="open"
       :aria-controls="menuId"
-      class="flex w-full items-center justify-between border border-border bg-background/50 px-4 py-3 text-left font-mono text-sm text-text-primary outline-none hover:border-brand focus:border-brand"
+      class="select-trigger flex w-full items-center justify-between border border-border bg-background/50 px-4 py-3 text-left font-mono text-sm text-text-primary outline-none hover:border-brand focus:border-brand"
       @click="open = !open"
     >
-      {{ current }} <span class="text-text-secondary" aria-hidden="true">▾</span>
+      {{ current }} <span class="select-caret text-text-secondary" aria-hidden="true">▾</span>
     </button>
     <Teleport to="body"
       ><Transition name="select-menu">
@@ -111,7 +111,7 @@ onUnmounted(() => {
             type="button"
             role="option"
             :aria-selected="modelValue === option.value"
-            class="block w-full px-3 py-2 text-left font-mono text-sm outline-none focus:bg-background focus:text-text-primary"
+            class="select-option block w-full px-3 py-2 text-left font-mono text-sm outline-none focus:bg-background focus:text-text-primary"
             :class="
               modelValue === option.value
                 ? 'text-brand'
@@ -128,6 +128,31 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* 下拉菜单不跟随按下位移，按下时反色填充，避免展开和选项点击时抖动。 */
+.select-trigger:active {
+  transform: none;
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--background);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+.select-trigger:active .select-caret {
+  color: var(--background);
+}
+.select-caret {
+  transition: color 120ms ease;
+}
+.select-option:active {
+  transform: none;
+  background: var(--brand);
+  color: var(--background);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
 /* 沿用下载源菜单的浮入动效。 */
 .select-menu-enter-active,
 .select-menu-leave-active {
