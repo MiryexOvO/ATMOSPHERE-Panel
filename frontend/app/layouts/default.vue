@@ -10,9 +10,9 @@ const seam = useRouteSeam()
 const enteringFromLogin = seam.value.phase === 'away' || seam.value.phase === 'clearing'
 
 const { t, locale } = useI18n()
-const preferences=useState<Record<string,unknown>>('panel-preferences',()=>({}))
-const panelName=computed(()=>'ATMOSPHERE')
-useHead(()=>({title:panelName.value}))
+const preferences = useState<Record<string, unknown>>('panel-preferences', () => ({}))
+const panelName = computed(() => 'ATMOSPHERE')
+useHead(() => ({ title: panelName.value }))
 
 const now = ref(new Date())
 // null 表示鼠标还没移动过
@@ -71,7 +71,14 @@ function closePopovers(event: MouseEvent) {
 
 onMounted(() => {
   // 默认布局读取面板偏好，不覆盖用户已保存的语言选择。
-  useApi().request<{settings:Record<string,unknown>}>('/api/panel/settings').then(result=>{preferences.value=result.settings;if(!localStorage.getItem('preferred-language'))locale.value=String(result.settings.default_locale||'zh') as 'zh'|'en'|'ja'}).catch(()=>{})
+  useApi()
+    .request<{ settings: Record<string, unknown> }>('/api/panel/settings')
+    .then((result) => {
+      preferences.value = result.settings
+      if (!localStorage.getItem('preferred-language'))
+        locale.value = String(result.settings.default_locale || 'zh') as 'zh' | 'en' | 'ja'
+    })
+    .catch(() => {})
   timer = setInterval(() => {
     now.value = new Date()
   }, 1000)
@@ -104,10 +111,12 @@ function selectTheme(value: 'system' | 'dark' | 'light') {
   colorMode.preference = value
   localStorage.removeItem('custom-theme')
   // 即使再次选择当前模式，也要清除自定义颜色的残留。
-  const light=value==='light'||(value==='system'&&window.matchMedia('(prefers-color-scheme: light)').matches)
-  customColors.value=light?{textPrimary:'#27313b',textSecondary:'#626e78',surface:'#ffffff',background:'#f1f4f6'}:{textPrimary:'#e9dfc6',textSecondary:'#a4aaa3',surface:'#1c252d',background:'#11151b'}
-  for(const field of fields)document.documentElement.style.setProperty(field.variable,customColors.value[field.key])
-  document.documentElement.style.setProperty('--brand',customColors.value.textPrimary)
+  const light = value === 'light' || (value === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)
+  customColors.value = light
+    ? { textPrimary: '#27313b', textSecondary: '#626e78', surface: '#ffffff', background: '#f1f4f6' }
+    : { textPrimary: '#e9dfc6', textSecondary: '#a4aaa3', surface: '#1c252d', background: '#11151b' }
+  for (const field of fields) document.documentElement.style.setProperty(field.variable, customColors.value[field.key])
+  document.documentElement.style.setProperty('--brand', customColors.value.textPrimary)
   paletteOpen.value = true
 }
 
@@ -127,7 +136,7 @@ async function logout() {
     >
       <div class="flex items-center gap-5">
         <span class="text-brand">✦</span>
-        <strong class="font-mono tracking-[0.18em]">{{panelName}}</strong>
+        <strong class="font-mono tracking-[0.18em]">{{ panelName }}</strong>
         <small class="font-mono text-xs tracking-[0.18em] text-text-secondary">MC SERVER OPERATIONS / 02</small>
       </div>
       <div class="relative flex items-center gap-4 font-mono text-xs text-text-secondary">

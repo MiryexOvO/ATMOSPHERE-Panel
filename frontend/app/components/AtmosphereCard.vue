@@ -45,7 +45,7 @@ const normalizedOpacity = computed(() => Math.min(1, Math.max(0, props.bgOpacity
 const backgroundColor = computed(() => {
   const value = props.bgColor.trim()
   // 默认玻璃随主题变化，自定义颜色仍保持原值。
-  if(value==='rgba(0, 0, 0, 0.2)')return 'var(--card-glass-color, rgba(0, 0, 0, 0.2))'
+  if (value === 'rgba(0, 0, 0, 0.2)') return 'var(--card-glass-color, rgba(0, 0, 0, 0.2))'
   if (/^rgba?\(/i.test(value) || /^hsla?\(/i.test(value) || value.startsWith('color(')) return value
   if (/^\d+\s*,\s*\d+\s*,\s*\d+$/.test(value)) return `rgb(${value} / ${normalizedOpacity.value})`
   return `color-mix(in srgb, ${value} ${normalizedOpacity.value * 100}%, transparent)`

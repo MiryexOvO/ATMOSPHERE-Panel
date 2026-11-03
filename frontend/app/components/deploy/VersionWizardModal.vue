@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import LocalScrollRuler from '~/components/ui/LocalScrollRuler.vue'
-const versionViewport=ref<HTMLElement|null>(null)
-const buildViewport=ref<HTMLElement|null>(null)
+const versionViewport = ref<HTMLElement | null>(null)
+const buildViewport = ref<HTMLElement | null>(null)
 type Core = { id: string; name: string }
 type Selection = { core: string; version: string; build: string }
 
@@ -87,19 +87,19 @@ function chooseBuild(build: string) {
           <p v-else-if="!versions.length" class="py-8 text-center text-xs text-text-secondary">暂无可用版本</p>
           <!-- 宽列表使用小刻度尺，保留紧凑选择布局。 -->
           <div class="relative">
-          <div ref="versionViewport" class="grid max-h-96 grid-cols-3 gap-2 overflow-y-auto pr-6 sm:grid-cols-4">
-            <button
-              v-for="version in versions"
-              :key="version"
-              type="button"
-              class="border border-border px-3 py-4 text-center font-mono text-xs text-text-secondary transition-colors hover:border-brand hover:text-text-primary"
-              :class="selectedVersion === version ? 'border-brand bg-brand/10 text-text-primary' : ''"
-              @click="chooseVersion(version)"
-            >
-              {{ version }}
-            </button>
-          </div>
-          <LocalScrollRuler :target="versionViewport"/>
+            <div ref="versionViewport" class="grid max-h-96 grid-cols-3 gap-2 overflow-y-auto pr-6 sm:grid-cols-4">
+              <button
+                v-for="version in versions"
+                :key="version"
+                type="button"
+                class="border border-border px-3 py-4 text-center font-mono text-xs text-text-secondary transition-colors hover:border-brand hover:text-text-primary"
+                :class="selectedVersion === version ? 'border-brand bg-brand/10 text-text-primary' : ''"
+                @click="chooseVersion(version)"
+              >
+                {{ version }}
+              </button>
+            </div>
+            <LocalScrollRuler :target="versionViewport" />
           </div>
         </div>
 
@@ -113,23 +113,23 @@ function chooseBuild(build: string) {
           </button>
           <p class="mb-4 text-xs text-text-secondary">{{ selectedVersion }} 的可用构建版本。</p>
           <div class="relative">
-          <div ref="buildViewport" class="max-h-96 space-y-2 overflow-y-auto pr-6">
-            <button
-              v-for="(build, index) in selectedBuilds"
-              :key="build"
-              type="button"
-              class="flex w-full items-center justify-between border border-border px-4 py-3 text-left font-mono text-sm text-text-primary transition-colors hover:border-brand/60 hover:bg-background"
-              @click="chooseBuild(build)"
-            >
-              <span>{{ build }}</span>
-              <span
-                v-if="index === 0"
-                class="border border-emerald-500/50 px-2 py-0.5 text-[9px] tracking-[0.16em] text-emerald-400"
-                >NEW</span
+            <div ref="buildViewport" class="max-h-96 space-y-2 overflow-y-auto pr-6">
+              <button
+                v-for="(build, index) in selectedBuilds"
+                :key="build"
+                type="button"
+                class="flex w-full items-center justify-between border border-border px-4 py-3 text-left font-mono text-sm text-text-primary transition-colors hover:border-brand/60 hover:bg-background"
+                @click="chooseBuild(build)"
               >
-            </button>
-          </div>
-          <LocalScrollRuler :target="buildViewport"/>
+                <span>{{ build }}</span>
+                <span
+                  v-if="index === 0"
+                  class="border border-emerald-500/50 px-2 py-0.5 text-[9px] tracking-[0.16em] text-emerald-400"
+                  >NEW</span
+                >
+              </button>
+            </div>
+            <LocalScrollRuler :target="buildViewport" />
           </div>
         </div>
       </section>
