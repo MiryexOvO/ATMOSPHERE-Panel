@@ -95,7 +95,7 @@ onMounted(load)
   <AtmosphereCard :interactive="false" :aria-busy="loading" data-addon-manager
     ><header class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p class="font-mono text-xs tracking-widest text-brand">/ {{ kind.toUpperCase() }} INVENTORY</p>
+        <p class="font-mono text-xs tracking-widest text-brand">/ {{ kind.toUpperCase() }} REGISTRY</p>
         <h2 class="mt-3 font-serif text-2xl">
           {{
             kind === 'mods' ? tr('模组列表', 'MOD LIST', 'MOD 一覧') : tr('插件列表', 'PLUGIN LIST', 'プラグイン一覧')

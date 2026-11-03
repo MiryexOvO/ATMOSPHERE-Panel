@@ -44,7 +44,7 @@ onMounted(load)
   <AtmosphereCard :interactive="false" class="w-full max-w-3xl" data-batch-operations
     ><div class="space-y-5">
       <div>
-        <p class="font-mono text-[10px] tracking-widest text-brand">/ BATCH OPERATIONS</p>
+        <p class="font-mono text-[10px] tracking-widest text-brand">/ FLEET COMMANDS</p>
         <h3 class="mt-3 font-serif text-xl">
           {{ tr('多实例批量操作', 'MULTI-SERVER OPERATIONS', '複数サーバー操作') }}
         </h3>

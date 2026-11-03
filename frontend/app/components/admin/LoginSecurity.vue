@@ -55,7 +55,7 @@ onMounted(load)
     ><section class="space-y-5">
       <header class="flex items-center justify-between">
         <div>
-          <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ LOGIN SECURITY</p>
+          <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ ACCESS GUARD</p>
           <h3 class="mt-2 font-serif text-xl">{{ tr('登录验证与提醒', 'LOGIN SECURITY', 'ログイン保護') }}</h3>
         </div>
         <span class="font-mono text-xs" :class="enabled ? 'text-data-live' : 'text-text-secondary'"

@@ -69,7 +69,7 @@ onMounted(load)
       <header class="flex items-start justify-between gap-4">
         <div>
           <p class="font-mono text-[10px] tracking-[.2em] text-brand">
-            / {{ section === 'system' ? 'DOWNLOAD SOURCE' : 'PANEL PREFERENCES' }}
+            / {{ section === 'system' ? 'MIRROR ROUTING' : 'OPERATOR CONFIG' }}
           </p>
           <h2 class="mt-3 font-serif text-2xl">
             {{ t(section === 'system' ? 'downloadSourceTitle' : 'panelSettingsTitle') }}

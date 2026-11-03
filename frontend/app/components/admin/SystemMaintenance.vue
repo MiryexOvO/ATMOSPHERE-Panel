@@ -68,7 +68,7 @@ const httpsAddress = computed(() =>
     <section class="space-y-5">
       <header class="flex items-center justify-between">
         <div>
-          <p class="font-mono text-[10px] tracking-widest text-brand">/ SOFTWARE UPDATE</p>
+          <p class="font-mono text-[10px] tracking-widest text-brand">/ MAINTENANCE</p>
           <h3 class="mt-2 font-serif text-xl">{{ tr('软件更新', 'SOFTWARE UPDATE', 'ソフトウェア更新') }}</h3>
         </div>
         <button type="button" :disabled="busy" class="border border-brand px-4 py-3 text-xs text-brand" @click="check">
@@ -127,7 +127,7 @@ const httpsAddress = computed(() =>
       </p>
     </section>
     <section class="space-y-5 border-t border-border pt-7">
-      <p class="font-mono text-[10px] tracking-widest text-brand">/ TRANSPORT SECURITY</p>
+      <p class="font-mono text-[10px] tracking-widest text-brand">/ ENCRYPTION</p>
       <h3 class="font-serif text-xl">{{ tr('HTTPS 加密访问', 'HTTPS ACCESS', 'HTTPS アクセス') }}</h3>
       <div class="grid gap-4 md:grid-cols-2">
         <label class="flex items-center justify-between border border-border p-4 text-sm"

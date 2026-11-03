@@ -129,7 +129,7 @@ onMounted(load)
     <AtmosphereCard v-if="adminAccess" :interactive="false">
       <header class="flex items-start justify-between gap-4">
         <div>
-          <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ IDENTITY & ACCESS</p>
+          <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ USER DIRECTORY</p>
           <h2 class="mt-3 font-serif text-2xl">{{ t('usersTitle') }}</h2>
         </div>
         <button type="button" class="border border-brand px-4 py-2 text-xs text-brand" @click="edit()">
@@ -204,7 +204,7 @@ onMounted(load)
     </AtmosphereCard>
     <AtmosphereCard v-if="adminAccess" :interactive="false"
       ><div>
-        <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ ADMIN ACTIVITY</p>
+        <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ EVENT LOG</p>
         <h3 class="mt-2 font-serif text-xl">{{ t('usersAudit') }}</h3>
       </div>
       <div class="relative mt-5">
