@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{ instanceId: string }>()
 const { t } = useI18n()
-const { request, getErrorMessage } = useApi()
+const { instanceRequest, path, getErrorMessage } = useInstanceApi(() => props.instanceId)
 const original = ref('')
 const activeEntry = ref<Entry | null>(null)
 const pending = ref<{ action: string; path: string } | null>(null)
@@ -19,10 +19,7 @@ const loading = ref(false)
 async function list(path = '/') {
   loading.value = true
   try {
-    const result = await $fetch<{ entries: Entry[] }>(
-      '/api/instances/' + encodeURIComponent(props.instanceId) + '/files',
-      { credentials: 'include', query: { path } },
-    )
+    const result = await instanceRequest<{ entries: Entry[] }>('/files', { query: { path } })
     entries.value = result.entries
     currentPath.value = path
   } catch (error) {
@@ -37,10 +34,7 @@ async function open(entry: Entry) {
   if (entry.type === 'directory') return list(entry.path)
   selectedPath.value = entry.path
   try {
-    const result = await $fetch<{ content: string }>(
-      '/api/instances/' + encodeURIComponent(props.instanceId) + '/files/content',
-      { credentials: 'include', query: { path: entry.path } },
-    )
+    const result = await instanceRequest<{ content: string }>('/files/content', { query: { path: entry.path } })
     content.value = result.content
     original.value = result.content
     message.value = ''
@@ -52,9 +46,8 @@ async function open(entry: Entry) {
 async function save() {
   working.value = true
   try {
-    await $fetch('/api/instances/' + encodeURIComponent(props.instanceId) + '/files/save', {
+    await instanceRequest('/files/save', {
       method: 'POST',
-      credentials: 'include',
       body: { path: selectedPath.value, content: content.value },
     })
     original.value = content.value
@@ -86,7 +79,7 @@ async function commit() {
   working.value = true
   try {
     const value = pending.value
-    await request(`/api/instances/${encodeURIComponent(props.instanceId)}/files/action`, {
+    await instanceRequest('/files/action', {
       method: 'POST',
       body: {
         action: value.action,
@@ -123,7 +116,7 @@ async function upload(files: FileList | null | undefined) {
       const form = new FormData()
       form.set('path', currentPath.value)
       form.set('file', file)
-      await request(`/api/instances/${encodeURIComponent(props.instanceId)}/files/upload`, {
+      await instanceRequest('/files/upload', {
         method: 'POST',
         body: form,
       })
@@ -139,7 +132,7 @@ async function upload(files: FileList | null | undefined) {
 }
 function download() {
   if (activeEntry.value?.type === 'file')
-    window.location.href = `/api/instances/${encodeURIComponent(props.instanceId)}/files/download?path=${encodeURIComponent(activeEntry.value.path)}`
+    window.location.href = path('/files/download') + '?path=' + encodeURIComponent(activeEntry.value.path)
 }
 onMounted(() => list())
 </script>

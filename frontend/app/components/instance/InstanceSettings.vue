@@ -10,7 +10,7 @@ const props = defineProps<{ instanceId: string; status?: string }>()
 const emit = defineEmits<{ saved: [] }>()
 const { t } = useI18n()
 const tr = usePanelText()
-const { request, getErrorMessage } = useApi()
+const { instanceRequest, getErrorMessage } = useInstanceApi(() => props.instanceId)
 // 导航与内容共用明确状态，并按分类重建表单。
 const activeSection = ref<'instance' | 'properties' | 'mods' | 'plugins'>('instance')
 const loading = ref(true)
@@ -133,8 +133,8 @@ async function load() {
   // 读取持久化设置及当前核心属性。
   loading.value = true
   try {
-    const result = await request<{ settings: Partial<typeof settings> & { server_properties?: string } }>(
-      `/api/instances/${encodeURIComponent(props.instanceId)}/settings`,
+    const result = await instanceRequest<{ settings: Partial<typeof settings> & { server_properties?: string } }>(
+      '/settings',
     )
     // 旧后端仍可展示全部属性，但必须升级后才能保存。
     apiCompatible.value = result.settings.property_values != null
@@ -163,7 +163,7 @@ async function save() {
   notice.value = ''
   syncProperties()
   try {
-    await request(`/api/instances/${encodeURIComponent(props.instanceId)}/settings`, { method: 'PUT', body: settings })
+    await instanceRequest('/settings', { method: 'PUT', body: settings })
     failed.value = false
     notice.value = t('settingsSaved')
     emit('saved')
