@@ -55,5 +55,7 @@ def create_app() -> FastAPI:
         await asyncio.gather(app.state.scheduler,app.state.updater,return_exceptions=True)
         from .services.tls_gateway import stop_gateway
         await stop_gateway()
+    from .web import mount_frontend
+    mount_frontend(app)
     return app
 app=create_app()

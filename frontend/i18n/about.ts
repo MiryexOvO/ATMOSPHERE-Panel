@@ -20,9 +20,24 @@ const text: Record<string, Record<Locale, () => string>> = {
     ja: () => 'GitHub リポジトリ',
   },
   aboutStack: {
-    zh: () => '技术栈',
-    en: () => 'TECH STACK',
-    ja: () => '技術スタック',
+    zh: () => '更新日志',
+    en: () => 'CHANGELOG',
+    ja: () => '更新履歴',
+  },
+  aboutChange1: {
+    zh: () => '单进程入口：FastAPI 托管网页与 API',
+    en: () => 'One process serves the web UI and API',
+    ja: () => '単一プロセスで Web UI と API を提供',
+  },
+  aboutChange2: {
+    zh: () => '新增 Linux / Windows / macOS 发布包构建流程',
+    en: () => 'Release builds for Linux, Windows and macOS',
+    ja: () => 'Linux / Windows / macOS 向けビルドを追加',
+  },
+  aboutChange3: {
+    zh: () => 'Linux 安装改为下载发布包并校验 SHA256',
+    en: () => 'Linux installer downloads releases with SHA256 verification',
+    ja: () => 'Linux インストーラーに SHA256 検証を追加',
   },
   aboutCapabilities: {
     zh: () => '核心能力',

@@ -84,3 +84,7 @@ coverage/
 .codex/
 .agents/
 *.part
+
+# Native release outputs
+release/
+*.spec

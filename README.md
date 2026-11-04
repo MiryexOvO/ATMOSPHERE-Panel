@@ -53,12 +53,65 @@ ATMOSPHERE-PANEL 是一个基于 Web 的 Minecraft 服务器管理面板。通�
 - 针对部分资源提供官方资源参考与镜像设置
 - 基于 SQLite 的本地数据存储
 
-## 快速开始
-克隆仓库
-  ```bash
-  git clone https://github.com/MiryexOvO/ATMOSPHERE-Panel.git
+## 快速安装（单进程）
+
+正式发布包内含网页与 Python 运行时，一个进程、一个端口即可访问全站，无需安装 Node.js、Python 或 Nginx。Java、BDS 和 MCDR 运行环境按实例需求另行准备，不打进面板下载包。发布包大小以 Release 附件为准。
+
+### Linux / systemd
+
+```bash
+curl -fL --retry 3 https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh -o /tmp/atmosphere-install.sh
+sudo bash /tmp/atmosphere-install.sh
+```
+
+默认入口 `http://服务器地址:27777`。安装器从 GitHub Releases 下载本机架构包、验证 SHA256、注册 `atmosphere-panel` 服务并检查网页与 API。需要预装 curl、tar、sha256sum；当前流水线提供 Linux x64、Windows x64、macOS arm64，其他架构需在对应机器构建。
+
+```bash
+sudo bash /tmp/atmosphere-install.sh --yes --port 27777 --version v0.2.0
+bash /tmp/atmosphere-install.sh --plan
+sudo journalctl -u atmosphere-panel -f
+sudo systemctl restart atmosphere-panel
+```
+
+首次密码见首次启动日志。数据保存于 `/opt/mc-panel`，更新保留数据；更新前请备份。安装器适用于全新安装和此发布安装器创建的目录。旧版源码安装需先备份、迁移数据库并停用旧前端和 Nginx 服务，避免继续访问旧站点。控制面板因现有 systemd 实例管理机制以 root 运行；游戏实例使用 mc-panel 账号。
+
+### Windows / macOS
+
+从 [Releases](https://github.com/MiryexOvO/ATMOSPHERE-Panel/releases) 下载对应平台压缩包并解压：
+
+```powershell
+# Windows
+.\atmosphere-panel.exe --port 27777
+```
+
+```bash
+# macOS
+chmod +x ./atmosphere-panel
+./atmosphere-panel --port 27777
+```
+
+打开 `http://127.0.0.1:27777`。数据默认位于可执行文件旁 `data/`，请放在可写目录；可用 `ATMOSPHERE_DATA_DIR` 与 `ATMOSPHERE_DB_PATH` 自定义。macOS 包暂未签名或公证。
+
+### 维护者：构建与发布
+
+在目标操作系统安装 Python 3.12、Node.js 24 和项目指定的 pnpm，然后执行：
+
+```bash
+python -m pip install -r backend/requirements.txt pyinstaller==6.11.1
+python scripts/build-release.py --version v0.2.0
+python scripts/smoke-release.py
+```
+
+脚本生成静态网页、打包单文件可执行程序，在 `release/` 输出压缩包及 SHA256 文件，并打印实际体积。仅打包运行所需内容，不包含 node_modules、源码数据库、Java 或服务器数据。单文件程序首次启动需要临时解压运行时。
+
+推送 `v*` 标签触发三平台构建，全部成功后创建 **Release 草稿**；检查附件、平台运行结果与更新说明后发布草稿，安装器才能读取 latest。Actions 手动运行只生成可下载构建附件。当前不包含自动推送标签或自动公开发布。
+
+## 源码开发
+
+```bash
+git clone https://github.com/MiryexOvO/ATMOSPHERE-Panel.git
 cd ATMOSPHERE-Panel
-  ```
+```
 
 ## 前端开发（[Nuxt 4.6.2](https://nuxt.com/docs/getting-started/introduction)）
 
@@ -84,39 +137,6 @@ pnpm preview
 首次启动时，终端只打印一次 20 位初始密码
 
 ## 后端开发（[FastAPI](https://fastapi.tiangolo.com/)）
-
-### Linux 一键部署（推荐）
-
-推荐 Ubuntu 24.04+、Debian 12+ 或使用 dnf 的发行版；需要 systemd、Python 3.11+。安装器使用独立服务账号，安装与校验 Node.js、Java 21，构建前端并配置 Nginx。实例不会在安装时自动创建或启动。
-
-```bash
-# Debian / Ubuntu：先准备下载工具
-sudo apt-get update && sudo apt-get install -y curl
-# 下载当前分支的安装器，再执行交互向导
-curl -fL --retry 3 https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh -o /tmp/atmosphere-install.sh
-sudo bash /tmp/atmosphere-install.sh
-```
-
-Fedora 等 dnf 系统可先执行 `sudo dnf install -y curl`，然后使用同一下载与安装命令。仅预览、不更改系统：
-
-```bash
-bash /tmp/atmosphere-install.sh --plan --no-color
-# 无交互安装示例；三个端口必须不同
-sudo bash /tmp/atmosphere-install.sh --yes --dir /opt/ATMOSPHERE-Panel --port 5173 --backend-port 27777 --internal-port 3000 --host 127.0.0.1
-```
-
-默认访问 `http://服务器地址:5173`；3000 为内部 Web 端口，27777 为内部 API，均仅监听回环地址。仅需放行面板入口及各实例的游戏端口；基岩版需要 UDP IPv4 / IPv6 端口。实例数据默认在 `/opt/mc-panel`，数据库保留在 `backend/app/panel.sqlite3`；可通过 `ATMOSPHERE_DATA_DIR` / `ATMOSPHERE_DB_PATH` 指定运行路径。
-
-安装会保留已有实例和数据库，仓库有未提交修改时停止并提示，不会强制覆盖。首次密码见 `sudo atmosphere logs` 或 `sudo journalctl -u atmosphere-panel --no-pager`，请登录后修改。安装失败的详细日志位于终端提示的 `/tmp/atmosphere-install.*.log`。
-
-```bash
-sudo atmosphere status    # 查看服务状态
-sudo atmosphere logs      # 跟踪后端日志
-sudo atmosphere restart   # 重启面板服务
-sudo atmosphere stop      # 停止面板服务
-```
-
-服务端模式：Java 在线部署、整合包导入、官方 BDS、MCDReforged。BDS 仅支持官方提供的 Windows / Linux x86_64 包；MCDR 在实例内建立 `.mcdr-venv`，使用 `mcdr_plugins` 存放自身插件。所有模式均在最终确认且下载、准备完成后才显示实例，由用户手动启动。
 
 ### Linux 手动部署
 

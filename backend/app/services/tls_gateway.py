@@ -58,7 +58,7 @@ async def configure_gateway(settings):
     gateway=FastAPI(docs_url=None,redoc_url=None,openapi_url=None)
     @gateway.api_route('/{path:path}',methods=['GET','HEAD','POST','PUT','PATCH','DELETE','OPTIONS'])
     async def forward(path:str,request:Request):
-        port=int(os.getenv('ATMOSPHERE_BACKEND_PORT','27777')) if path=='api' or path.startswith('api/') else settings['frontend_port']
+        port=int(os.getenv('ATMOSPHERE_BACKEND_PORT','27777')) if os.getenv('ATMOSPHERE_WEB_DIR') or path=='api' or path.startswith('api/') else settings['frontend_port']
         headers={k:v for k,v in request.headers.items() if k.lower() not in {'host','connection','content-length','x-forwarded-for','x-forwarded-proto'}}
         headers.update({'x-forwarded-proto':'https','x-forwarded-for':request.client.host if request.client else '127.0.0.1'})
         client=httpx.AsyncClient(timeout=httpx.Timeout(30,read=None),follow_redirects=False)

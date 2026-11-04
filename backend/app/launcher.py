@@ -1,9 +1,16 @@
 """跨平台启动入口，与开发用 uvicorn 入口兼容。"""
-import argparse, os
+import argparse, os, sys
+from pathlib import Path
 import uvicorn
 
 
 def main():
+    if getattr(sys, 'frozen', False):
+        data = Path(os.getenv('ATMOSPHERE_DATA_DIR') or Path(sys.executable).parent / 'data')
+        data.mkdir(parents=True, exist_ok=True)
+        os.environ.setdefault('ATMOSPHERE_DATA_DIR', str(data))
+        os.environ.setdefault('ATMOSPHERE_DB_PATH', str(data / 'panel.sqlite3'))
+        os.environ.setdefault('ATMOSPHERE_WEB_DIR', str(Path(sys._MEIPASS) / 'web'))
     parser=argparse.ArgumentParser(description='ATMOSPHERE · Minecraft server operations')
     parser.add_argument('--host',default=os.getenv('ATMOSPHERE_BIND','0.0.0.0'))
     parser.add_argument('--port',type=int,default=int(os.getenv('ATMOSPHERE_BACKEND_PORT','27777')))

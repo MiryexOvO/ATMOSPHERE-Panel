@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+# Default: download the standalone release installer. Legacy source installation is opt-in.
+if [[ ${1:-} != --from-source ]]; then
+  installer=$(mktemp)
+  trap 'rm -f "$installer"' EXIT
+  curl --fail --location --retry 3 https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/scripts/install-release.sh -o "$installer"
+  bash "$installer" "$@"
+  exit $?
+fi
+shift
+
 
 CYAN='\033[1;36m'
 GREEN='\033[1;32m'
