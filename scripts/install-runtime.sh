@@ -1,6 +1,43 @@
 #!/usr/bin/env bash
 # 由根目录 install.sh 加载；所有步骤输出到私有安装日志。
 
+# 检测可复用的 Node.js：优先上次安装的 .tools，其次系统 PATH。
+node_usable() {
+  local candidate
+  for candidate in "$INSTALL_PATH/.tools/node/bin/node" "$(command -v node 2>/dev/null || true)"; do
+    [[ -n "$candidate" && -x "$candidate" ]] || continue
+    if "$candidate" -e 'let [a,b]=process.versions.node.split(".").map(Number);process.exit(a>=24||(a===22&&b>=12)?0:1)' 2>/dev/null; then
+      NODE_BIN="$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# 读取 Java 主版本号，Java 8 的 1.8.0 也归一化为 8。
+java_major() {
+  "$1" -version 2>&1 | awk -F'"' '/version/ {split($2, v, "."); print (v[1] == "1" ? v[2] : v[1]); exit}'
+}
+
+# 已有 Temurin 或系统 Java 21+ 时不再下载。
+java_usable() {
+  local target="$DATA_PATH/java/temurin-21/bin/java" system_java major
+  [[ -x "$target" ]] && return 0
+  system_java=$(command -v java 2>/dev/null || true)
+  [[ -n "$system_java" ]] || return 1
+  major=$(java_major "$system_java")
+  [[ -n "$major" ]] && ((major >= 21))
+}
+
+# 依赖清单未变化且虚拟环境可运行时跳过 pip 安装。
+backend_deps_current() {
+  local marker="$INSTALL_PATH/backend/.venv/.atmosphere-requirements.sha256" hash
+  [[ -x "$INSTALL_PATH/backend/.venv/bin/python" && -f "$marker" ]] || return 1
+  hash=$(sha256sum "$INSTALL_PATH/backend/requirements.txt" | awk '{print $1}')
+  [[ "$(cat "$marker")" == "$hash" ]] || return 1
+  "$INSTALL_PATH/backend/.venv/bin/python" -c 'import sys; assert sys.version_info >= (3,11)' 2>/dev/null
+}
+
 install_node() {
   if [[ $(command -v node || true) =~ ^/usr/(local/)?bin/node$ ]] && node -e 'let [a,b]=process.versions.node.split(".").map(Number);process.exit(a>=24||(a===22&&b>=12)?0:1)'; then NODE_BIN=$(command -v node); return; fi
   local arch archive directory base
@@ -26,24 +63,42 @@ prepare_backend() {
   [[ -n "$PYTHON_BIN" ]] || fail '需要 Python 3.11+，推荐 Ubuntu 24.04+ / Debian 12+；安装后重新执行即可'
   "$PYTHON_BIN" -m venv "$INSTALL_PATH/backend/.venv"
   "$INSTALL_PATH/backend/.venv/bin/python" -m pip install --disable-pip-version-check -r "$INSTALL_PATH/backend/requirements.txt" --index-url "$PIP_INDEX"
+  # 记录依赖清单指纹，下次安装时据此跳过 pip 拉取。
+  sha256sum "$INSTALL_PATH/backend/requirements.txt" | awk '{print $1}' > "$INSTALL_PATH/backend/.venv/.atmosphere-requirements.sha256"
 }
 
 prepare_frontend() {
-  local manager
+  local manager pnpm_bin lock_hash marker
   manager=$("$NODE_BIN" -p "require('$INSTALL_PATH/frontend/package.json').packageManager")
   [[ "$manager" =~ ^pnpm@[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail 'packageManager 不是已锁定的 pnpm 版本'
-  npm install --global --prefix "$INSTALL_PATH/.tools/pnpm" "$manager" --registry "$NPM_REGISTRY"
+  pnpm_bin="$INSTALL_PATH/.tools/pnpm/bin/pnpm"
+  # 已安装且版本一致时不再从 npm 拉取 pnpm。
+  if [[ ! -x "$pnpm_bin" || "$("$pnpm_bin" --version 2>/dev/null || true)" != "${manager#pnpm@}" ]]; then
+    npm install --global --prefix "$INSTALL_PATH/.tools/pnpm" "$manager" --registry "$NPM_REGISTRY"
+  fi
   export PATH="$INSTALL_PATH/.tools/pnpm/bin:$(dirname "$NODE_BIN"):$PATH"
   cd "$INSTALL_PATH/frontend"
-  npm_config_registry="$NPM_REGISTRY" pnpm install --frozen-lockfile
+  # 锁文件没变且 node_modules 完整时跳过依赖下载，但始终重新构建。
+  lock_hash=$(sha256sum pnpm-lock.yaml | awk '{print $1}')
+  marker="node_modules/.atmosphere-lock.sha256"
+  if [[ ! -d node_modules || ! -f "$marker" || "$(cat "$marker")" != "$lock_hash" ]]; then
+    npm_config_registry="$NPM_REGISTRY" pnpm install --frozen-lockfile
+    printf '%s\n' "$lock_hash" > "$marker"
+  fi
   NUXT_PUBLIC_API_BASE=/api pnpm build
 }
 
 install_java() {
   # 使用官方元数据中的下载地址与摘要，保留已有 Java 安装。
-  local target directory
+  local target directory system_java major
   target="$DATA_PATH/java/temurin-21"
   [[ -x "$target/bin/java" ]] && return
+  # 系统已有 Java 21+ 时直接复用，不再下载 Temurin。
+  system_java=$(command -v java 2>/dev/null || true)
+  if [[ -n "$system_java" ]]; then
+    major=$(java_major "$system_java")
+    if [[ -n "$major" ]] && ((major >= 21)); then return; fi
+  fi
   [[ ! -e "$target" ]] || fail 'Java 目标目录已有不完整内容，请先检查后再重试'
   directory=$(mktemp -d)
   "$PYTHON_BIN" - "$directory" <<'PY'
@@ -174,16 +229,32 @@ installer_run() {
   [[ "$DATA_PATH" =~ ^/[a-zA-Z0-9_/-]+$ && "$DATA_PATH" != / ]] || fail '运行数据目录格式无效'
   [[ $(realpath -m "$DATA_PATH") == "$DATA_PATH" ]] || fail '运行数据目录不能包含符号链接或非标准路径'
   mkdir -p "$DATA_PATH/java"
-  run_step '02 / 08  Node.js 运行环境' install_node
+  if node_usable; then
+    info "已检测到 Node.js $("$NODE_BIN" --version)，跳过下载"
+  else
+    run_step '02 / 08  Node.js 运行环境' install_node
+  fi
   # 后台步骤不向父 Shell 回传变量，运行环境在此重新定位。
-  if [[ -x "$INSTALL_PATH/.tools/node/bin/node" ]];then NODE_BIN="$INSTALL_PATH/.tools/node/bin/node";else NODE_BIN=$(command -v node);fi
+  node_usable || fail 'Node.js 运行环境不可用'
   export PATH="$(dirname "$NODE_BIN"):$PATH"
   for candidate in python3.13 python3.12 python3.11 python3;do
     if command -v "$candidate" >/dev/null && "$candidate" -c 'import sys;assert sys.version_info>=(3,11)' 2>/dev/null;then PYTHON_BIN=$(command -v "$candidate");break;fi
   done
-  run_step '03 / 08  Python 后端依赖'  prepare_backend
+  # 复用旧虚拟环境时系统可能已没有可用的 Python，仍需一个解释器下载 Java。
+  if [[ -z "$PYTHON_BIN" && -x "$INSTALL_PATH/backend/.venv/bin/python" ]]; then
+    PYTHON_BIN="$INSTALL_PATH/backend/.venv/bin/python"
+  fi
+  if backend_deps_current; then
+    info 'Python 依赖已是最新，跳过安装'
+  else
+    run_step '03 / 08  Python 后端依赖'  prepare_backend
+  fi
   run_step '04 / 08  前端依赖与生产构建' prepare_frontend
-  run_step '05 / 08  Java 21 官方运行环境' install_java
+  if java_usable; then
+    info '已检测到 Java 21+，跳过下载'
+  else
+    run_step '05 / 08  Java 21 官方运行环境' install_java
+  fi
   run_step '06 / 08  服务与反向代理' write_services
   run_step '07 / 08  ATMOSPHERE 管理命令' install_cli
   run_step '08 / 08  面板健康检查' verify_install

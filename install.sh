@@ -139,6 +139,7 @@ if ((PLAN));then
   box 'ATMOSPHERE / INSTALLATION PLAN'
   printf 'Directory: %s\nPublic: %s  API: %s  Web: %s\n' "$INSTALL_PATH" "$FRONTEND_PORT" "$BACKEND_PORT" "$INTERNAL_FRONTEND_PORT"
   printf '01 source and packages\n02 Node.js (verified SHA256)\n03 Python backend\n04 locked frontend build\n05 Java 21 (verified SHA256)\n06 services + nginx\n07 management command\n08 HTTP health check\n'
+  printf 'Existing Node.js / Python dependencies / Java are reused when detected.\n'
   exit 0
 fi
 [[ $(uname -s) == Linux ]] || fail '一键安装仅面向 Linux；Windows 请使用 backend/run_windows.ps1'
@@ -163,6 +164,15 @@ run_step(){
   printf '\r  %b[OK] %s · %ss%b\n' "$GREEN" "$title" "$((SECONDS-started))" "$RESET"
 }
 bootstrap(){
+  local missing=0 cmd
+  # 系统依赖齐全时跳过包管理器更新与安装，避免每次重复拉取。
+  for cmd in curl git python3 nginx tar xz make gcc sha256sum; do
+    command -v "$cmd" >/dev/null 2>&1 || missing=1
+  done
+  [[ -d /etc/ssl/certs ]] || missing=1
+  python3 -c 'import venv' >/dev/null 2>&1 || missing=1
+  python3 -m pip --version >/dev/null 2>&1 || missing=1
+  if ((missing==0)); then info '系统依赖已存在，跳过软件包安装'; return; fi
   if command -v apt-get >/dev/null;then export DEBIAN_FRONTEND=noninteractive;apt-get update;apt-get install -y ca-certificates curl git python3 python3-venv python3-pip nginx xz-utils tar build-essential
   elif command -v dnf >/dev/null;then dnf install -y ca-certificates curl git python3 python3-pip nginx xz tar gcc make
   else fail '当前安装器支持 apt / dnf，请使用受支持系统';fi
