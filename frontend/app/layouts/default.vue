@@ -25,18 +25,8 @@ const palettePanel = ref<HTMLElement | null>(null)
 const menuTrigger = ref<HTMLElement | null>(null)
 const menuPanel = ref<HTMLElement | null>(null)
 const colorMode = useColorMode()
-const customColors = ref({
-  textPrimary: '#e9dfc6',
-  textSecondary: '#a4aaa3',
-  surface: '#1c252d',
-  background: '#11151b',
-})
-const fields = [
-  { label: 'TEXT1', key: 'textPrimary', variable: '--text-primary' },
-  { label: 'TEXT2', key: 'textSecondary', variable: '--text-secondary' },
-  { label: 'UI COLOR', key: 'surface', variable: '--surface' },
-  { label: 'BACKGROUND', key: 'background', variable: '--background' },
-] as const
+// usePanelTheme 管理这些
+const { colors: customColors, fields, themeOptions, selectTheme, applyColor } = usePanelTheme()
 let timer: ReturnType<typeof setInterval> | undefined
 let pointerFrame = 0
 let pendingPointer: { x: number; y: number } | null = null
@@ -54,12 +44,6 @@ const coordinates = computed(() => ({
   x: pointer.value ? String(pointer.value.x).padStart(4, '0') : '----',
   y: pointer.value ? String(pointer.value.y).padStart(4, '0') : '----',
 }))
-
-const themeOptions = computed(() => [
-  { label: 'SYSTEM', value: 'system' },
-  { label: 'DARK', value: 'dark' },
-  { label: 'LIGHT', value: 'light' },
-])
 
 // 点击 PALETTE 面板或用户菜单以外的区域时自动收起
 function closePopovers(event: MouseEvent) {
@@ -85,14 +69,6 @@ onMounted(() => {
   }, 1000)
   window.addEventListener('pointermove', trackPointer, { passive: true })
   document.addEventListener('click', closePopovers)
-  const saved = localStorage.getItem('custom-theme')
-  if (saved) {
-    try {
-      customColors.value = JSON.parse(saved)
-    } catch {
-      /* ignore malformed local preference */
-    }
-  }
 })
 
 onUnmounted(() => {
@@ -102,22 +78,13 @@ onUnmounted(() => {
   if (pointerFrame) cancelAnimationFrame(pointerFrame)
 })
 
-function applyColor(field: (typeof fields)[number], value: string) {
-  customColors.value[field.key] = value
-  document.documentElement.style.setProperty(field.variable, value)
-  localStorage.setItem('custom-theme', JSON.stringify(customColors.value))
+// 取色与主题切换统一交给 usePanelTheme，这里只处理面板开合。
+function updateColor(field: (typeof fields)[number], value: string) {
+  applyColor(field.key, value)
 }
 
-function selectTheme(value: 'system' | 'dark' | 'light') {
-  colorMode.preference = value
-  localStorage.removeItem('custom-theme')
-  // 即使再次选择当前模式，也要清除自定义颜色的残留。
-  const light = value === 'light' || (value === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)
-  customColors.value = light
-    ? { textPrimary: '#27313b', textSecondary: '#626e78', surface: '#ffffff', background: '#f1f4f6' }
-    : { textPrimary: '#e9dfc6', textSecondary: '#a4aaa3', surface: '#1c252d', background: '#11151b' }
-  for (const field of fields) document.documentElement.style.setProperty(field.variable, customColors.value[field.key])
-  document.documentElement.style.setProperty('--brand', customColors.value.textPrimary)
+function chooseTheme(value: 'system' | 'dark' | 'light') {
+  selectTheme(value)
   paletteOpen.value = true
 }
 
@@ -246,7 +213,7 @@ async function logout() {
                     ? 'border border-brand text-text-primary'
                     : 'border border-transparent'
                 "
-                @click="selectTheme(theme.value as 'system' | 'dark' | 'light')"
+                @click="chooseTheme(theme.value as 'system' | 'dark' | 'light')"
               >
                 <span>◌</span>{{ theme.label }}
               </button>
@@ -263,7 +230,7 @@ async function logout() {
                   type="color"
                   class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   :value="customColors[field.key]"
-                  @input="applyColor(field, ($event.target as HTMLInputElement).value)"
+                  @input="updateColor(field, ($event.target as HTMLInputElement).value)"
                 />
                 <span
                   class="pointer-events-none h-7 w-7 rounded-full"

@@ -20,36 +20,8 @@ const paletteOpen = ref(false)
 const now = ref(new Date())
 const colorMode = useColorMode()
 const { request, getErrorMessage } = useApi()
-const customColors = ref({
-  textPrimary: '#e9dfc6',
-  textSecondary: '#a4aaa3',
-  surface: '#1c252d',
-  background: '#11151b',
-})
-const colorFields = [
-  { label: 'TEXT1', variable: 'text-primary', key: 'textPrimary' },
-  { label: 'TEXT2', variable: 'text-secondary', key: 'textSecondary' },
-  { label: 'UI COLOR', variable: 'surface', key: 'surface' },
-  { label: 'BACKGROUND', variable: 'background', key: 'background' },
-] as const
-const themeOptions = [
-  { label: 'SYSTEM', value: 'system' },
-  { label: 'DARK', value: 'dark' },
-  { label: 'LIGHT', value: 'light' },
-] as const
-function selectTheme(value: 'system' | 'dark' | 'light') {
-  colorMode.preference = value
-  localStorage.removeItem('custom-theme')
-  const resolved =
-    value === 'system' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : value
-  const colors =
-    resolved === 'light'
-      ? { textPrimary: '#27313b', textSecondary: '#626e78', surface: '#ffffff', background: '#f1f4f6' }
-      : { textPrimary: '#e9dfc6', textSecondary: '#a4aaa3', surface: '#1c252d', background: '#11151b' }
-  customColors.value = colors
-  for (const field of colorFields) document.documentElement.style.setProperty('--' + field.variable, colors[field.key])
-  document.documentElement.style.setProperty('--brand', colors.textPrimary)
-}
+// 复用全站共享的颜色
+const { colors: customColors, fields: colorFields, themeOptions, selectTheme, applyColor } = usePanelTheme()
 const { t, locale, setLocale } = useI18n()
 const languages = [
   { code: 'zh', label: 'ZH' },
@@ -87,31 +59,7 @@ onMounted(() => {
     now.value = new Date()
   }, 1000)
   document.addEventListener('click', closePopovers)
-  const saved = localStorage.getItem('custom-theme')
-  if (saved) {
-    try {
-      customColors.value = JSON.parse(saved)
-    } catch {}
-  } else {
-    // 登录页晚于应用挂载时，仍使用当前主题而非固定深色。
-    customColors.value =
-      colorMode.value === 'light'
-        ? { textPrimary: '#27313b', textSecondary: '#626e78', surface: '#ffffff', background: '#f1f4f6' }
-        : { textPrimary: '#e9dfc6', textSecondary: '#a4aaa3', surface: '#1c252d', background: '#11151b' }
-  }
-  for (const field of colorFields)
-    document.documentElement.style.setProperty(`--${field.variable}`, customColors.value[field.key])
-  document.documentElement.style.setProperty('--brand', customColors.value.textPrimary)
 })
-function saveToLocalStorage() {
-  localStorage.setItem('custom-theme', JSON.stringify(customColors.value))
-}
-function applyCustomColor(variable: string, key: keyof typeof customColors.value, value: string) {
-  customColors.value[key] = value
-  document.documentElement.style.setProperty(`--${variable}`, value)
-  if (key === 'textPrimary') document.documentElement.style.setProperty('--brand', value)
-  saveToLocalStorage()
-}
 onUnmounted(() => {
   if (timer) clearInterval(timer)
   document.removeEventListener('click', closePopovers)
@@ -286,7 +234,7 @@ async function login() {
               type="color"
               :value="customColors[field.key]"
               class="absolute inset-[-10px] h-12 w-12 cursor-pointer opacity-0"
-              @input="applyCustomColor(field.variable, field.key, ($event.target as HTMLInputElement).value)" /><span
+              @input="applyColor(field.key, ($event.target as HTMLInputElement).value)" /><span
               class="pointer-events-none block h-full w-full rounded-full"
               :style="{ backgroundColor: customColors[field.key] }"
           /></label>
