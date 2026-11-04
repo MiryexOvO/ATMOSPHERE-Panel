@@ -170,20 +170,17 @@ Set-ExecutionPolicy -Scope Process Bypass
 # 3.运行 Windows 启动脚本
 .\run_windows.ps1
 ```
+
 不要使用 Linux 命令 `.venv/bin/activate`；Windows 虚拟环境入口是 `.venv\\Scripts\\python.exe`  
 如果 Python 3.14 的系统 pip 已损坏，建议使用 Python 3.12 或 3.13 创建虚拟环境
 
 ## 服务管理
 
 ```bash
-# 1. 查看 atmosphere-panel 服务当前运行状态（是否正在运行、是否报错、启动日志等）
-sudo systemctl status atmosphere-panel.service
-
-# 2. 重启 atmosphere-panel 服务（通常在修改了后端代码或配置文件后执行，用于应用更新）
-sudo systemctl restart atmosphere-panel.service
-
-# 3. 实时跟踪/查看 atmosphere-panel 服务的运行日志（-f 表示 follow 实时滚动输出，方便排查报错）
-sudo journalctl -u atmosphere-panel.service -f
+sudo atmosphere status    # 查看服务状态
+sudo atmosphere logs      # 跟踪后端日志
+sudo atmosphere restart   # 重启面板服务
+sudo atmosphere stop      # 停止面板服务
 ```
 
 ## 提示
