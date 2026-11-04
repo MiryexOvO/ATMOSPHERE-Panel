@@ -4,7 +4,7 @@ type Level = 'normal' | 'error' | 'warn' | 'system'
 type LogLine = { id: number; text: string; level: Level; time: string; animate: boolean }
 
 const props = defineProps<{ instanceId: string; status?: string }>()
-const { request, getErrorMessage } = useApi()
+const { instanceRequest, path, getErrorMessage } = useInstanceApi(() => props.instanceId)
 const logs = ref<LogLine[]>([])
 const command = ref('')
 const connected = ref(false)
@@ -83,7 +83,7 @@ function connect() {
   source?.close()
   connected.value = false
   serverRunning.value = null
-  source = new EventSource('/api/instances/' + encodeURIComponent(props.instanceId) + '/logs/stream')
+  source = new EventSource(path('/logs/stream'))
   source.onopen = () => {
     connected.value = true
   }
@@ -110,9 +110,7 @@ function connect() {
 
 async function refreshPlayers() {
   try {
-    const result = await request<{ players?: string[] }>(
-      '/api/instances/' + encodeURIComponent(props.instanceId) + '/players',
-    )
+    const result = await instanceRequest<{ players?: string[] }>('/players')
     playerCount.value = result.players?.length || 0
   } catch {
     playerCount.value = 0
@@ -134,7 +132,7 @@ async function sendCommand() {
   }
   sending.value = true
   try {
-    await request('/api/instances/' + encodeURIComponent(props.instanceId) + '/command', {
+    await instanceRequest('/command', {
       method: 'POST',
       body: { command: value },
     })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{ instanceId: string }>()
 const tr = usePanelText(),
-  { request, getErrorMessage } = useApi()
+  { instanceRequest, path, getErrorMessage } = useInstanceApi(() => props.instanceId)
 const names = ref<string[]>([]),
   selected = ref<string[]>([]),
   message = ref(''),
@@ -19,7 +19,7 @@ const actions = computed(() => [
 let timer: ReturnType<typeof setInterval> | undefined
 async function load() {
   try {
-    const data = await request<{ players: string[] }>(`/api/instances/${encodeURIComponent(props.instanceId)}/players`)
+    const data = await instanceRequest<{ players: string[] }>('/players')
     names.value = data.players
     selected.value = selected.value.filter((name) => names.value.includes(name))
     message.value = ''
@@ -37,7 +37,7 @@ async function apply() {
   const results: string[] = []
   for (const name of selected.value) {
     try {
-      await request(`/api/instances/${encodeURIComponent(props.instanceId)}/players/action`, {
+      await instanceRequest('/players/action', {
         method: 'POST',
         body: { name, action: action.value },
       })
@@ -76,7 +76,7 @@ onUnmounted(() => {
         :key="name"
         class="flex cursor-pointer items-center gap-4 border border-border p-4 transition-colors hover:border-brand"
         ><input v-model="selected" type="checkbox" :value="name" class="accent-brand" /><img
-          :src="`/api/instances/${encodeURIComponent(instanceId)}/players/avatar/${encodeURIComponent(name)}`"
+          :src="path(`/players/avatar/${encodeURIComponent(name)}`)"
           width="48"
           height="48"
           :alt="name"

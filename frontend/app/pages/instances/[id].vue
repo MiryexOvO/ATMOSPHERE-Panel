@@ -30,12 +30,12 @@ function updateTabIndicator() {
 }
 watch([activeTab, locale], () => nextTick(updateTabIndicator))
 let timer: ReturnType<typeof setInterval> | undefined
-const { request, getErrorMessage } = useApi()
+const { instanceRequest, getErrorMessage } = useInstanceApi(instanceId)
 const toast = ref<{ type: 'success' | 'error'; message: string } | null>(null)
 const showDeleteModal = ref(false)
 async function deleteInstance() {
   try {
-    await request('/api/instances/' + encodeURIComponent(instanceId), { method: 'DELETE' })
+    await instanceRequest('', { method: 'DELETE' })
     await navigateTo('/dashboard')
   } catch (error: unknown) {
     showDeleteModal.value = false
@@ -50,14 +50,14 @@ function showToast(type: 'success' | 'error', message: string) {
 }
 
 async function load() {
-  instance.value = await request<import('~/types').InstanceData>('/api/instances/' + encodeURIComponent(instanceId))
+  instance.value = await instanceRequest<import('~/types').InstanceData>('')
 }
 const powerBusy = ref(false)
 async function power(action: 'start' | 'stop' | 'restart') {
   if (powerBusy.value) return
   powerBusy.value = true
   try {
-    await request('/api/instances/' + encodeURIComponent(instanceId) + '/power', { method: 'POST', body: { action } })
+    await instanceRequest('/power', { method: 'POST', body: { action } })
     await load()
   } catch (error: unknown) {
     showToast('error', getErrorMessage(error, t('instancePowerError')))

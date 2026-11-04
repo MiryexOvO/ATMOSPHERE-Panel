@@ -1,3 +1,5 @@
+import { instancePath } from '~/utils/apiPath'
+
 export function useApi() {
   const config = useRuntimeConfig()
   const token = useCookie<string | null>('mc_panel_session')
@@ -30,4 +32,21 @@ export function useApi() {
   }
 
   return { request, getErrorMessage }
+}
+
+type InstanceIdSource = string | (() => string)
+
+// API 封装
+// id 编码和前缀处理
+export function useInstanceApi(instanceId: InstanceIdSource) {
+  const { request, getErrorMessage } = useApi()
+
+  const resolveId = () => (typeof instanceId === 'function' ? instanceId() : instanceId)
+  // 生成实例路径，供 EventSource、下载链接等无法走 request 的场景使用
+  const path = (suffix = '') => instancePath(resolveId(), suffix)
+  // 实例请求
+  const instanceRequest = <T>(suffix: string, options: Parameters<typeof request<T>>[1] = {}) =>
+    request<T>(path(suffix), options)
+
+  return { request, instanceRequest, path, getErrorMessage }
 }

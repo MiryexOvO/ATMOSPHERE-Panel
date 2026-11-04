@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{ instanceId: string; running: boolean }>()
 const tr = usePanelText(),
-  { request, getErrorMessage } = useApi()
+  { instanceRequest, path, getErrorMessage } = useInstanceApi(() => props.instanceId)
 const canvas = ref<HTMLCanvasElement | null>(null),
   image = shallowRef<HTMLImageElement | null>(null),
   zoom = ref(1),
@@ -55,7 +55,7 @@ async function save() {
     if (!blob) throw Error('PNG encoding failed')
     const form = new FormData()
     form.append('file', blob, 'server-icon.png')
-    await request(`/api/instances/${encodeURIComponent(props.instanceId)}/icon`, { method: 'POST', body: form })
+    await instanceRequest('/icon', { method: 'POST', body: form })
     stamp.value = Date.now()
     message.value = tr(
       '图标已保存，启动后生效',
@@ -81,7 +81,7 @@ async function exportServer() {
           types: [{ description: 'ZIP', accept: { 'application/zip': ['.zip'] } }],
         })
       : null
-    const response = await fetch(`/api/instances/${encodeURIComponent(props.instanceId)}/export`)
+    const response = await fetch(path('/export'))
     if (!response.ok) {
       const data = await response.json()
       throw Error(data.detail || data.message || response.statusText)
@@ -131,7 +131,7 @@ onUnmounted(() => {
     <div class="flex flex-wrap items-center gap-5">
       <img
         :key="stamp"
-        :src="`/api/instances/${encodeURIComponent(instanceId)}/icon?v=${stamp}`"
+        :src="path('/icon') + '?v=' + stamp"
         width="64"
         height="64"
         alt="SERVER ICON"
