@@ -9,6 +9,7 @@ yes=0
 color=''; reset=''
 if [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-dumb} != dumb ]]; then color='\033[1;36m'; reset='\033[0m'; fi
 step(){ printf '\n%b  [%s/5] %s%b\n' "$color" "$1" "$2" "$reset"; }
+download(){ curl --proto '=https' --tlsv1.2 --fail --show-error --location --retry 3 --connect-timeout 15 --max-time 600 "$@"; }
 fail(){ printf '\n  FAILED · %s\n' "$*" >&2; exit 1; }
 while (($#)); do
   case "$1" in
@@ -44,15 +45,15 @@ trap 'rm -rf -- "$work"' EXIT
 trap 'printf "\n  Installation failed; previous releases and data retained.\n" >&2' ERR
 step 1 'Resolve official release'
 if [[ "$version" == latest ]]; then
-  effective=$(curl -fsSL --retry 3 -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest")
+  effective=$(download --silent -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest")
   version=${effective##*/}
   [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-\.][a-zA-Z0-9.-]+)?$ ]] || fail 'No published release found'
 fi
 name="atmosphere-panel-$version-linux-$arch.tar.gz"
 base="https://github.com/$repo/releases/download/$version"
 step 2 'Download binary / no Node.js or Python installation'
-curl -fL --retry 3 --progress-bar "$base/$name" -o "$work/$name"
-curl -fsSL --retry 3 "$base/$name.sha256" -o "$work/checksum"
+download --progress-bar "$base/$name" -o "$work/$name"
+download --silent "$base/$name.sha256" -o "$work/checksum"
 step 3 'Verify SHA256 and unpack'
 expected=$(awk 'NR==1 {print $1}' "$work/checksum")
 [[ "$expected" =~ ^[a-fA-F0-9]{64}$ ]] || fail 'Invalid checksum'
@@ -96,7 +97,7 @@ systemctl enable atmosphere-panel
 systemctl restart atmosphere-panel
 step 5 'Check HTTP readiness'
 for attempt in {1..60}; do
-  if curl -fsS "http://127.0.0.1:$port/api/health" >/dev/null && curl -fsS "http://127.0.0.1:$port/" >/dev/null; then
+  if curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/api/health" >/dev/null && curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/" >/dev/null; then
     printf '\n  ONLINE / http://<server>:%s\n  Logs: sudo journalctl -u atmosphere-panel -f\n  Initial password: first-start service logs\n  Data: /opt/mc-panel (preserved across updates)\n' "$port"
     exit 0
   fi

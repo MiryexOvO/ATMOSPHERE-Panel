@@ -27,7 +27,18 @@ jobs:
       - run: corepack enable
       - run: python -m pip install -r backend/requirements.txt pyinstaller==6.11.1
       - run: python scripts/build-release.py --version "${{ inputs.version || github.ref_name }}"
-      - run: python scripts/smoke-release.py
+      - name: Verify frozen web and API
+        run: python scripts/smoke-release.py
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-${{ matrix.os }}
+          path: |
+            build/diagnostics/*
+            build/atmosphere-panel/warn-atmosphere-panel.txt
+          if-no-files-found: ignore
+
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.os }}

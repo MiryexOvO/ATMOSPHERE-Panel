@@ -60,20 +60,31 @@ ATMOSPHERE-PANEL 是一个基于 Web 的 Minecraft 服务器管理面板。通�
 ### Linux / systemd
 
 ```bash
-curl -fL --retry 3 https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh -o /tmp/atmosphere-install.sh
-sudo bash /tmp/atmosphere-install.sh
+bash -c 'set -euo pipefail
+installer=$(mktemp -t atmosphere-install.XXXXXXXX.sh)
+cleanup() { rm -f -- "$installer"; }
+trap cleanup EXIT
+curl --proto "=https" --tlsv1.2 --fail --show-error --location \
+  --retry 3 --connect-timeout 15 --max-time 120 \
+  https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/scripts/install-release.sh \
+  --output "$installer"
+sudo bash "$installer" "$@"' -- --yes --port 27777
 ```
 
 默认入口 `http://服务器地址:27777`。安装器从 GitHub Releases 下载本机架构包、验证 SHA256、注册 `atmosphere-panel` 服务并检查网页与 API。需要预装 curl、tar、sha256sum；当前流水线提供 Linux x64、Windows x64、macOS arm64，其他架构需在对应机器构建。
 
 ```bash
-sudo bash /tmp/atmosphere-install.sh --yes --port 27777 --version v0.2.0
-bash /tmp/atmosphere-install.sh --plan
+# 在上方命令末尾追加 --version v0.3.0 可锁定版本；移除 --yes 可交互选择端口。
+# 预览安装计划：将末尾参数替换为 --plan --no-color。
 sudo journalctl -u atmosphere-panel -f
 sudo systemctl restart atmosphere-panel
 ```
 
 首次密码见首次启动日志。数据保存于 `/opt/mc-panel`，更新保留数据；更新前请备份。安装器适用于全新安装和此发布安装器创建的目录。旧版源码安装需先备份、迁移数据库并停用旧前端和 Nginx 服务，避免继续访问旧站点。控制面板因现有 systemd 实例管理机制以 root 运行；游戏实例使用 mc-panel 账号。
+
+安装命令使用随机临时文件，下载失败立即停止，退出时清理文件；参数通过 `"$@"` 原样传给安装器。需要自定义目录时追加 `--dir /opt/atmosphere-panel`。只有已公开的 Release 才能下载，草稿和失败的 Actions 运行不会成为可安装版本。
+
+`install-release.sh` 是真正的二进制安装器：下载发布包 → 校验 SHA256 → 解压 → 注册 systemd → 检查网页/API。根目录 `install.sh` 是兼容入口，默认转交给它，`--from-source` 才进入旧版源码安装。上方命令直接获取二进制安装器，减少一次网络请求，安装无需克隆源码或现场编译。
 
 ### Windows / macOS
 

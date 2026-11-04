@@ -4,7 +4,7 @@ set -Eeuo pipefail
 if [[ ${1:-} != --from-source ]]; then
   installer=$(mktemp)
   trap 'rm -f "$installer"' EXIT
-  curl --fail --location --retry 3 https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/scripts/install-release.sh -o "$installer"
+  curl --proto '=https' --tlsv1.2 --fail --show-error --location --retry 3 --connect-timeout 15 --max-time 120 https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/scripts/install-release.sh -o "$installer"
   bash "$installer" "$@"
   exit $?
 fi
