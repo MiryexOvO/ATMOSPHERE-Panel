@@ -3,7 +3,7 @@ import ResourceChart from './ResourceChart.vue'
 const props = defineProps<{ instanceId: string }>()
 const { t } = useI18n()
 const tr = usePanelText()
-const { request, getErrorMessage } = useApi()
+const { request, instanceRequest, getErrorMessage } = useInstanceApi(() => props.instanceId)
 type Reading = {
   running: boolean
   pid: number | null
@@ -43,7 +43,7 @@ async function sample() {
   if (sampling || disposed) return
   sampling = true
   try {
-    reading.value = await request<Reading>(`/api/instances/${encodeURIComponent(props.instanceId)}/monitor`)
+    reading.value = await instanceRequest<Reading>('/monitor')
     points.value.push({
       time: new Date().toLocaleTimeString(),
       cpu: reading.value.host_cpu_percent,

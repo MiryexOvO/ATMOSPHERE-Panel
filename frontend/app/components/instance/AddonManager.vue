@@ -2,7 +2,7 @@
 import MechanicalSwitch from '~/components/ui/MechanicalSwitch.vue'
 const props = defineProps<{ instanceId: string; kind: 'mods' | 'plugins' }>()
 const tr = usePanelText(),
-  { request, getErrorMessage } = useApi()
+  { instanceRequest, getErrorMessage } = useInstanceApi(() => props.instanceId)
 type Addon = {
   file: string
   name: string
@@ -42,14 +42,14 @@ watch(search, () => {
 watch(pageCount, (count) => {
   page.value = Math.min(page.value, count)
 })
-const base = computed(() => `/api/instances/${encodeURIComponent(props.instanceId)}/addons/${props.kind}`)
+const addonPath = computed(() => `/addons/${props.kind}`)
 let loadVersion = 0
 // 加载时保留卡片占位；只接收当前分类的最新响应。
 async function load() {
   const version = ++loadVersion
   loading.value = true
   try {
-    const data = await request<{ items: Addon[]; running: boolean; supported: boolean }>(base.value)
+    const data = await instanceRequest<{ items: Addon[]; running: boolean; supported: boolean }>(addonPath.value)
     if (version !== loadVersion) return
     items.value = data.items
     running.value = data.running
@@ -65,7 +65,7 @@ async function toggle(item?: Addon) {
   busy.value = true
   message.value = ''
   try {
-    const data = await request<{ changed: string[] }>(base.value, {
+    const data = await instanceRequest<{ changed: string[] }>(addonPath.value, {
       method: 'POST',
       body: item ? { file: item.file, enabled: !item.enabled } : { auto_client: true },
     })
