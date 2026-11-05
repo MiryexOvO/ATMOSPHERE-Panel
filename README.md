@@ -33,7 +33,7 @@
   <a href="./README_EN.md">English</a> | 简体中文 | <a href="README_JP.md">日本語</a>
 </p>
 
-ATMOSPHERE-PANEL 是一个基于 Web 的 Minecraft 服务器管理面板。通过受身份验证保护的界面，可以注册服务器实例、选择服务端核心与版本，并由后端 API 完成部署与运行管理。
+ATMOSPHERE-PANEL 是一个基于 Web 的 **Minecraft 服务器管理面板**。通过受身份验证保护的界面，可以注册服务器实例、选择服务端核心与版本，并由后端 API 完成部署与运行管理
 
 项目由两个部分组成：
 
@@ -67,9 +67,9 @@ ATMOSPHERE-PANEL 是一个基于 Web 的 Minecraft 服务器管理面板。通�
 
 ## 开箱即用（单进程部署）
 
-> - **零依赖运行**：发布包内置 Web 界面与独立 Python 运行时，无需额外部署 Node.js、Python 或 Nginx。
-> - **单端口访问**：一个进程、单个端口即可拉起全站服务。
-> - **外部依赖说明**：Java、BDS 及 MCDR 等游戏/管理运行环境需根据具体实例按需配置，不打包在面板下载包内。
+> - **零依赖运行**：发布包内置 Web 界面与独立 Python 运行时 无需额外部署 Node.js、Python、Nginx
+> - **单端口访问**：一个进程 单个端口即可拉起全站服务
+> - **外部依赖说明**：Java、BDS、MCDR 等管理运行环境需根据具体实例按需配置 不打包在面板下载包内
 
 ### Linux / systemd
 
@@ -90,16 +90,16 @@ curl --proto "=https" --tlsv1.2 --fail --show-error --location \
 sudo bash "$installer" "$@"' -- --yes --port 27777
 ```
 
-默认入口：`http://<服务器地址>:27777`
-
+默认入口：`http://<服务器地址>:27777`  
+  
 | 参数 | 作用 |
 | --- | --- |
 | `--yes --port 27777` | 非交互安装，指定入口端口 |
 | `--version v0.3.0` | 锁定发布版本 |
 | `--dir /opt/atmosphere-panel` | 自定义程序目录（默认值，须位于 `/opt` 下） |
-| `--plan --no-color` | 只预览安装计划 |
-
-安装器会从 GitHub Releases 下载对应架构包、校验 SHA256、解压、注册 `atmosphere-panel` 服务，并检查网页与 API。需要预装 `curl`、`tar`、`sha256sum`。当前提供 Linux x64、Windows x64、macOS arm64，其他架构需自行构建
+| `--plan --no-color` | 只预览安装计划 |  
+  
+安装器会从 GitHub Releases 下载架构包、校验 SHA256、解压、注册 `atmosphere-panel` 服务，检查网页与 API。需预装 `curl`、`tar`、`sha256sum`。当前提供 Linux x64、Windows x64、macOS arm64，其他架构需自行构建
 
 **首次使用**
 
@@ -134,12 +134,13 @@ chmod +x ./atmosphere-panel
 ./atmosphere-panel --port 27777
 ```
 
-打开 `http://127.0.0.1:27777`。数据默认位于可执行文件旁的 `data/`，请放在可写目录；可用 `ATMOSPHERE_DATA_DIR` 与 `ATMOSPHERE_DB_PATH` 自定义。macOS 包暂未签名或公证
+打开 `http://127.0.0.1:27777`。数据默认位于可执行文件旁的 `data/`，请放在可写目录  
+可用 `ATMOSPHERE_DATA_DIR` 与 `ATMOSPHERE_DB_PATH` 自定义。macOS 包暂未签名或公证
 
 ### 安装器说明
 
-- `scripts/install-release.sh`：二进制安装器，负责下载发布包、校验 SHA256、解压、注册 systemd、检查网页API
-- `install.sh`：兼容入口，默认转交给 `install-release.sh`；只有加 `--from-source` 才进入旧版源码安装
+- `scripts/install-release.sh`：二进制安装器，下载发布包、校验 SHA256、解压、注册 systemd、检查API
+- `install.sh`：兼容入口，默认转交给 `install-release.sh`加上 `--from-source` 进入旧版源码安装
 - 上方命令可直接获取 `install-release.sh`，减少一次网络跳转，也无需克隆源码或现场编译
 
 ## 获取源码
@@ -150,7 +151,7 @@ git clone https://github.com/MiryexOvO/ATMOSPHERE-Panel.git
 cd ATMOSPHERE-Panel
 ```
 
-开发端口：Web `5173`，后端 API `27777`。Nuxt 使用客户端渲染，`/api` 通过代理转发到 FastAPI。
+开发端口：Web `5173` 后端 API `27777`。Nuxt 使用客户端渲染 `/api` 通过代理转发到 FastAPI。
 
 <a id="frontend-dev"></a>
 
@@ -207,7 +208,6 @@ Set-ExecutionPolicy -Scope Process Bypass
 ```
 
 > Windows 请使用 `.venv\Scripts\python.exe`，不要执行 `.venv/bin/activate`
->
 > 如果 Python 3.14 的系统 pip 已损坏，建议改用 Python 3.12 或 3.13 创建虚拟环境
 
 ## 服务管理

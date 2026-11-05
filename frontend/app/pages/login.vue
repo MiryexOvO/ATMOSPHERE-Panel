@@ -31,7 +31,7 @@ const languages = [
 type LocaleCode = (typeof languages)[number]['code']
 function changeLocale(code: string) {
   if (languages.some((language) => language.code === code)) setLocale(code as LocaleCode)
-}
+} 
 const languageOpen = ref(false)
 const langSwitch = ref<HTMLElement | null>(null)
 const paletteTrigger = ref<HTMLElement | null>(null)
