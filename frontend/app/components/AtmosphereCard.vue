@@ -33,7 +33,7 @@ const props = withDefaults(defineProps<AtmosphereCardProps>(), {
   hasShadow: true,
   shadowOffsetX: 6,
   shadowOffsetY: 6,
-  shadowColor: 'rgba(255, 255, 255, 0.05)',
+  shadowColor: 'var(--card-shadow-color, rgba(255, 255, 255, 0.05))',
 })
 
 const attrs = useAttrs()

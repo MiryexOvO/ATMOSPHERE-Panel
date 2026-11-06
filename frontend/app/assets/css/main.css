@@ -70,22 +70,24 @@ body::-webkit-scrollbar,
     --border: color-mix(in srgb, var(--text-secondary) 18%, transparent);
     --brand: #d8aa58;
     --data-live: #72c7bd;
+    --card-border-default: rgba(255, 255, 255, 0.18);
+    --card-shadow-color: rgba(255, 255, 255, 0.09);
   }
 
   .light {
-    /* 日间玻璃改用半透明白，避免叠成灰黑色块。 */
-    --login-glass: rgba(255, 255, 255, 0.78);
-    --card-glass-color: rgba(255, 255, 255, 0.7);
-    --card-border-default: rgba(65, 83, 98, 0.2);
-    --card-shadow-color: rgba(65, 83, 98, 0.1);
+    /* 纸一样的暖米白 */
+    --login-glass: rgba(243, 239, 229, 0.82);
+    --card-glass-color: rgba(243, 239, 229, 0.78);
+    --card-border-default: rgba(65, 83, 98, 0.22);
+    --card-shadow-color: rgba(65, 83, 98, 0.18);
     color-scheme: light;
-    --background: #f1f4f6;
-    --surface: #ffffff;
-    --text-primary: #27313b;
-    --text-secondary: #626e78;
+    --background: #e9e4d8;
+    --surface: #f3efe5;
+    --text-primary: #202838;
+    --text-secondary: #505868;
     --border: color-mix(in srgb, var(--text-secondary) 24%, transparent);
-    --brand: #b87924;
-    --data-live: #267d72;
+    --brand: #202838;
+    --data-live: #207870;
   }
 
   .dark {

@@ -31,7 +31,7 @@ const languages = [
 type LocaleCode = (typeof languages)[number]['code']
 function changeLocale(code: string) {
   if (languages.some((language) => language.code === code)) setLocale(code as LocaleCode)
-} 
+}
 const languageOpen = ref(false)
 const langSwitch = ref<HTMLElement | null>(null)
 const paletteTrigger = ref<HTMLElement | null>(null)
@@ -626,7 +626,7 @@ async function login() {
   content: '';
   position: absolute;
   inset: 0;
-  border: 0 solid rgba(255, 255, 255, 0.05);
+  border: 0 solid var(--card-shadow-color, rgba(255, 255, 255, 0.05));
   transform: translate(10px, 10px);
   transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }

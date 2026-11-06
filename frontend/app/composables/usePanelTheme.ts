@@ -25,7 +25,7 @@ export const THEME_STORAGE_KEY = 'custom-theme'
 // 默认色板
 export const themePresets: Record<ThemeName, PanelColors> = {
   dark: { textPrimary: '#e9dfc6', textSecondary: '#a4aaa3', surface: '#1c252d', background: '#11151b' },
-  light: { textPrimary: '#27313b', textSecondary: '#626e78', surface: '#ffffff', background: '#f1f4f6' },
+  light: { textPrimary: '#202838', textSecondary: '#505868', surface: '#f3efe5', background: '#e9e4d8' },
 }
 
 // 四项颜色
@@ -82,7 +82,7 @@ export function usePanelTheme() {
     applyTheme(colors.value)
   }
 
-// 依旧清理
+  // 依旧清理
   function selectTheme(mode: ThemeMode) {
     colorMode.preference = mode
     localStorage.removeItem(THEME_STORAGE_KEY)
@@ -97,7 +97,6 @@ export function usePanelTheme() {
     saveStoredTheme(colors.value)
   }
 
-
   function restore() {
     const saved = readStoredTheme()
     colors.value = saved ?? { ...themePresets[colorMode.value === 'light' ? 'light' : 'dark'] }
@@ -108,16 +107,16 @@ export function usePanelTheme() {
 
   return {
     // 当前颜色
-    colors, 
+    colors,
     // 调色盘
-    fields: colorFields, 
+    fields: colorFields,
     // SYSTEM DARK LIGHT
-    themeOptions, 
+    themeOptions,
     // 切换预设
     selectTheme,
     // 单个颜色的修改
-    applyColor, 
+    applyColor,
     // 手动恢复
-    restore, 
+    restore,
   }
 }

@@ -119,7 +119,7 @@ const styles = computed(() => {
 .route-seam-bar {
   position: absolute;
   display: block;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card-border-default, rgba(255, 255, 255, 0.05));
 }
 .route-seam-bar-h {
   top: 0;
@@ -156,11 +156,11 @@ const styles = computed(() => {
 /* 更粗 更亮 */
 .route-seam.is-away .route-seam-bar-h {
   height: 2px;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--card-border-default, rgba(255, 255, 255, 0.2));
 }
 .route-seam.is-away .route-seam-bar-v {
   width: 2px;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--card-border-default, rgba(255, 255, 255, 0.2));
 }
 /* 消失 缩短 */
 .route-seam.is-retracting .route-seam-bar-h {
