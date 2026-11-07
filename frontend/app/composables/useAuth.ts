@@ -1,5 +1,10 @@
 export function useAuth() {
   const { request } = useApi()
+  let t: (key: string) => string = (key) => key
+  try {
+    const i18n = useI18n()
+    t = (key: string) => i18n.t(key)
+  } catch {}
   const user = useState<{ username: string } | null>('auth-user', () => null)
   const error = ref('')
   const loading = ref(false)
@@ -16,7 +21,7 @@ export function useAuth() {
       return result
     } catch (cause: unknown) {
       const err = cause as { data?: { message?: string }; message?: string }
-      error.value = err.data?.message || err.message || '登录失败'
+      error.value = err.data?.message || err.message || t('msg_sign_in_failed')
       throw cause
     } finally {
       loading.value = false

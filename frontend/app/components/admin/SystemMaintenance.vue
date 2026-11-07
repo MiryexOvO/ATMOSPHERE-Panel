@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import MechanicalSwitch from '~/components/ui/MechanicalSwitch.vue'
 import ExpandTransition from '~/components/ui/ExpandTransition.vue'
+const { t } = useI18n()
 const settings = defineModel<Record<string, any>>({ required: true })
 const emit = defineEmits<{ save: [] }>()
-const tr = usePanelText(),
-  { request, getErrorMessage } = useApi()
+const { request, getErrorMessage } = useApi()
 type Update = {
   current: string
   latest?: string
@@ -52,7 +52,7 @@ async function upload() {
     form.append('certificate', certificate.value)
     form.append('private_key', key.value)
     await request('/api/panel/tls/certificate', { method: 'POST', body: form })
-    message.value = tr('证书已验证并保存', 'Certificate validated and saved', '証明書を検証して保存しました')
+    message.value = t('msg_certificate_validated_and_saved')
   } catch (error) {
     message.value = getErrorMessage(error)
   } finally {
@@ -69,34 +69,22 @@ const httpsAddress = computed(() =>
       <header class="flex items-center justify-between">
         <div>
           <p class="font-mono text-[10px] tracking-widest text-brand">/ MAINTENANCE</p>
-          <h3 class="mt-2 font-serif text-xl">{{ tr('软件更新', 'SOFTWARE UPDATE', 'ソフトウェア更新') }}</h3>
+          <h3 class="mt-2 font-serif text-xl">{{ t('msg_software_update') }}</h3>
         </div>
         <button type="button" :disabled="busy" class="border border-brand px-4 py-3 text-xs text-brand" @click="check">
-          {{ busy ? tr('处理中…', 'PROCESSING…', '処理中…') : tr('检查更新', 'CHECK FOR UPDATES', '更新を確認') }}
+          {{ busy ? t('msg_processing') : t('msg_check_for_updates') }}
         </button>
       </header>
       <label class="flex items-center justify-between border border-border p-4 text-sm"
-        >{{
-          tr(
-            '发现正式版本后自动下载（每小时检查）',
-            'AUTO-DOWNLOAD RELEASES (HOURLY)',
-            '正式版を自動ダウンロード（毎時確認）',
-          )
-        }}<MechanicalSwitch
-          v-model="settings.update_auto_download"
-          :label="tr('自动下载', 'AUTO-DOWNLOAD', '自動ダウンロード')"
+        >{{ t('msg_auto_download_releases_hourly')
+        }}<MechanicalSwitch v-model="settings.update_auto_download" :label="t('msg_auto_download')"
       /></label>
       <div v-if="update" class="space-y-4 border-l border-brand pl-4">
         <p class="font-mono text-sm">
           {{ update.current }} <span v-if="update.latest">→ {{ update.latest }}</span>
         </p>
         <p class="text-sm text-text-secondary">
-          {{
-            update.message ||
-            (update.available
-              ? tr('发现新版本', 'NEW VERSION AVAILABLE', '新しいバージョンがあります')
-              : tr('当前已是最新版本', 'UP TO DATE', '最新版です'))
-          }}
+          {{ update.message || (update.available ? t('msg_new_version_available') : t('msg_up_to_date')) }}
         </p>
         <pre
           v-if="update.notes"
@@ -104,44 +92,35 @@ const httpsAddress = computed(() =>
           >{{ update.notes }}</pre>
         <div class="flex flex-wrap gap-5 text-xs text-brand">
           <button v-if="update.available" type="button" :disabled="busy" @click="download">
-            {{ tr('下载新版本', 'DOWNLOAD UPDATE', '更新をダウンロード') }}</button
+            {{ t('msg_download_update') }}</button
           ><a v-if="update.page" :href="update.page" target="_blank" rel="noopener noreferrer">{{
-            tr('查看发布页', 'RELEASE PAGE', 'リリースページ')
+            t('msg_release_page')
           }}</a
-          ><a v-if="update.ready" href="/api/panel/updates/package">{{
-            tr('保存已下载的更新包', 'SAVE DOWNLOADED PACKAGE', 'ダウンロード済みパッケージを保存')
-          }}</a>
+          ><a v-if="update.ready" href="/api/panel/updates/package">{{ t('msg_save_downloaded_package') }}</a>
         </div>
         <p v-if="update.ready" class="font-mono text-[10px] break-all text-text-secondary">
           {{ update.ready.version }} · SHA256 {{ update.ready.sha256 }}
         </p>
       </div>
       <p class="text-xs leading-6 text-text-secondary">
-        {{
-          tr(
-            '更新包下载到面板数据目录。不会在游戏运行时自动覆盖程序。',
-            'Update packages are stored in the panel data directory. Running server files are never overwritten automatically.',
-            '更新パッケージはデータ領域に保存します。稼働中のファイルは自動上書きしません。',
-          )
-        }}
+        {{ t('msg_update_packages_are_stored_in_the_panel_data') }}
       </p>
     </section>
     <section class="space-y-5 border-t border-border pt-7">
       <p class="font-mono text-[10px] tracking-widest text-brand">/ ENCRYPTION</p>
-      <h3 class="font-serif text-xl">{{ tr('HTTPS 加密访问', 'HTTPS ACCESS', 'HTTPS アクセス') }}</h3>
+      <h3 class="font-serif text-xl">{{ t('msg_https_access') }}</h3>
       <div class="grid gap-4 md:grid-cols-2">
         <label class="flex items-center justify-between border border-border p-4 text-sm"
-          >{{ tr('开启 HTTPS', 'ENABLE HTTPS', 'HTTPS を有効化')
-          }}<MechanicalSwitch v-model="settings.https_enabled" label="HTTPS" /></label
+          >{{ t('msg_enable_https') }}<MechanicalSwitch v-model="settings.https_enabled" label="HTTPS" /></label
         ><label class="flex items-center justify-between border border-border p-4 text-sm"
-          >{{ tr('自动生成自签证书', 'SELF-SIGNED CERTIFICATE', '自己署名証明書')
+          >{{ t('msg_self_signed_certificate')
           }}<MechanicalSwitch v-model="settings.https_self_signed" label="SELF-SIGNED"
         /></label>
       </div>
       <ExpandTransition
         ><div v-if="settings.https_enabled" class="grid gap-5 md:grid-cols-2">
           <label class="space-y-2 text-xs"
-            >{{ tr('HTTPS 入口端口', 'HTTPS PORT', 'HTTPS ポート')
+            >{{ t('msg_https_port')
             }}<input
               v-model.number="settings.https_port"
               type="number"
@@ -149,7 +128,7 @@ const httpsAddress = computed(() =>
               max="65535"
               class="block w-full border border-border bg-transparent p-3" /></label
           ><label class="space-y-2 text-xs"
-            >{{ tr('本机前端端口', 'LOCAL FRONTEND PORT', 'ローカルフロントエンドポート')
+            >{{ t('msg_local_frontend_port')
             }}<input
               v-model.number="settings.frontend_port"
               type="number"
@@ -158,13 +137,7 @@ const httpsAddress = computed(() =>
               class="block w-full border border-border bg-transparent p-3"
           /></label>
           <p class="text-xs leading-6 text-text-secondary md:col-span-2">
-            {{
-              tr(
-                '保存后使用新入口访问；自签证书首次访问需要浏览器确认，公网域名请上传正式证书。',
-                'After saving, use the HTTPS entry. Browsers require approval for self-signed certificates. Upload a trusted certificate for a public domain.',
-                '保存後に HTTPS 入口へアクセス。自己署名証明書はブラウザの確認が必要です。公開ドメインでは正式な証明書をご利用ください。',
-              )
-            }}
+            {{ t('msg_after_saving_use_the_https_entry_browsers_re') }}
             <a :href="httpsAddress" target="_blank" rel="noopener noreferrer" class="text-brand underline">{{
               httpsAddress
             }}</a>
@@ -173,13 +146,7 @@ const httpsAddress = computed(() =>
       ><ExpandTransition
         ><div v-if="!settings.https_self_signed" class="space-y-4">
           <p class="text-xs text-text-secondary">
-            {{
-              tr(
-                '先关闭并保存 HTTPS，再上传 PEM 证书与私钥。',
-                'Disable and save HTTPS before uploading PEM certificate and key.',
-                'HTTPS を無効化して保存後、PEM 証明書と秘密鍵をアップロード。',
-              )
-            }}
+            {{ t('msg_disable_and_save_https_before_uploading_pem_') }}
           </p>
           <label class="block text-xs"
             >CERTIFICATE PEM<input
@@ -194,7 +161,7 @@ const httpsAddress = computed(() =>
               class="mt-2 block"
               @change="key = ($event.target as HTMLInputElement).files?.[0] || null" /></label
           ><button type="button" :disabled="busy || !certificate || !key" class="text-xs text-brand" @click="upload">
-            {{ tr('验证并保存证书', 'VALIDATE & SAVE CERTIFICATE', '証明書を検証・保存') }}
+            {{ t('msg_validate_save_certificate') }}
           </button>
         </div></ExpandTransition
       >

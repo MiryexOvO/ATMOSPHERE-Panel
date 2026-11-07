@@ -70,9 +70,9 @@ const host = ref({
   cpu: 0,
   memory: 0,
   cores: [] as number[],
-  platform: '读取中',
-  hostname: '读取中',
-  release: '读取中',
+  platform: t('msg_loading'),
+  hostname: t('msg_loading'),
+  release: t('msg_loading'),
   panel: 'ATMOSPHERE / 02',
 })
 let timer: ReturnType<typeof setInterval> | undefined

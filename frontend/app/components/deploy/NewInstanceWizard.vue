@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DeployLayout from './DeployLayout.vue'
 import VersionWizardModal from './VersionWizardModal.vue'
+const { t } = useI18n()
 
 const emit = defineEmits<{ close: []; complete: [] }>()
 const step = ref(1)
@@ -28,18 +29,32 @@ async function openCoreModal(core: CoreOption) {
     versions.value = response.versions.map((item) => item.id)
     coreModal.value = true
   } catch (error) {
-    deployMessage.value = error instanceof Error ? error.message : '版本加载失败'
+    deployMessage.value = error instanceof Error ? error.message : t('deploy_failed_to_load_versions')
   }
 }
 const deployStatus = ref('idle')
 const deployPercent = ref(0)
 const deployMessage = ref('')
 const deploySteps = ref([
-  { label: '创建实例目录', state: 'pending' },
-  { label: '下载 Java 环境', state: 'pending' },
-  { label: '下载核心文件', state: 'pending' },
-  { label: '生成配置文件', state: 'pending' },
-  { label: '启动服务器', state: 'pending' },
+  { state: 'pending' },
+  { state: 'pending' },
+  { state: 'pending' },
+  { state: 'pending' },
+  { state: 'pending' },
+])
+const deployStepLabels = computed(() => [
+  t('deploy_create_instance_directory'),
+  t('deploy_download_java_runtime'),
+  t('deploy_download_core_files'),
+  t('deploy_generate_configuration'),
+  t('deploy_start_the_server'),
+])
+const wizardSteps = computed(() => [
+  t('deploy_basic_info'),
+  t('deploy_core_files'),
+  t('deploy_java_jvm'),
+  t('deploy_confirmation'),
+  t('deploy_deploy'),
 ])
 const validBasic = computed(
   () => /^[A-Za-z0-9-]{2,48}$/.test(formData.name) && formData.port > 0 && formData.port < 65536,
@@ -88,7 +103,7 @@ function back() {
 }
 async function startDeploy() {
   deployStatus.value = 'running'
-  deployMessage.value = '准备部署'
+  deployMessage.value = t('deploy_preparing_deployment_2')
   try {
     const fd = new FormData()
     fd.set('instance_id', formData.name.toLowerCase())
@@ -119,26 +134,26 @@ async function startDeploy() {
   } catch (error: unknown) {
     const err = error as { data?: { message?: string }; message?: string }
     deployStatus.value = 'failed'
-    deployMessage.value = err.data?.message || err.message || '部署失败'
+    deployMessage.value = err.data?.message || err.message || t('deploy_deployment_failed_2')
   }
 }
 </script>
 <template>
   <div class="new-wizard-page">
     <header class="wizard-page-header">
-      <button class="ghost" :disabled="step === 5" @click="emit('close')">← 返回</button>
+      <button class="ghost" :disabled="step === 5" @click="emit('close')">← {{ t('deploy_back_2') }}</button>
       <div>
         <span>ATMOSPHERE / INSTANCE PROVISIONING</span>
-        <h1>新建实例</h1>
+        <h1>{{ t('deploy_new_instance') }}</h1>
       </div>
     </header>
     <nav class="wizard-stepper">
       <div
-        v-for="item in ['基本信息', '核心文件', 'Java / JVM', '确认信息', '执行部署']"
+        v-for="item in wizardSteps"
         :key="item"
         :class="{
-          active: step === ['基本信息', '核心文件', 'Java / JVM', '确认信息', '执行部署'].indexOf(item) + 1,
-          done: ['基本信息', '核心文件', 'Java / JVM', '确认信息', '执行部署'].indexOf(item) + 1 < step,
+          active: step === wizardSteps.indexOf(item) + 1,
+          done: wizardSteps.indexOf(item) + 1 < step,
         }"
       >
         {{ item }}
@@ -146,15 +161,25 @@ async function startDeploy() {
     </nav>
     <Transition name="wizard-slide" mode="out-in">
       <section v-if="step === 1" key="basic" class="wizard-step-panel">
-        <h2>基本信息</h2>
-        <p>创建实例名称与网络端口。</p>
-        <label>实例名称<input class="atmo-input" v-model="formData.name" placeholder="Survival-Server" /></label
-        ><label>服务端端口<input class="atmo-input" type="number" v-model.number="formData.port" /></label>
-        <p v-if="formData.name && !validBasic" class="wizard-error">名称只能包含英文、数字和连字符。</p>
+        <h2>{{ t('deploy_basic_info') }}</h2>
+        <p>
+          {{ t('deploy_set_the_instance_name_and_network_port') }}
+        </p>
+        <label
+          >{{ t('deploy_instance_name')
+          }}<input class="atmo-input" v-model="formData.name" placeholder="Survival-Server" /></label
+        ><label
+          >{{ t('deploy_server_port_2') }}<input class="atmo-input" type="number" v-model.number="formData.port"
+        /></label>
+        <p v-if="formData.name && !validBasic" class="wizard-error">
+          {{ t('deploy_the_name_may_only_contain_letters_digits_and_hyp') }}
+        </p>
       </section>
       <section v-else-if="step === 2" key="core" class="wizard-step-panel">
-        <h2>核心文件</h2>
-        <p>选择核心后不会立即下载，确认后继续下一步。</p>
+        <h2>{{ t('deploy_core_files') }}</h2>
+        <p>
+          {{ t('deploy_selecting_a_core_does_not_download_it_now_it_hap') }}
+        </p>
         <button
           class="core-selected"
           @click="openCoreModal(selectedCore || { id: formData.coreType.toLowerCase(), name: formData.coreType })"
@@ -162,72 +187,88 @@ async function startDeploy() {
           {{
             formData.coreType
               ? `${formData.coreType} ${formData.mcVersion} · Build ${formData.buildVersion}`
-              : '选择服务端核心'
+              : t('deploy_choose_a_server_core')
           }}
         </button>
         <div v-if="formData.coreType" class="selection-summary">
-          已选择：<strong>{{ formData.coreType }}</strong> / {{ formData.mcVersion }} / Build
+          {{ t('deploy_selected') }}<strong>{{ formData.coreType }}</strong> / {{ formData.mcVersion }} / Build
           {{ formData.buildVersion }}
         </div>
       </section>
       <section v-else-if="step === 3" key="java" class="wizard-step-panel">
-        <h2>Java 环境与 JVM 设置</h2>
-        <p>系统已自动匹配 Java {{ formData.javaVersion || '17' }} 环境。</p>
+        <h2>{{ t('deploy_java_jvm_settings') }}</h2>
+        <p>
+          {{ t('deploy_java') }} {{ formData.javaVersion || '17' }}
+          {{ t('deploy_has_been_matched_automatically') }}
+        </p>
         <label
-          >Java 版本<select class="atmo-input" v-model="formData.javaVersion">
+          >{{ t('deploy_java_version')
+          }}<select class="atmo-input" v-model="formData.javaVersion">
             <option>8</option>
             <option>17</option>
             <option>21</option>
           </select></label
-        ><label>内存分配<input class="atmo-input" v-model="formData.memory" /></label
-        ><label class="switch-line"><input type="checkbox" v-model="formData.useAikar" /> 使用 Aikar's flags</label>
+        ><label>{{ t('deploy_memory_2') }}<input class="atmo-input" v-model="formData.memory" /></label
+        ><label class="switch-line"
+          ><input type="checkbox" v-model="formData.useAikar" /> {{ t('deploy_use_aikar_s_flags') }}</label
+        >
       </section>
       <section v-else-if="step === 4" key="confirm" class="wizard-step-panel">
-        <h2>确认信息</h2>
+        <h2>{{ t('deploy_confirmation') }}</h2>
         <div class="confirm-grid">
           <div>
-            <span>实例名称</span><strong>{{ formData.name }}</strong>
+            <span>{{ t('deploy_instance_name') }}</span
+            ><strong>{{ formData.name }}</strong>
           </div>
           <div>
-            <span>端口</span><strong>{{ formData.port }}</strong>
+            <span>{{ t('deploy_port') }}</span
+            ><strong>{{ formData.port }}</strong>
           </div>
           <div>
-            <span>核心</span><strong>{{ formData.coreType }}</strong>
+            <span>{{ t('deploy_core') }}</span
+            ><strong>{{ formData.coreType }}</strong>
           </div>
           <div>
-            <span>版本</span><strong>{{ formData.mcVersion }} / {{ formData.buildVersion }}</strong>
+            <span>{{ t('deploy_version') }}</span
+            ><strong>{{ formData.mcVersion }} / {{ formData.buildVersion }}</strong>
           </div>
           <div>
             <span>Java</span><strong>{{ formData.javaVersion }}</strong>
           </div>
           <div>
-            <span>内存</span><strong>{{ formData.memory }}</strong>
+            <span>{{ t('deploy_memory') }}</span
+            ><strong>{{ formData.memory }}</strong>
           </div>
         </div>
       </section>
       <section v-else key="deploy" class="wizard-step-panel deploy-progress-panel">
-        <h2>{{ deployStatus === 'done' ? '创建成功！' : '正在执行部署' }}</h2>
+        <h2>
+          {{ deployStatus === 'done' ? t('deploy_created_successfully') : t('deploy_deploying') }}
+        </h2>
         <p>{{ deployMessage }}</p>
         <div class="deploy-progress-bar"><i :style="{ width: `${deployPercent}%` }"></i></div>
         <strong>{{ deployPercent }}%</strong>
         <div class="deploy-timeline">
-          <div v-for="item in deploySteps" :key="item.label" :class="item.state">
-            {{ item.state === 'done' ? '✓' : '○' }} {{ item.label }}
+          <div v-for="(item, index) in deploySteps" :key="index" :class="item.state">
+            {{ item.state === 'done' ? '✓' : '○' }} {{ deployStepLabels[index] }}
           </div>
         </div>
-        <button v-if="deployStatus === 'done'" class="primary" @click="emit('complete')">进入实例列表 →</button>
+        <button v-if="deployStatus === 'done'" class="primary" @click="emit('complete')">
+          {{ t('deploy_open_instance_list') }} →
+        </button>
       </section>
     </Transition>
     <footer class="wizard-footer">
-      <button class="ghost" :disabled="step === 1 || step === 5" @click="back">上一步</button
+      <button class="ghost" :disabled="step === 1 || step === 5" @click="back">
+        {{ t('deploy_back') }}</button
       ><button v-if="step < 5" class="primary" :disabled="!canNext" @click="next">
-        {{ step === 4 ? '确认并创建' : '下一步' }} →
+        {{ step === 4 ? t('deploy_confirm_create') : t('deploy_next') }} →
       </button>
     </footer>
     <VersionWizardModal
       v-if="coreModal"
       :open="coreModal"
-      :core="selectedCore || { id: 'paper', name: '服务端核心' }"
+      :core="selectedCore || { id: 'paper', name: t('deploy_server_core') }"
       :versions="versions"
       @close="coreModal = false"
       @deploy="chooseCore(selectedCore || { name: 'Paper' }, $event[0], $event[1])"

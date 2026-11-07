@@ -61,12 +61,22 @@ const capabilities = computed(() => [
         <h3 class="mt-2 font-serif text-xl">{{ t('aboutStack') }}</h3>
         <p class="mt-4 font-mono text-[10px] text-brand">2026.11 / RELEASE PREVIEW</p>
         <ol class="mt-2 font-mono text-xs">
-          <li v-for="(change, index) in changes" :key="change" class="flex gap-3 border-b border-border/60 py-3 leading-6 last:border-b-0">
+          <li
+            v-for="(change, index) in changes"
+            :key="change"
+            class="flex gap-3 border-b border-border/60 py-3 leading-6 last:border-b-0"
+          >
             <span class="text-brand">{{ String(index + 1).padStart(2, '0') }}</span>
             <span class="text-text-secondary">{{ change }}</span>
           </li>
         </ol>
-        <a :href="`${repository}/releases`" target="_blank" rel="noopener noreferrer" class="mt-5 inline-block font-mono text-xs text-brand">GitHub Releases →</a>
+        <a
+          :href="`${repository}/releases`"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="mt-5 inline-block font-mono text-xs text-brand"
+          >GitHub Releases →</a
+        >
       </AtmosphereCard>
       <AtmosphereCard :interactive="false">
         <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ FEATURE SET</p>

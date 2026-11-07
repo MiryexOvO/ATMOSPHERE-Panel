@@ -30,7 +30,10 @@ const languages = [
 ] as const
 type LocaleCode = (typeof languages)[number]['code']
 function changeLocale(code: string) {
-  if (languages.some((language) => language.code === code)) setLocale(code as LocaleCode)
+  if (!languages.some((language) => language.code === code)) return
+  // 记住选择，登录页以外的页面也沿用。
+  localStorage.setItem('preferred-language', code)
+  setLocale(code as LocaleCode)
 }
 const languageOpen = ref(false)
 const langSwitch = ref<HTMLElement | null>(null)

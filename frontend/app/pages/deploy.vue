@@ -43,7 +43,7 @@ const error = ref('')
 const result = ref<DeployResult | null>(null)
 const isDeploying = ref(false)
 const progress = ref<number | null>(0)
-const deployStatus = ref('准备部署...')
+const deployStatus = ref('')
 const deployInstanceId = ref('')
 const deploySource = useState('wizard-source', () => 'fastmirror')
 let deployStream: EventSource | null = null
@@ -62,22 +62,55 @@ function openInstanceConsole() {
   navigateTo('/instances/' + deployInstanceId.value)
 }
 
-const modes = [
-  { id: 'quick', title: '快速部署', desc: '在线选择核心、版本与构建', icon: '' },
-  { id: 'bedrock', title: '基岩版', desc: '部署 Bedrock Dedicated Server', icon: '◇' },
-  { id: 'package', title: '上传整合包', desc: '上传、解压并自动检测服务端核心', icon: '↑' },
-  { id: 'mcdr', title: 'MCDR', desc: '使用 Python 管理 Minecraft 服务端', icon: '⌘' },
-] as const
+// computed 保证切换语言后标题与描述会重新计算。
+const modes = computed<{ id: Mode; title: string; desc: string; icon: string }[]>(() => [
+  {
+    id: 'quick',
+    title: t('deploy_quick_deploy'),
+    desc: t('deploy_pick_a_core_version_and_build_online'),
+    icon: '',
+  },
+  {
+    id: 'bedrock',
+    title: t('deploy_bedrock'),
+    desc: t('deploy_deploy_bedrock_dedicated_server'),
+    icon: '◇',
+  },
+  {
+    id: 'package',
+    title: t('deploy_upload_modpack'),
+    desc: t('deploy_upload_extract_and_auto_detect_the_server_core'),
+    icon: '↑',
+  },
+  {
+    id: 'mcdr',
+    title: 'MCDR',
+    desc: t('deploy_manage_the_minecraft_server_with_python'),
+    icon: '⌘',
+  },
+])
 
-const steps = computed(() =>
-  data.value.mode === 'quick'
-    ? ['基本信息', '核心文件', '环境与设置', '确认信息', '执行部署', '完成结果']
+const steps = computed(() => {
+  // 在 computed 内取文案，切换语言后会重新计算。
+  const label = {
+    basic: t('deploy_basic_info'),
+    core: t('deploy_core_files'),
+    version: t('deploy_server_version'),
+    upload: t('deploy_upload_modpack_2'),
+    coreConfig: t('deploy_core_config'),
+    environment: t('deploy_environment'),
+    confirm: t('deploy_confirmation'),
+    deploy: t('deploy_deploy'),
+    result: t('deploy_result'),
+  }
+  return data.value.mode === 'quick'
+    ? [label.basic, label.core, label.environment, label.confirm, label.deploy, label.result]
     : data.value.mode === 'bedrock'
-      ? ['基本信息', '服务端版本', '环境与设置', '确认信息', '执行部署', '完成结果']
+      ? [label.basic, label.version, label.environment, label.confirm, label.deploy, label.result]
       : data.value.mode === 'package'
-        ? ['上传整合包', '基本信息', '核心配置', '环境与设置', '确认信息', '执行部署', '完成结果']
-        : ['基本信息', '核心文件', '环境与设置', '确认信息', '执行部署', '完成结果'],
-)
+        ? [label.upload, label.basic, label.coreConfig, label.environment, label.confirm, label.deploy, label.result]
+        : [label.basic, label.core, label.environment, label.confirm, label.deploy, label.result]
+})
 
 // 整合包多一步上传，环境与确认步骤随模式偏移。
 const environmentStep = computed(() => (data.value.mode === 'package' ? 4 : 3))
@@ -161,11 +194,11 @@ function setCore(value: { core: string; version: string; build: string; source?:
 function choosePackage(file?: File) {
   if (!file) return
   if (!/\.(zip|tar\.gz|tgz)$/i.test(file.name)) {
-    error.value = '仅支持 .zip、.tar.gz 或 .tgz 整合包。'
+    error.value = t('deploy_only_zip_tar_gz_or_tgz_modpacks_are_supported')
     return
   }
   if (file.size > packageLimitMb.value * 1024 * 1024) {
-    error.value = `整合包不能超过 ${packageLimitMb.value}MB。`
+    error.value = t('deploy_modpack_too_large', { size: packageLimitMb.value })
     return
   }
   data.value.packageFile = file
@@ -182,7 +215,7 @@ function onDrop(event: DragEvent) {
   dragging.value = false
   if (busy.value) return
   if (event.dataTransfer?.files.length !== 1) {
-    error.value = '每次请选择一个整合包。'
+    error.value = t('deploy_select_one_modpack_at_a_time')
     return
   }
   choosePackage(event.dataTransfer.files[0])
@@ -200,14 +233,14 @@ async function analyzePackage() {
       body: form,
     })
     if (!response.core_candidates?.some((item) => item.kind === 'jar' || item.kind === 'args'))
-      throw new Error('整合包中未找到可启动核心。')
+      throw new Error(t('deploy_no_launchable_core_found_in_the_modpack'))
     data.value.packageInfo = response
     const candidate = response.core_candidates?.find((item) => item.recommended) || response.core_candidates?.[0]
     if (candidate) data.value.coreType = candidate.path
     step.value++
   } catch (cause: unknown) {
     const err = cause as { data?: { message?: string }; message?: string }
-    error.value = err.data?.message || err.message || '整合包分析失败。'
+    error.value = err.data?.message || err.message || t('deploy_could_not_analyze_the_modpack')
   } finally {
     busy.value = false
   }
@@ -217,7 +250,7 @@ async function deploy() {
   busy.value = true
   isDeploying.value = true
   progress.value = 0
-  deployStatus.value = '准备部署...'
+  deployStatus.value = t('deploy_preparing_deployment')
   deployInstanceId.value = data.value.name.toLowerCase()
   error.value = ''
   try {
@@ -230,11 +263,11 @@ async function deploy() {
       form.set('memory', String(data.value.memory))
       form.set('java_version', data.value.javaVersion)
       form.set('package', data.value.packageFile)
-      deployStatus.value = '正在上传并校验整合包，完成后创建实例...'
+      deployStatus.value = t('deploy_uploading_and_validating_the_modpack_the_instanc')
       progress.value = null
       result.value = await request<DeployResult>('/api/instances/package', { method: 'POST', body: form })
       progress.value = 100
-      deployStatus.value = '整合包已导入，实例已创建，可手动启动'
+      deployStatus.value = t('deploy_modpack_imported_and_instance_created_start_it_m')
       step.value = steps.value.length
       return
     } else {
@@ -269,18 +302,18 @@ async function deploy() {
       }
       if (progress.value !== null && progress.value >= 100) {
         deployStream?.close()
-        deployStatus.value = '部署完成！'
+        deployStatus.value = t('deploy_deployment_complete')
         step.value = steps.value.length
       }
     }
     deployStream.onerror = () => {
       deployStream?.close()
-      error.value = '部署进度连接中断，请检查后端及实例状态后再重试。'
+      error.value = t('deploy_deployment_progress_connection_lost_check_the_ba')
       deployStatus.value = error.value
     }
   } catch (cause: unknown) {
     const err = cause as { data?: { message?: string }; message?: string }
-    error.value = err.data?.message || err.message || '部署失败。'
+    error.value = err.data?.message || err.message || t('deploy_deployment_failed')
     deployStatus.value = error.value
   } finally {
     busy.value = false
@@ -291,7 +324,7 @@ function next() {
   if (busy.value || isDeploying.value) return
   error.value = ''
   if (!canContinue.value) {
-    error.value = '请先完成当前步骤。'
+    error.value = t('deploy_complete_the_current_step_first')
     return
   }
   if (data.value.mode === 'package' && step.value === 1) {
@@ -323,7 +356,9 @@ function back() {
             <p class="font-mono text-[10px] tracking-[0.22em] text-text-secondary">
               / ATMOSPHERE / INSTANCE PROVISIONING
             </p>
-            <h1 class="mt-3 font-serif text-4xl md:text-5xl">{{ step === 0 ? '选择开服模式' : '新建实例' }}</h1>
+            <h1 class="mt-3 font-serif text-4xl md:text-5xl">
+              {{ step === 0 ? t('deploy_choose_a_mode') : t('deploy_new_instance') }}
+            </h1>
           </div>
           <span v-if="step" class="font-mono text-[10px] tracking-[0.2em] text-text-secondary"
             >STEP {{ String(step).padStart(2, '0') }} / {{ String(steps.length).padStart(2, '0') }}</span
@@ -344,7 +379,9 @@ function back() {
               }}</span>
             </div>
             <p class="mt-8 text-sm text-text-secondary">{{ mode.desc }}</p>
-            <span class="mt-5 block font-mono text-[10px] tracking-[0.16em] text-brand">选择模式 →</span>
+            <span class="mt-5 block font-mono text-[10px] tracking-[0.16em] text-brand"
+              >{{ t('deploy_select_mode') }} →</span
+            >
           </button>
         </section>
         <template v-else>
@@ -375,14 +412,18 @@ function back() {
               class="mx-auto mt-12 max-w-xl border border-brand/50 bg-surface/60 p-10 text-center"
             >
               <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ DEPLOYMENT COMPLETE</p>
-              <h2 class="mt-4 font-serif text-3xl">实例已创建</h2>
-              <p class="mt-4 text-sm text-text-secondary">服务端已写入独立实例目录，可以进入控制台。</p>
+              <h2 class="mt-4 font-serif text-3xl">
+                {{ t('deploy_instance_created') }}
+              </h2>
+              <p class="mt-4 text-sm text-text-secondary">
+                {{ t('deploy_the_server_was_written_to_an_isolated_instance_d') }}
+              </p>
               <button
                 type="button"
                 class="mt-8 border border-brand px-5 py-3 font-mono text-xs text-brand hover:bg-brand/10"
                 @click="navigateTo('/dashboard')"
               >
-                返回实例列表 →
+                {{ t('deploy_back_to_instances') }} →
               </button>
             </section>
             <section
@@ -391,8 +432,12 @@ function back() {
               class="mx-auto mt-12 max-w-xl border border-border bg-surface/50 p-8"
             >
               <p class="font-mono text-[10px] tracking-[0.2em] text-brand">01 / PACKAGE UPLOAD</p>
-              <h2 class="mt-4 font-serif text-3xl">上传整合包</h2>
-              <p class="mt-3 text-sm text-text-secondary">支持自动解压、路径安全校验和核心检测。</p>
+              <h2 class="mt-4 font-serif text-3xl">
+                {{ t('deploy_upload_modpack') }}
+              </h2>
+              <p class="mt-3 text-sm text-text-secondary">
+                {{ t('deploy_auto_extraction_path_safety_checks_and_core_dete') }}
+              </p>
               <label
                 data-package-dropzone
                 tabindex="0"
@@ -406,9 +451,9 @@ function back() {
                 class="mt-8 flex cursor-pointer flex-col items-center border border-dashed border-border p-10 text-center hover:border-brand"
                 ><span class="text-3xl text-brand">↑</span
                 ><strong class="mt-3 font-mono text-sm">{{
-                  data.packageFile?.name || '拖放文件到此处，或点击选择 ZIP / TAR.GZ / TGZ'
+                  data.packageFile?.name || t('deploy_drop_a_file_here_or_click_to_choose_zip_tar_gz_t')
                 }}</strong
-                ><small class="mt-2 text-xs text-text-secondary">最大 {{ packageLimitMb }}MB</small
+                ><small class="mt-2 text-xs text-text-secondary">{{ t('deploy_up_to') }} {{ packageLimitMb }}MB</small
                 ><input ref="packageInput" class="hidden" type="file" accept=".zip,.tar.gz,.tgz" @change="onPackage"
               /></label>
             </section>
@@ -423,16 +468,19 @@ function back() {
               <p class="font-mono text-[10px] tracking-[0.2em] text-brand">
                 {{ String(step).padStart(2, '0') }} / BASIC INFO
               </p>
-              <h2 class="mt-4 font-serif text-3xl">实例基本信息</h2>
+              <h2 class="mt-4 font-serif text-3xl">
+                {{ t('deploy_instance_basics') }}
+              </h2>
               <p v-if="data.mode === 'mcdr'" class="mt-4 text-sm leading-7 text-text-secondary">
-                将创建实例专用 Python 环境安装 MCDReforged，插件独立存放在 mcdr_plugins；不会改动面板 Python 依赖。
+                {{ t('deploy_creates_an_instance_local_python_environment_for') }}
               </p>
               <p v-if="data.mode === 'bedrock'" class="mt-4 text-sm leading-7 text-text-secondary">
-                原生 BDS 不需要 Java；内存值仅作为监测预算，不会伪装成 JVM 内存限制。
+                {{ t('deploy_native_bds_does_not_need_java_the_memory_value_i') }}
               </p>
               <div v-if="data.mode === 'bedrock'" class="mt-5 space-y-4">
                 <label class="block text-sm"
-                  >IPv6 UDP 端口<input
+                  >{{ t('deploy_ipv6_udp_port')
+                  }}<input
                     v-model.number="ipv6Port"
                     type="number"
                     min="1"
@@ -442,12 +490,14 @@ function back() {
               </div>
               <div class="mt-8 space-y-5">
                 <label class="block text-xs text-text-secondary"
-                  >实例名称<input
+                  >{{ t('deploy_instance_name')
+                  }}<input
                     v-model="data.name"
                     class="mt-2 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm outline-none focus:border-brand"
                     placeholder="Survival-Server" /></label
                 ><label class="block text-xs text-text-secondary"
-                  >服务端口<input
+                  >{{ t('deploy_server_port')
+                  }}<input
                     v-model.number="data.port"
                     class="mt-2 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm outline-none focus:border-brand"
                     type="number"
@@ -466,18 +516,22 @@ function back() {
               key="bedrock-version"
               :interactive="false"
               class="mx-auto mt-12 max-w-xl"
-              ><h2 class="font-serif text-2xl">基岩版官方服务端</h2>
+              ><h2 class="font-serif text-2xl">
+                {{ t('deploy_official_bedrock_server') }}
+              </h2>
               <p class="my-5 text-sm leading-7 text-text-secondary">
-                从 Mojang 官方目录获取本机适用的正式版。需要 Windows x64 或 Ubuntu 22.04+ x64；客户端使用 UDP 端口连接。
+                {{ t('deploy_fetches_the_supported_stable_release_from_mojang') }}
               </p>
-              <p v-if="modeLoading" class="text-xs text-brand">正在读取官方版本…</p>
+              <p v-if="modeLoading" class="text-xs text-brand">
+                {{ t('deploy_loading_official_versions') }}
+              </p>
               <AtmosphereSelect
                 v-else
                 v-model="data.mcVersion"
                 label="BDS VERSION"
                 :options="bedrockVersions.map((item) => ({ value: item.id, label: item.label }))"
               /><button type="button" class="mt-4 text-xs text-brand" @click="loadBedrockVersions">
-                刷新官方目录
+                {{ t('deploy_refresh_catalog') }}
               </button></AtmosphereCard
             >
             <section
@@ -486,9 +540,10 @@ function back() {
               class="mx-auto mt-12 max-w-xl border border-border bg-surface/50 p-8"
             >
               <p class="font-mono text-[10px] tracking-[0.2em] text-brand">03 / CORE CONFIG</p>
-              <h2 class="mt-4 font-serif text-3xl">核心检测结果</h2>
+              <h2 class="mt-4 font-serif text-3xl">{{ t('deploy_core_detection') }}</h2>
               <p class="mt-4 text-sm text-text-secondary">
-                已发现 {{ data.packageInfo?.core_candidates?.length || 0 }} 个候选核心。
+                {{ t('deploy_found') }} {{ data.packageInfo?.core_candidates?.length || 0 }}
+                {{ t('deploy_candidate_cores') }}
               </p>
               <select
                 v-model="data.coreType"
@@ -513,18 +568,18 @@ function back() {
               <p class="font-mono text-[10px] tracking-[0.2em] text-brand">
                 {{ String(step).padStart(2, '0') }} / ENVIRONMENT
               </p>
-              <h2 class="mt-4 font-serif text-3xl">环境与设置</h2>
+              <h2 class="mt-4 font-serif text-3xl">{{ t('deploy_environment_settings') }}</h2>
               <p class="mt-3 text-sm text-text-secondary">
                 {{
                   data.mode === 'bedrock'
-                    ? '运行官方原生 BDS，不需要 Java；内存仅作为监测预算。'
+                    ? t('deploy_runs_the_native_official_bds_no_java_needed_memo')
                     : data.mode === 'mcdr'
-                      ? '使用实例专用 Python 环境运行 MCDR，并由它启动所选 Java 核心。'
-                      : '系统将检测当前主机环境；缺少 Java 时会返回安装提示。'
+                      ? t('deploy_runs_mcdr_in_an_instance_local_python_environmen')
+                      : t('deploy_the_host_environment_is_checked_a_setup_hint_app')
                 }}
               </p>
               <label v-if="data.mode === 'bedrock'" class="flex items-center gap-3 text-sm"
-                ><input v-model="acceptEula" type="checkbox" class="accent-brand" />同意
+                ><input v-model="acceptEula" type="checkbox" class="accent-brand" />{{ t('deploy_agree') }}
                 <a
                   href="https://aka.ms/MinecraftEULA"
                   target="_blank"
@@ -535,7 +590,8 @@ function back() {
               >
               <div class="mt-8 space-y-5">
                 <label v-if="data.mode !== 'bedrock'" class="block text-xs text-text-secondary"
-                  >Java 版本<select
+                  >{{ t('deploy_java_version')
+                  }}<select
                     v-model="data.javaVersion"
                     class="mt-2 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm"
                   >
@@ -544,7 +600,8 @@ function back() {
                     <option>21</option>
                   </select></label
                 ><label class="block text-xs text-text-secondary"
-                  >内存（MB）<input
+                  >{{ t('deploy_memory_mb')
+                  }}<input
                     v-model.number="data.memory"
                     class="mt-2 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm"
                     type="number"
@@ -558,29 +615,31 @@ function back() {
               class="mx-auto mt-12 max-w-2xl border border-border p-8"
             >
               <p class="font-mono text-[10px] tracking-[0.2em] text-brand">/ CONFIRMATION</p>
-              <h2 class="mt-4 font-serif text-3xl">确认部署信息</h2>
+              <h2 class="mt-4 font-serif text-3xl">
+                {{ t('deploy_confirm_deployment') }}
+              </h2>
               <p v-if="data.mode === 'package'" class="mt-5 text-sm break-all text-text-secondary">
-                整合包：{{ data.packageFile?.name }}
+                {{ t('deploy_modpack') }}{{ data.packageFile?.name }}
               </p>
               <dl class="mt-8 divide-y divide-border font-mono text-sm">
                 <div class="flex justify-between py-4">
-                  <dt class="text-text-secondary">实例名称</dt>
+                  <dt class="text-text-secondary">{{ t('deploy_instance_name') }}</dt>
                   <dd>{{ data.name }}</dd>
                 </div>
                 <div class="flex justify-between py-4">
-                  <dt class="text-text-secondary">服务端口</dt>
+                  <dt class="text-text-secondary">{{ t('deploy_server_port') }}</dt>
                   <dd>{{ data.port }}</dd>
                 </div>
                 <div class="flex justify-between py-4">
-                  <dt class="text-text-secondary">核心</dt>
+                  <dt class="text-text-secondary">{{ t('deploy_core') }}</dt>
                   <dd>{{ data.coreType || data.mode }}</dd>
                 </div>
                 <div v-if="data.mode !== 'package'" class="flex justify-between py-4">
-                  <dt class="text-text-secondary">游戏版本</dt>
+                  <dt class="text-text-secondary">{{ t('deploy_game_version') }}</dt>
                   <dd>{{ data.mcVersion || '—' }}</dd>
                 </div>
                 <div v-if="data.mode !== 'package'" class="flex justify-between py-4">
-                  <dt class="text-text-secondary">核心构建</dt>
+                  <dt class="text-text-secondary">{{ t('deploy_build') }}</dt>
                   <dd>{{ data.buildVersion || '—' }}</dd>
                 </div>
                 <div v-if="data.mode !== 'bedrock'" class="flex justify-between py-4">
@@ -588,7 +647,7 @@ function back() {
                   <dd>{{ data.javaVersion }}</dd>
                 </div>
                 <div class="flex justify-between py-4">
-                  <dt class="text-text-secondary">内存</dt>
+                  <dt class="text-text-secondary">{{ t('deploy_memory') }}</dt>
                   <dd>{{ data.memory }} MB</dd>
                 </div>
               </dl>
@@ -606,7 +665,7 @@ function back() {
               class="border border-border px-4 py-2 font-mono text-xs text-text-secondary hover:border-brand hover:text-brand"
               @click="back"
             >
-              ← 上一步</button
+              ← {{ t('deploy_back') }}</button
             ><button
               v-if="!isComplete"
               type="button"
@@ -614,7 +673,8 @@ function back() {
               :disabled="busy || !canContinue"
               @click="next"
             >
-              {{ busy ? '处理中…' : step === confirmStep ? '确认并部署' : '下一步' }} →
+              {{ busy ? t('deploy_working') : step === confirmStep ? t('deploy_confirm_deploy') : t('deploy_next') }}
+              →
             </button>
           </footer>
         </template>
@@ -655,7 +715,7 @@ function back() {
                 class="border border-brand px-4 py-2 font-mono text-xs text-brand hover:bg-brand/10"
                 @click="openInstanceConsole"
               >
-                进入控制台 →
+                {{ t('deploy_open_console') }} →
               </button>
             </div>
           </AtmosphereCard>

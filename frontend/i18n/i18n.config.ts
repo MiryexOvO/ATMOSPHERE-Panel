@@ -1,4 +1,6 @@
 import { aboutMessages } from './about'
+import { commonMessages } from './common'
+import { deployMessages } from './deploy'
 import { instanceMessages } from './instance'
 import { panelMessages } from './panel'
 type Locale = 'zh' | 'en' | 'ja'
@@ -10,6 +12,8 @@ export const i18nMessages = {
   ...instanceMessages,
   ...panelMessages,
   ...aboutMessages,
+  ...deployMessages,
+  ...commonMessages,
   authRequired: {
     zh: () => '/ 需要身份验证',
     en: () => '/ AUTHENTICATION REQUIRED',

@@ -5,7 +5,6 @@ import HologramLight from '~/components/ui/HologramLight.vue'
 import LocalScrollRuler from '~/components/ui/LocalScrollRuler.vue'
 const auditViewport = ref<HTMLElement | null>(null)
 const { t } = useI18n()
-const tr = usePanelText()
 const { request, getErrorMessage } = useApi()
 type User = {
   id: number
@@ -31,16 +30,16 @@ watch(search, () => {
   page.value = 1
 })
 const permissionLabels = computed(() => ({
-  view: tr('查看状态', 'VIEW', '状態閲覧'),
-  console: tr('控制台日志', 'CONSOLE', 'ログ'),
-  power: tr('电源控制', 'POWER', '電源'),
-  command: tr('发送命令', 'COMMAND', 'コマンド'),
-  files: tr('文件与扩展', 'FILES & ADDONS', 'ファイル'),
-  backups: tr('备份', 'BACKUPS', 'バックアップ'),
-  settings: tr('实例配置', 'SETTINGS', '設定'),
-  players: tr('玩家管理', 'PLAYERS', 'プレイヤー'),
-  schedule: tr('定时任务', 'SCHEDULES', '定期タスク'),
-  delete: tr('删除实例', 'DELETE SERVER', 'サーバー削除'),
+  view: t('msg_view'),
+  console: t('msg_console'),
+  power: t('msg_power'),
+  command: t('msg_command'),
+  files: t('msg_files_addons'),
+  backups: t('msg_backups'),
+  settings: t('msg_settings'),
+  players: t('msg_players'),
+  schedule: t('msg_schedules'),
+  delete: t('msg_delete_server'),
 }))
 const adminAccess = ref(false)
 const users = ref<User[]>([]),
@@ -138,18 +137,12 @@ onMounted(load)
         </button>
       </header>
       <p class="mt-5 text-xs leading-6 text-text-secondary">
-        {{
-          tr(
-            '管理员管理全站；操作员仅管理分配的实例及所选能力；只读账户不能执行写入操作。',
-            'Administrators manage all resources. Operators receive assigned servers and capabilities. Viewers cannot modify resources.',
-            '管理者は全体を管理。オペレーターは割り当てられたインスタンスと権限のみ。閲覧者は変更できません。',
-          )
-        }}
+        {{ t('msg_administrators_manage_all_resources_operator') }}
       </p>
       <p v-if="message" role="status" class="mt-4 text-sm text-brand">{{ message }}</p>
       <input
         v-model="search"
-        :placeholder="tr('搜索用户名或昵称', 'SEARCH USERS', 'ユーザーを検索')"
+        :placeholder="t('msg_search_users')"
         class="mt-6 w-full border border-border bg-transparent p-3 text-sm"
       />
       <div class="mt-6 overflow-x-auto">
@@ -159,7 +152,7 @@ onMounted(load)
               <th class="py-3">{{ t('usersName') }}</th>
               <th>{{ t('usersRole') }}</th>
               <th>{{ t('usersEnabled') }}</th>
-              <th>{{ tr('最后登录', 'LAST LOGIN', '最終ログイン') }}</th>
+              <th>{{ t('msg_last_login') }}</th>
               <th />
             </tr>
           </thead>
@@ -175,7 +168,7 @@ onMounted(load)
                   v-if="user.id === currentId"
                   :active="true"
                   class="ml-3 align-middle"
-                  :title="tr('当前账户', 'CURRENT ACCOUNT', '現在のアカウント')"
+                  :title="t('msg_current_account')"
                 />
               </td>
               <td>{{ roles.find((role) => role.value === user.role)?.label }}</td>
@@ -255,7 +248,7 @@ onMounted(load)
                 autocomplete="new-password"
                 class="w-full border border-border bg-background p-3" /></label
             ><label class="block space-y-2 text-xs"
-              >{{ tr('昵称', 'DISPLAY NAME', '表示名')
+              >{{ t('msg_display_name')
               }}<input
                 v-model="form.nickname"
                 maxlength="60"
@@ -266,13 +259,7 @@ onMounted(load)
             /></label>
             <section v-if="form.role !== 'admin'" class="space-y-4 border-t border-border pt-4">
               <p class="text-xs text-text-secondary">
-                {{
-                  tr(
-                    '分配实例与操作权限（未分配不可访问）',
-                    'ASSIGNED SERVERS AND PERMISSIONS',
-                    'インスタンスと操作権限',
-                  )
-                }}
+                {{ t('msg_assigned_servers_and_permissions') }}
               </p>
               <div class="flex flex-wrap gap-4">
                 <label v-for="instance in instances" :key="instance.id" class="flex items-center gap-2 text-xs"

@@ -1,5 +1,15 @@
 <script setup lang="ts">
 import VersionWizardModal from './VersionWizardModal.vue'
+const { t } = useI18n()
+// 分类使用稳定的 ASCII 键，展示文案来自 i18n。
+const categories = ['plugin', 'modded', 'vanilla', 'proxy']
+const categoryKeys: Record<string, string> = {
+  plugin: 'deploy_category_plugin',
+  modded: 'deploy_category_modded',
+  vanilla: 'deploy_category_vanilla',
+  proxy: 'deploy_category_proxy',
+}
+const categoryLabel = (category: string) => (categoryKeys[category] ? t(categoryKeys[category]) : category)
 
 type Core = {
   id: string
@@ -14,52 +24,50 @@ type Selection = {
   build: string
 }
 
-const categories = ['插件服务端', '模组服务端', '原版服务端', '代理服务端']
-
-const cores: Core[] = [
+const cores = computed<Core[]>(() => [
   {
     id: 'paper',
     name: 'Paper',
-    desc: '高性能 Spigot 分支',
-    category: '插件服务端',
+    desc: t('deploy_high_performance_spigot_fork'),
+    category: 'plugin',
   },
   {
     id: 'purpur',
     name: 'Purpur',
-    desc: 'Paper 的高可定制分支',
-    category: '插件服务端',
+    desc: t('deploy_highly_customizable_paper_fork'),
+    category: 'plugin',
   },
   {
     id: 'folia',
     name: 'Folia',
-    desc: '面向区域并行的服务端',
-    category: '插件服务端',
+    desc: t('deploy_region_parallel_server'),
+    category: 'plugin',
   },
   {
     id: 'fabric',
     name: 'Fabric',
-    desc: '轻量灵活的模组加载器',
-    category: '模组服务端',
+    desc: t('deploy_lightweight_flexible_mod_loader'),
+    category: 'modded',
   },
   {
     id: 'forge',
     name: 'Forge',
-    desc: '经典 Minecraft 模组平台',
-    category: '模组服务端',
+    desc: t('deploy_classic_minecraft_mod_platform'),
+    category: 'modded',
   },
   {
     id: 'vanilla',
     name: 'Vanilla',
-    desc: '官方原版 Minecraft 服务端',
-    category: '原版服务端',
+    desc: t('deploy_official_vanilla_minecraft_server'),
+    category: 'vanilla',
   },
   {
     id: 'velocity',
     name: 'Velocity',
-    desc: '现代高性能代理服务端',
-    category: '代理服务端',
+    desc: t('deploy_modern_high_performance_proxy'),
+    category: 'proxy',
   },
-]
+])
 
 const versions: Record<string, string[]> = {
   paper: ['1.21.1', '1.21', '1.20.6', '1.20.4', '1.20.2', '1.20.1'],
@@ -92,7 +100,7 @@ const selectedCore = ref<Core | null>(null)
 const isModalOpen = ref(false)
 const selected = ref<Selection | null>(null)
 
-const filteredCores = computed(() => cores.filter((core) => core.category === activeCategory.value))
+const filteredCores = computed(() => cores.value.filter((core) => core.category === activeCategory.value))
 
 function openWizard(core: Core) {
   selectedCore.value = core
@@ -122,7 +130,7 @@ function handleSelection(selection: Selection) {
           :class="activeCategory === category ? 'border-brand bg-surface text-text-primary' : ''"
           @click="activeCategory = category"
         >
-          {{ category }}
+          {{ categoryLabel(category) }}
         </button>
       </nav>
     </aside>
@@ -131,7 +139,9 @@ function handleSelection(selection: Selection) {
       <header class="mb-6 flex items-end justify-between gap-4 border-b border-border pb-5">
         <div>
           <p class="mb-2 font-mono text-[10px] tracking-[0.24em] text-text-secondary">/ CORE LIBRARY</p>
-          <h2 class="font-serif text-2xl text-text-primary">选择服务端核心</h2>
+          <h2 class="font-serif text-2xl text-text-primary">
+            {{ t('deploy_choose_a_server_core') }}
+          </h2>
         </div>
         <span class="font-mono text-[10px] tracking-[0.18em] text-text-secondary uppercase">
           {{ filteredCores.length.toString().padStart(2, '0') }} AVAILABLE
@@ -154,7 +164,7 @@ function handleSelection(selection: Selection) {
       </div>
 
       <p v-if="selected" class="mt-6 border-l-2 border-brand bg-surface px-4 py-3 font-mono text-xs text-text-primary">
-        已选择：{{ selected.core }} {{ selected.version }} ({{ selected.build }})
+        {{ t('deploy_selected') }}{{ selected.core }} {{ selected.version }} ({{ selected.build }})
       </p>
     </main>
 

@@ -1,29 +1,130 @@
 <script setup lang="ts">
 import VersionWizardModal from './VersionWizardModal.vue'
+const { t } = useI18n()
 type Core = { id: string; name: string; desc: string; category: string }
 type Selection = { core: string; version: string; build: string; source?: string }
-const categories = ['插件服务端', '模组服务端', '代理服务端', '基岩服务端', '原版服务端', '混合服务端']
-const cores: Core[] = [
-  { id: 'arclight', name: 'Arclight', desc: '混合端（推荐）', category: '混合服务端' },
-  { id: 'catserver', name: 'CatServer', desc: '混合端', category: '混合服务端' },
-  { id: 'fabric', name: 'Fabric', desc: '轻量模组加载器', category: '模组服务端' },
-  { id: 'forge', name: 'Forge', desc: '经典模组平台', category: '模组服务端' },
-  { id: 'neoforge', name: 'NeoForge', desc: '新一代模组生态', category: '模组服务端' },
-  { id: 'quilt', name: 'Quilt', desc: 'Fabric 衍生加载器', category: '模组服务端' },
-  { id: 'bungeecord', name: 'BungeeCord', desc: '代理服务端', category: '代理服务端' },
-  { id: 'velocity', name: 'Velocity', desc: '现代代理服务端', category: '代理服务端' },
-  { id: 'folia', name: 'Folia', desc: '多线程区域并行', category: '插件服务端' },
-  { id: 'leaves', name: 'Leaves', desc: 'Paper 衍生服务端', category: '插件服务端' },
-  { id: 'paper', name: 'Paper', desc: '高性能插件服务端（推荐）', category: '插件服务端' },
-  { id: 'purpur', name: 'Purpur', desc: '高可定制服务端', category: '插件服务端' },
-  { id: 'spigot', name: 'Spigot', desc: '经典插件服务端', category: '插件服务端' },
-  { id: 'spongevanilla', name: 'SpongeVanilla', desc: 'Sponge 插件服务端', category: '插件服务端' },
-  { id: 'nukkit', name: 'Nukkit', desc: '基岩版服务端', category: '基岩服务端' },
-  { id: 'pocketmine', name: 'PocketMine', desc: '基岩版服务端', category: '基岩服务端' },
-  { id: 'vanilla', name: 'Vanilla', desc: '官方原版服务端', category: '原版服务端' },
-  { id: 'spongeforge', name: 'SpongeForge', desc: 'Forge 混合生态', category: '混合服务端' },
-  { id: 'spongeneo', name: 'SpongeNeo', desc: 'NeoForge 混合生态', category: '混合服务端' },
-]
+// 分类使用稳定的 ASCII 键，展示文案来自 i18n。
+const categories = ['plugin', 'modded', 'proxy', 'bedrock', 'vanilla', 'hybrid'] as const
+const categoryKeys: Record<string, string> = {
+  plugin: 'deploy_category_plugin',
+  modded: 'deploy_category_modded',
+  proxy: 'deploy_category_proxy',
+  bedrock: 'deploy_category_bedrock',
+  vanilla: 'deploy_category_vanilla',
+  hybrid: 'deploy_category_hybrid',
+}
+const categoryLabel = (category: string) => (categoryKeys[category] ? t(categoryKeys[category]) : category)
+const cores = computed<Core[]>(() => [
+  {
+    id: 'arclight',
+    name: 'Arclight',
+    desc: t('deploy_hybrid_recommended'),
+    category: 'hybrid',
+  },
+  { id: 'catserver', name: 'CatServer', desc: t('deploy_hybrid'), category: 'hybrid' },
+  {
+    id: 'fabric',
+    name: 'Fabric',
+    desc: t('deploy_lightweight_mod_loader'),
+    category: 'modded',
+  },
+  {
+    id: 'forge',
+    name: 'Forge',
+    desc: t('deploy_classic_mod_platform'),
+    category: 'modded',
+  },
+  {
+    id: 'neoforge',
+    name: 'NeoForge',
+    desc: t('deploy_next_gen_mod_ecosystem'),
+    category: 'modded',
+  },
+  {
+    id: 'quilt',
+    name: 'Quilt',
+    desc: t('deploy_fabric_derived_loader'),
+    category: 'modded',
+  },
+  {
+    id: 'bungeecord',
+    name: 'BungeeCord',
+    desc: t('deploy_proxy_server'),
+    category: 'proxy',
+  },
+  {
+    id: 'velocity',
+    name: 'Velocity',
+    desc: t('deploy_modern_proxy_server'),
+    category: 'proxy',
+  },
+  {
+    id: 'folia',
+    name: 'Folia',
+    desc: t('deploy_multi_threaded_region_parallelism'),
+    category: 'plugin',
+  },
+  {
+    id: 'leaves',
+    name: 'Leaves',
+    desc: t('deploy_paper_derived_server'),
+    category: 'plugin',
+  },
+  {
+    id: 'paper',
+    name: 'Paper',
+    desc: t('deploy_high_performance_plugin_server_recommended'),
+    category: 'plugin',
+  },
+  {
+    id: 'purpur',
+    name: 'Purpur',
+    desc: t('deploy_highly_customizable_server'),
+    category: 'plugin',
+  },
+  {
+    id: 'spigot',
+    name: 'Spigot',
+    desc: t('deploy_classic_plugin_server'),
+    category: 'plugin',
+  },
+  {
+    id: 'spongevanilla',
+    name: 'SpongeVanilla',
+    desc: t('deploy_sponge_plugin_server'),
+    category: 'plugin',
+  },
+  {
+    id: 'nukkit',
+    name: 'Nukkit',
+    desc: t('deploy_bedrock_server'),
+    category: 'bedrock',
+  },
+  {
+    id: 'pocketmine',
+    name: 'PocketMine',
+    desc: t('deploy_bedrock_server'),
+    category: 'bedrock',
+  },
+  {
+    id: 'vanilla',
+    name: 'Vanilla',
+    desc: t('deploy_official_vanilla_server'),
+    category: 'vanilla',
+  },
+  {
+    id: 'spongeforge',
+    name: 'SpongeForge',
+    desc: t('deploy_forge_hybrid_ecosystem'),
+    category: 'hybrid',
+  },
+  {
+    id: 'spongeneo',
+    name: 'SpongeNeo',
+    desc: t('deploy_neoforge_hybrid_ecosystem'),
+    category: 'hybrid',
+  },
+])
 const versions = ref<string[]>([])
 const builds = ref<Record<string, string[]>>({})
 const buildSources = ref<Record<string, string>>({})
@@ -41,7 +142,7 @@ async function loadVersions(core: Core) {
     const rawVersions = Array.isArray(response) ? response : (response.versions ?? [])
     versions.value = rawVersions.map((item) => (typeof item === 'string' ? item : (item.id ?? ''))).filter(Boolean)
   } catch (error: unknown) {
-    loadError.value = getErrorMessage(error, '版本加载失败')
+    loadError.value = getErrorMessage(error, t('deploy_failed_to_load_versions'))
     versions.value = []
   } finally {
     isLoading.value = false
@@ -63,7 +164,7 @@ async function loadBuilds(core: Core, version: string) {
       [version]: rawBuilds.map((item) => (typeof item === 'string' ? item : (item.id ?? ''))).filter(Boolean),
     }
   } catch (error: unknown) {
-    loadError.value = getErrorMessage(error, '构建加载失败')
+    loadError.value = getErrorMessage(error, t('deploy_failed_to_load_builds'))
     builds.value = { ...builds.value, [version]: [] }
   }
 }
@@ -71,7 +172,7 @@ const activeCategory = ref(categories[0])
 const selectedCore = ref<Core | null>(null)
 const selected = ref<Selection | null>(null)
 const isModalOpen = ref(false)
-const filteredCores = computed(() => cores.filter((core) => core.category === activeCategory.value))
+const filteredCores = computed(() => cores.value.filter((core) => core.category === activeCategory.value))
 async function openWizard(core: Core) {
   builds.value = {}
   buildSources.value = {}
@@ -102,7 +203,7 @@ const emit = defineEmits<{ select: [value: Selection] }>()
           :class="activeCategory === category ? 'border-brand bg-surface text-text-primary' : ''"
           @click="activeCategory = category"
         >
-          {{ category }}
+          {{ categoryLabel(category) }}
         </button>
       </nav>
     </aside>
@@ -110,7 +211,9 @@ const emit = defineEmits<{ select: [value: Selection] }>()
       <header class="mb-6 flex items-end justify-between gap-4 border-b border-border pb-5">
         <div>
           <p class="mb-2 font-mono text-[10px] tracking-[0.24em] text-text-secondary">/ CORE LIBRARY</p>
-          <h2 class="font-serif text-2xl text-text-primary">选择服务端核心</h2>
+          <h2 class="font-serif text-2xl text-text-primary">
+            {{ t('deploy_choose_a_server_core') }}
+          </h2>
         </div>
         <span class="font-mono text-[10px] tracking-[0.18em] text-text-secondary"
           >{{ filteredCores.length.toString().padStart(2, '0') }} AVAILABLE</span
@@ -136,7 +239,7 @@ const emit = defineEmits<{ select: [value: Selection] }>()
         </button>
       </div>
       <p v-if="selected" class="mt-6 border-l-2 border-brand bg-brand/15 px-4 py-3 font-mono text-xs text-text-primary">
-        已选择：{{ selected.core }} {{ selected.version }} ({{ selected.build }})
+        {{ t('deploy_selected') }}{{ selected.core }} {{ selected.version }} ({{ selected.build }})
       </p>
     </main>
     <VersionWizardModal

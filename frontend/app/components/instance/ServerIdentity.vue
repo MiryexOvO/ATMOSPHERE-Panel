@@ -1,7 +1,7 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const props = defineProps<{ instanceId: string; running: boolean }>()
-const tr = usePanelText(),
-  { instanceRequest, path, getErrorMessage } = useInstanceApi(() => props.instanceId)
+const { instanceRequest, path, getErrorMessage } = useInstanceApi(() => props.instanceId)
 const canvas = ref<HTMLCanvasElement | null>(null),
   image = shallowRef<HTMLImageElement | null>(null),
   zoom = ref(1),
@@ -26,7 +26,7 @@ function choose(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
   if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 10 * 1048576) {
-    message.value = tr('请选择小于 10 MB 的 JPG / PNG', 'Choose JPG / PNG under 10 MB', '10 MB 以下の JPG / PNG を選択')
+    message.value = t('msg_choose_jpg_png_under_10_mb')
     return
   }
   if (objectUrl) URL.revokeObjectURL(objectUrl)
@@ -39,7 +39,7 @@ function choose(event: Event) {
     nextTick(draw)
   }
   img.onerror = () => {
-    message.value = tr('无法读取图片', 'Unable to read image', '画像を読み込めません')
+    message.value = t('msg_unable_to_read_image')
   }
   img.src = objectUrl
 }
@@ -57,11 +57,7 @@ async function save() {
     form.append('file', blob, 'server-icon.png')
     await instanceRequest('/icon', { method: 'POST', body: form })
     stamp.value = Date.now()
-    message.value = tr(
-      '图标已保存，启动后生效',
-      'Icon saved; takes effect on start',
-      'アイコンを保存しました。起動後に反映されます',
-    )
+    message.value = t('msg_icon_saved_takes_effect_on_start')
   } catch (error) {
     message.value = getErrorMessage(error)
   } finally {
@@ -96,14 +92,14 @@ async function exportServer() {
           if (done) break
           await writer.write(value)
           bytes += value.byteLength
-          message.value = tr('正在导出 ', 'EXPORTING ', 'エクスポート中 ') + (bytes / 1048576).toFixed(1) + ' MB'
+          message.value = t('msg_exporting') + (bytes / 1048576).toFixed(1) + ' MB'
         }
       } finally {
         reader.releaseLock()
       }
       await writer.close()
       writer = null
-      message.value = tr('服务端已导出', 'Server exported', 'エクスポート完了')
+      message.value = t('msg_server_exported')
     } else {
       const url = URL.createObjectURL(await response.blob()),
         link = document.createElement('a')
@@ -126,7 +122,7 @@ onUnmounted(() => {
 <template>
   <section class="space-y-5 border-t border-border pt-6">
     <h3 class="font-serif text-lg">
-      {{ tr('服务器图标与导出', 'SERVER ICON & EXPORT', 'サーバーアイコンとエクスポート') }}
+      {{ t('msg_server_icon_export') }}
     </h3>
     <div class="flex flex-wrap items-center gap-5">
       <img
@@ -138,7 +134,7 @@ onUnmounted(() => {
         class="border border-border [image-rendering:pixelated]"
         @error="($event.target as HTMLImageElement).style.visibility = 'hidden'"
       /><label class="cursor-pointer border border-border px-4 py-3 text-xs text-brand"
-        >{{ tr('选择 JPG / PNG', 'CHOOSE JPG / PNG', 'JPG / PNG を選択')
+        >{{ t('msg_choose_jpg_png')
         }}<input
           type="file"
           accept="image/png,image/jpeg"
@@ -151,27 +147,17 @@ onUnmounted(() => {
         class="border border-border px-4 py-3 text-xs text-brand disabled:opacity-40"
         @click="exportServer"
       >
-        {{
-          busy
-            ? tr('处理中…', 'PROCESSING…', '処理中…')
-            : tr('导出完整服务端', 'EXPORT FULL SERVER', 'サーバー全体をエクスポート')
-        }}
+        {{ busy ? t('msg_processing') : t('msg_export_full_server') }}
       </button>
     </div>
     <p class="text-xs leading-6 text-text-secondary">
-      {{
-        tr(
-          '停服后操作。导出包含世界存档、插件、MODS、配置文件与核心。',
-          'Stop the server first. Export includes worlds, plugins, mods, configuration and core.',
-          '停止後に操作してください。ワールド、プラグイン、MOD、設定、コアを含みます。',
-        )
-      }}
+      {{ t('msg_stop_the_server_first_export_includes_worlds') }}
     </p>
     <div v-if="image" class="grid max-w-xl gap-5 sm:grid-cols-2">
       <canvas ref="canvas" width="256" height="256" class="w-full border border-brand" />
       <div class="space-y-4">
         <label class="block text-xs"
-          >{{ tr('缩放', 'ZOOM', '拡大')
+          >{{ t('msg_zoom')
           }}<input
             v-model.number="zoom"
             type="range"
@@ -189,7 +175,7 @@ onUnmounted(() => {
           class="border border-brand px-4 py-2 text-xs text-brand"
           @click="save"
         >
-          {{ tr('保存裁剪 · 64×64', 'SAVE CROP · 64×64', '切り抜きを保存 · 64×64') }}
+          {{ t('msg_save_crop_64_64') }}
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import LocalScrollRuler from '~/components/ui/LocalScrollRuler.vue'
+const { t } = useI18n()
 type Level = 'normal' | 'error' | 'warn' | 'system'
 type LogLine = { id: number; text: string; level: Level; time: string; animate: boolean }
 
@@ -19,7 +20,6 @@ const paused = ref(false)
 const autoScroll = ref(true)
 const sending = ref(false)
 const sent = ref(false)
-const tr = usePanelText()
 let sentTimer: ReturnType<typeof setTimeout> | undefined
 const viewport = ref<HTMLElement | null>(null)
 const filter = ref<'all' | 'error' | 'warn'>('all')
@@ -121,13 +121,7 @@ async function sendCommand() {
   const value = command.value.trim()
   if (!value || sending.value) return
   if (isOffline.value) {
-    append(
-      tr(
-        '[系统] 实例已停止，请启动后发送；已输入的命令会保留。',
-        '[SYSTEM] Start the server before sending. Your command is preserved.',
-        '[SYSTEM] 起動後に送信してください。入力内容は保持されます。',
-      ),
-    )
+    append(t('msg_system_start_the_server_before_sending_your_'))
     return
   }
   sending.value = true
@@ -146,7 +140,7 @@ async function sendCommand() {
       sent.value = false
     }, 900)
   } catch (error: unknown) {
-    append('[command error] ' + getErrorMessage(error, '指令发送失败'))
+    append('[command error] ' + getErrorMessage(error, t('msg_failed_to_send_command')))
   } finally {
     sending.value = false
   }
@@ -229,7 +223,9 @@ onUnmounted(() => {
     <div class="relative">
       <div ref="viewport" class="h-[460px] overflow-y-auto p-4 font-mono text-[11px] leading-6" @scroll="onScroll">
         <p v-if="isOffline" class="py-12 text-center text-text-secondary">SERVER IS OFFLINE</p>
-        <p v-else-if="!visibleLogs.length" class="py-12 text-center text-text-secondary">等待服务端日志……</p>
+        <p v-else-if="!visibleLogs.length" class="py-12 text-center text-text-secondary">
+          {{ t('msg_waiting_for_server_logs') }}
+        </p>
         <div
           v-for="line in visibleLogs"
           :key="line.id"
@@ -273,7 +269,7 @@ onUnmounted(() => {
       ><input
         v-model="command"
         class="min-w-0 flex-1 bg-transparent px-1 py-4 font-mono text-xs text-text-primary outline-none placeholder:text-text-secondary"
-        placeholder="输入服务器指令，例如 say hello"
+        :placeholder="t('msg_enter_a_server_command_e_g_say_hello')"
         autocomplete="off"
         @keydown.up.prevent="recall(-1)"
         @keydown.down.prevent="recall(1)"
@@ -285,24 +281,12 @@ onUnmounted(() => {
         <span
           class="inline-block transition-transform duration-300"
           :class="sent ? 'translate-x-1 text-data-live' : ''"
-          >{{
-            sending
-              ? tr('发送中', 'SENDING', '送信中')
-              : sent
-                ? tr('已发送', 'SENT', '送信済み')
-                : tr('发送', 'SEND', '送信')
-          }}</span
+          >{{ sending ? t('msg_sending') : sent ? t('msg_sent') : t('msg_send') }}</span
         >
       </button>
     </form>
     <p v-if="isOffline" role="status" class="border-t border-border px-4 py-2 text-xs text-text-secondary">
-      {{
-        tr(
-          '实例已停止，可先输入命令，启动后发送。',
-          'Server stopped. You can prepare a command and send it after starting.',
-          '停止中でもコマンドを入力できます。起動後に送信してください。',
-        )
-      }}
+      {{ t('msg_server_stopped_you_can_prepare_a_command_and') }}
     </p>
   </section>
 </template>

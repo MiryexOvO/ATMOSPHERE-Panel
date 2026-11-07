@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const tr = usePanelText(),
-  { request, getErrorMessage } = useApi()
+const { t } = useI18n()
+const { request, getErrorMessage } = useApi()
 const instances = ref<{ id: string; name: string }[]>([]),
   selected = ref<string[]>([]),
   action = ref('restart'),
@@ -17,11 +17,7 @@ async function load() {
 // 限制并发并返回每台实例的真实结果。
 async function run() {
   if (!selected.value.length || busy.value) return
-  if (
-    action.value !== 'command' &&
-    !window.confirm(tr('确认操作选中的实例？', 'Apply to selected servers?', '選択したサーバーに実行しますか？'))
-  )
-    return
+  if (action.value !== 'command' && !window.confirm(t('msg_apply_to_selected_servers'))) return
   busy.value = true
   try {
     const data = await request<{ results: { id: string; ok: boolean; result: string }[] }>('/api/batch', {
@@ -46,7 +42,7 @@ onMounted(load)
       <div>
         <p class="font-mono text-[10px] tracking-widest text-brand">/ FLEET COMMANDS</p>
         <h3 class="mt-3 font-serif text-xl">
-          {{ tr('多实例批量操作', 'MULTI-SERVER OPERATIONS', '複数サーバー操作') }}
+          {{ t('msg_multi_server_operations') }}
         </h3>
       </div>
       <div class="flex flex-wrap gap-5">
@@ -62,10 +58,10 @@ onMounted(load)
             v-model="action"
             label="ACTION"
             :options="[
-              { value: 'restart', label: tr('一键重启', 'RESTART SELECTED', '一括再起動') },
-              { value: 'command', label: tr('同步命令', 'BROADCAST COMMAND', 'コマンド同期') },
-              { value: 'start', label: tr('批量启动', 'START SELECTED', '一括起動') },
-              { value: 'stop', label: tr('批量停止', 'STOP SELECTED', '一括停止') },
+              { value: 'restart', label: t('msg_restart_selected') },
+              { value: 'command', label: t('msg_broadcast_command') },
+              { value: 'start', label: t('msg_start_selected') },
+              { value: 'stop', label: t('msg_stop_selected') },
             ]"
           />
         </div>
@@ -73,7 +69,7 @@ onMounted(load)
           v-if="action === 'command'"
           v-model="command"
           maxlength="512"
-          :placeholder="tr('单行服务器命令', 'SINGLE SERVER COMMAND', 'サーバーコマンド')"
+          :placeholder="t('msg_single_server_command')"
           class="min-w-0 flex-1 border border-border bg-transparent p-3 font-mono text-sm"
         /><button
           :disabled="busy || !selected.length || (action === 'command' && !command.trim())"
@@ -81,7 +77,7 @@ onMounted(load)
           :class="action === 'command' ? '' : 'sm:col-start-2 sm:justify-self-start'"
           @click="run"
         >
-          {{ busy ? tr('执行中…', 'RUNNING…', '実行中…') : tr('执行', 'EXECUTE', '実行') }}
+          {{ busy ? t('msg_running') : t('msg_execute') }}
         </button>
       </div>
       <p v-if="message" role="status" class="font-mono text-xs leading-6 whitespace-pre-wrap text-brand">

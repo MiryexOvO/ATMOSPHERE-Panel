@@ -1,7 +1,14 @@
 import { instancePath } from '~/utils/apiPath'
+import { hasCJK, translateBackendKey } from '~/utils/backendMessages'
 
 export function useApi() {
   const config = useRuntimeConfig()
+  // i18n 在少数上下文可能不可用，此时保持默认语言。
+  let getLocale: () => string = () => 'zh'
+  try {
+    const { locale } = useI18n()
+    getLocale = () => locale.value
+  } catch {}
   const token = useCookie<string | null>('mc_panel_session')
 
   const request = async <T>(url: string, options: Parameters<typeof $fetch<T>>[1] = {}) => {
@@ -17,9 +24,9 @@ export function useApi() {
     }
   }
 
-  const getErrorMessage = (cause: unknown, fallback = '请求失败') => {
+  const getErrorMessage = (cause: unknown, fallback = t('msg_request_failed')) => {
     const err = cause as { data?: { message?: string; detail?: string | { msg: string }[] }; message?: string }
-    return (
+    const raw =
       err.data?.message ||
       (typeof err.data?.detail === 'string'
         ? err.data.detail
@@ -27,8 +34,12 @@ export function useApi() {
           ? err.data.detail.map((item) => item.msg).join('; ')
           : '') ||
       err.message ||
-      fallback
-    )
+      ''
+    // 后端只返回中文时，按当前语言翻译；没有收录则回退到调用方的本地化文案。
+    const key = translateBackendKey(raw)
+    if (key) return t(key)
+    if (getLocale() !== 'zh' && hasCJK(raw)) return fallback
+    return raw || fallback
   }
 
   return { request, getErrorMessage }

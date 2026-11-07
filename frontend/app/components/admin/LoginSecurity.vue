@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import LocalScrollRuler from '~/components/ui/LocalScrollRuler.vue'
-const tr = usePanelText(),
-  { request, getErrorMessage } = useApi()
+const { t } = useI18n()
+const { request, getErrorMessage } = useApi()
 const enabled = ref(false),
   password = ref(''),
   code = ref(''),
@@ -40,7 +40,7 @@ async function act(action: 'setup' | 'confirm' | 'disable') {
       password.value = ''
       code.value = ''
       await load()
-      message.value = tr('二步验证设置已保存', 'Two-factor settings saved', '二段階認証の設定を保存しました')
+      message.value = t('msg_two_factor_settings_saved')
     }
   } catch (error) {
     message.value = getErrorMessage(error)
@@ -56,24 +56,18 @@ onMounted(load)
       <header class="flex items-center justify-between">
         <div>
           <p class="font-mono text-[10px] tracking-[.2em] text-brand">/ ACCESS GUARD</p>
-          <h3 class="mt-2 font-serif text-xl">{{ tr('登录验证与提醒', 'LOGIN SECURITY', 'ログイン保護') }}</h3>
+          <h3 class="mt-2 font-serif text-xl">{{ t('msg_login_security') }}</h3>
         </div>
         <span class="font-mono text-xs" :class="enabled ? 'text-data-live' : 'text-text-secondary'"
           >TOTP · {{ enabled ? 'ON' : 'OFF' }}</span
         >
       </header>
       <p class="text-xs leading-6 text-text-secondary">
-        {{
-          tr(
-            '使用认证器生成六位验证码。新网络登录会显示提醒；仅比较网络来源，不推测地理位置。请妥善保存验证器密钥。',
-            'Use an authenticator for six-digit codes. New-network sign-ins are flagged without inferring location. Keep your authenticator secret safe.',
-            '認証アプリの 6 桁コードを使用。新しいネットワークからのログインを通知します。位置情報の推測は行いません。鍵を安全に保管してください。',
-          )
-        }}
+        {{ t('msg_use_an_authenticator_for_six_digit_codes_new') }}
       </p>
       <div class="grid gap-4 md:grid-cols-2">
         <label class="space-y-2 text-xs"
-          >{{ tr('当前密码', 'CURRENT PASSWORD', '現在のパスワード')
+          >{{ t('msg_current_password')
           }}<input
             v-model="password"
             type="password"
@@ -92,26 +86,18 @@ onMounted(load)
       </div>
       <div v-if="secret" class="space-y-3 border-l border-brand pl-4">
         <p class="text-xs text-text-secondary">
-          {{
-            tr(
-              '在验证器中手动添加以下密钥，再输入验证码确认。',
-              'Add this secret in your authenticator, then confirm with its code.',
-              '認証アプリに以下の鍵を登録し、確認コードを入力してください。',
-            )
-          }}
+          {{ t('msg_add_this_secret_in_your_authenticator_then_c') }}
         </p>
         <code class="text-sm break-all text-brand">{{ secret }}</code
-        ><a :href="uri" class="block text-xs text-brand underline">{{
-          tr('打开本机验证器', 'OPEN AUTHENTICATOR', '認証アプリを開く')
-        }}</a>
+        ><a :href="uri" class="block text-xs text-brand underline">{{ t('msg_open_authenticator') }}</a>
       </div>
       <div class="flex gap-5 text-xs text-brand">
         <button v-if="!enabled && !secret" :disabled="busy || !password" @click="act('setup')">
-          {{ tr('配置二步验证', 'SET UP TWO-FACTOR', '二段階認証を設定') }}</button
+          {{ t('msg_set_up_two_factor') }}</button
         ><button v-if="secret" :disabled="busy || code.length !== 6" @click="act('confirm')">
-          {{ tr('确认启用', 'CONFIRM ENABLE', '有効化を確認') }}</button
+          {{ t('msg_confirm_enable') }}</button
         ><button v-if="enabled" :disabled="busy || !password || code.length !== 6" @click="act('disable')">
-          {{ tr('关闭二步验证', 'DISABLE TWO-FACTOR', '二段階認証を無効化') }}
+          {{ t('msg_disable_two_factor') }}
         </button>
       </div>
       <p v-if="message" role="status" class="text-sm text-brand">{{ message }}</p>
@@ -127,9 +113,7 @@ onMounted(load)
             <span
               class="text-right"
               :class="event.unusual ? 'text-amber-300' : event.success ? 'text-text-secondary' : 'text-red-400'"
-              >{{
-                event.unusual ? tr('新网络登录', 'NEW NETWORK', '新しいネットワーク') : event.success ? 'OK' : 'FAILED'
-              }}</span
+              >{{ event.unusual ? t('msg_new_network') : event.success ? 'OK' : 'FAILED' }}</span
             >
           </div>
         </div>

@@ -8,7 +8,6 @@ import InstanceSettings from '~/components/instance/InstanceSettings.vue'
 import PlayerManager from '~/components/instance/PlayerManager.vue'
 definePageMeta({ middleware: 'auth' })
 const { t, locale } = useI18n()
-const tr = usePanelText()
 const route = useRoute()
 const instanceId = String(route.params.id)
 const instance = ref<import('~/types').InstanceData | null>(null)
@@ -39,7 +38,7 @@ async function deleteInstance() {
     await navigateTo('/dashboard')
   } catch (error: unknown) {
     showDeleteModal.value = false
-    showToast('error', getErrorMessage(error, '实例删除失败'))
+    showToast('error', getErrorMessage(error, t('msg_failed_to_delete_instance')))
   }
 }
 function showToast(type: 'success' | 'error', message: string) {
@@ -119,22 +118,26 @@ onUnmounted(() => {
         <AtmosphereCard>
           <div class="max-w-md space-y-5">
             <p class="font-mono text-[10px] tracking-[0.2em] text-red-500">/ DESTRUCTIVE ACTION</p>
-            <h2 class="font-serif text-2xl text-text-primary">确认删除实例 {{ instance?.name || instanceId }}？</h2>
-            <p class="text-sm text-text-secondary">此操作将永久删除所有服务端文件，不可恢复！</p>
+            <h2 class="font-serif text-2xl text-text-primary">
+              {{ t('msg_delete_instance') }} {{ instance?.name || instanceId }}{{ t('msg_') }}
+            </h2>
+            <p class="text-sm text-text-secondary">
+              {{ t('msg_this_permanently_deletes_all_server_files_an') }}
+            </p>
             <div class="flex justify-end gap-3">
               <button
                 type="button"
                 class="border border-border px-4 py-2 font-mono text-xs text-text-secondary hover:text-text-primary"
                 @click="showDeleteModal = false"
               >
-                取消
+                {{ t('msg_cancel') }}
               </button>
               <button
                 type="button"
                 class="border border-red-500/30 px-4 py-2 font-mono text-xs text-red-500 hover:bg-red-500/10"
                 @click="deleteInstance"
               >
-                确认删除
+                {{ t('msg_delete_2') }}
               </button>
             </div>
           </div>
@@ -150,7 +153,7 @@ onUnmounted(() => {
           :class="activeTab === tab ? 'text-brand' : 'text-text-secondary hover:text-text-primary'"
           @click="activeTab = tab"
         >
-          {{ tab === 'players' ? tr('玩家管理', 'PLAYERS', 'プレイヤー') : t(tabKeys[tab]!) }}
+          {{ tab === 'players' ? t('msg_players') : t(tabKeys[tab]!) }}
         </button>
         <span aria-hidden="true" class="instance-tab-indicator" :style="tabIndicator" />
       </nav>

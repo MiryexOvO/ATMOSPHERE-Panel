@@ -6,13 +6,12 @@ import StarfieldBackground from '~/components/ui/StarfieldBackground.vue'
 type ErrorLike = { statusCode?: number; statusMessage?: string; message?: string; url?: string }
 const props = defineProps<{ error: ErrorLike | null }>()
 
-type Tr = (zh: string, en: string, ja: string) => string
-// i18n 插件异常时也要能显示错误页，退回中文。
-let tr: Tr = (zh) => zh
+let t: (key: string) => string = (key) => key
 try {
-  tr = usePanelText()
+  const i18n = useI18n()
+  t = (key: string) => i18n.t(key)
 } catch {
-  /* 保持中文兜底 */
+  /* i18n 不可用时退回键名 */
 }
 
 // 仅开发环境支持用 ?code=500 预览不同状态的错误页。
@@ -33,118 +32,62 @@ type Copy = { title: string; description: string }
 const copy = computed<Copy>(() => {
   const table: Record<number, Copy> = {
     400: {
-      title: tr('请求无效', 'Invalid request', '無効なリクエスト'),
-      description: tr(
-        '请求缺少必要参数，或格式无法识别。请返回控制台重新操作。',
-        'The request is missing required parameters or has an unrecognized format. Return to the console and try again.',
-        'リクエストに必要なパラメータが欠けているか、形式を認識できません。コンソールに戻ってやり直してください。',
-      ),
+      title: t('msg_invalid_request'),
+      description: t('msg_the_request_is_missing_required_parameters_o'),
     },
     401: {
-      title: tr('需要身份验证', 'Authentication required', '認証が必要です'),
-      description: tr(
-        '会话已失效，请重新登录后继续。',
-        'Your session has expired. Sign in again to continue.',
-        'セッションが切れました。再度ログインして続行してください。',
-      ),
+      title: t('msg_authentication_required'),
+      description: t('msg_your_session_has_expired_sign_in_again_to_co'),
     },
     403: {
-      title: tr('访问被拒绝', 'Access denied', 'アクセスが拒否されました'),
-      description: tr(
-        '当前账户没有访问此资源的权限。',
-        'The current account does not have permission to access this resource.',
-        '現在のアカウントにはこのリソースへのアクセス権がありません。',
-      ),
+      title: t('msg_access_denied'),
+      description: t('msg_the_current_account_does_not_have_permission'),
     },
     404: {
-      title: tr('页面不存在', 'Page not found', 'ページが見つかりません'),
-      description: tr(
-        '这条航线上没有对应的坐标。请返回控制台重新导航。',
-        'No coordinates match this route. Return to the console and navigate again.',
-        'この航路に対応する座標はありません。コンソールに戻って再移動してください。',
-      ),
+      title: t('msg_page_not_found'),
+      description: t('msg_no_coordinates_match_this_route_return_to_th'),
     },
     405: {
-      title: tr('请求方式不支持', 'Method not allowed', 'メソッドが許可されていません'),
-      description: tr(
-        '该地址不接受当前的请求方式。请从面板重新发起操作。',
-        'This address does not accept the current request method. Start the action again from the panel.',
-        'このアドレスでは現在のリクエスト方式を受け付けません。パネルから操作をやり直してください。',
-      ),
+      title: t('msg_method_not_allowed'),
+      description: t('msg_this_address_does_not_accept_the_current_req'),
     },
     408: {
-      title: tr('请求超时', 'Request timeout', 'リクエストがタイムアウトしました'),
-      description: tr(
-        '等待响应的时间过长，请检查网络后重试。',
-        'The response took too long. Check your connection and try again.',
-        '応答に時間がかかりすぎました。ネットワークを確認して再試行してください。',
-      ),
+      title: t('msg_request_timeout'),
+      description: t('msg_the_response_took_too_long_check_your_connec'),
     },
     409: {
-      title: tr('状态冲突', 'Conflict', '状態が競合しています'),
-      description: tr(
-        '资源状态已经变化，请刷新后再试。',
-        'The resource state has changed. Refresh and try again.',
-        'リソースの状態が変更されました。更新してから再試行してください。',
-      ),
+      title: t('msg_conflict'),
+      description: t('msg_the_resource_state_has_changed_refresh_and_t'),
     },
     422: {
-      title: tr('数据校验失败', 'Validation failed', 'データ検証に失敗しました'),
-      description: tr(
-        '提交的数据未通过校验，请检查后重试。',
-        'The submitted data failed validation. Check it and try again.',
-        '送信されたデータが検証に通りませんでした。確認して再試行してください。',
-      ),
+      title: t('msg_validation_failed'),
+      description: t('msg_the_submitted_data_failed_validation_check_i'),
     },
     429: {
-      title: tr('请求过于频繁', 'Too many requests', 'リクエストが多すぎます'),
-      description: tr(
-        '操作频率超出限制，请稍等片刻再试。',
-        'The request rate exceeded the limit. Wait a moment and try again.',
-        'リクエスト頻度が制限を超えました。少し待ってから再試行してください。',
-      ),
+      title: t('msg_too_many_requests'),
+      description: t('msg_the_request_rate_exceeded_the_limit_wait_a_m'),
     },
     500: {
-      title: tr('面板内部错误', 'Internal error', '内部エラー'),
-      description: tr(
-        '面板运行时遇到异常，请稍后重试或查看服务日志。',
-        'The panel encountered an unexpected error. Try again later or check the service logs.',
-        'パネルの実行中に例外が発生しました。しばらくしてから再試行するか、サービスログを確認してください。',
-      ),
+      title: t('msg_internal_error'),
+      description: t('msg_the_panel_encountered_an_unexpected_error_tr'),
     },
     502: {
-      title: tr('后端连接失败', 'Bad gateway', 'バックエンド接続エラー'),
-      description: tr(
-        '面板无法连接到后端服务，请确认服务正在运行。',
-        'The panel cannot reach the backend service. Make sure it is running.',
-        'パネルがバックエンドサービスに接続できません。サービスが稼働しているか確認してください。',
-      ),
+      title: t('msg_bad_gateway'),
+      description: t('msg_the_panel_cannot_reach_the_backend_service_m'),
     },
     503: {
-      title: tr('服务暂不可用', 'Service unavailable', 'サービスを利用できません'),
-      description: tr(
-        '服务正在维护或尚未就绪，请稍后再试。',
-        'The service is under maintenance or not ready yet. Try again later.',
-        'サービスはメンテナンス中か、まだ準備ができていません。後でもう一度お試しください。',
-      ),
+      title: t('msg_service_unavailable'),
+      description: t('msg_the_service_is_under_maintenance_or_not_read'),
     },
     504: {
-      title: tr('后端响应超时', 'Gateway timeout', 'ゲートウェイタイムアウト'),
-      description: tr(
-        '后端响应超时，请稍后重试。',
-        'The backend took too long to respond. Try again later.',
-        'バックエンドの応答がタイムアウトしました。後でもう一度お試しください。',
-      ),
+      title: t('msg_gateway_timeout'),
+      description: t('msg_the_backend_took_too_long_to_respond_try_aga'),
     },
   }
   return (
     table[code.value] || {
-      title: tr('未知错误', 'Unknown error', '不明なエラー'),
-      description: tr(
-        '请求未能完成，请返回控制台后重试。',
-        'The request could not be completed. Return to the console and try again.',
-        'リクエストを完了できませんでした。コンソールに戻って再試行してください。',
-      ),
+      title: t('msg_unknown_error'),
+      description: t('msg_the_request_could_not_be_completed_return_to'),
     }
   )
 })
@@ -203,29 +146,27 @@ function resetPointer(event: PointerEvent) {
 
 type Action = { label: string; run: () => void }
 const primaryAction = computed<Action>(() => {
-  if (isAuthError.value)
-    return { label: tr('重新登录', 'SIGN IN AGAIN', '再ログイン'), run: () => clearError({ redirect: '/login' }) }
+  if (isAuthError.value) return { label: t('msg_sign_in_again'), run: () => clearError({ redirect: '/login' }) }
   if (isServerError.value)
     return {
-      label: tr('重新加载', 'RELOAD', '再読み込み'),
+      label: t('msg_reload'),
       run: () => {
         if (typeof window !== 'undefined') window.location.reload()
       },
     }
   return {
-    label: tr('返回控制台', 'BACK TO CONSOLE', 'コンソールへ'),
+    label: t('msg_back_to_console'),
     run: () => clearError({ redirect: '/dashboard' }),
   }
 })
 const secondaryAction = computed<Action>(() => {
-  if (isAuthError.value)
-    return { label: tr('返回首页', 'BACK TO HOME', 'ホームへ'), run: () => clearError({ redirect: '/' }) }
+  if (isAuthError.value) return { label: t('msg_back_to_home'), run: () => clearError({ redirect: '/' }) }
   if (isServerError.value)
     return {
-      label: tr('返回控制台', 'BACK TO CONSOLE', 'コンソールへ'),
+      label: t('msg_back_to_console'),
       run: () => clearError({ redirect: '/dashboard' }),
     }
-  return { label: tr('返回登录', 'SIGN IN', 'ログイン'), run: () => clearError({ redirect: '/login' }) }
+  return { label: t('msg_sign_in'), run: () => clearError({ redirect: '/login' }) }
 })
 </script>
 <template>

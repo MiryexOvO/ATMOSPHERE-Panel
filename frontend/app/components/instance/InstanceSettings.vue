@@ -9,7 +9,6 @@ import { instancePropertyKeys, parseServerProperties } from '~/utils/serverPrope
 const props = defineProps<{ instanceId: string; status?: string }>()
 const emit = defineEmits<{ saved: [] }>()
 const { t } = useI18n()
-const tr = usePanelText()
 const { instanceRequest, getErrorMessage } = useInstanceApi(() => props.instanceId)
 // 导航与内容共用明确状态，并按分类重建表单。
 const activeSection = ref<'instance' | 'properties' | 'mods' | 'plugins'>('instance')
@@ -196,9 +195,9 @@ onMounted(load)
         >
           {{
             item === 'mods'
-              ? tr('模组列表', 'MOD LIST', 'MOD 一覧')
+              ? t('msg_mod_list')
               : item === 'plugins'
-                ? tr('插件列表', 'PLUGIN LIST', 'プラグイン一覧')
+                ? t('msg_plugin_list')
                 : t(item === 'instance' ? 'settingsInstance' : 'settingsProperties')
           }}
           <span class="transition-transform duration-300" :class="activeSection === item ? 'translate-x-1' : ''"

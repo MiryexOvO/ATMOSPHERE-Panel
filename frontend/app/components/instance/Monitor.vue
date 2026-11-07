@@ -2,7 +2,6 @@
 import ResourceChart from './ResourceChart.vue'
 const props = defineProps<{ instanceId: string }>()
 const { t } = useI18n()
-const tr = usePanelText()
 const { request, instanceRequest, getErrorMessage } = useInstanceApi(() => props.instanceId)
 type Reading = {
   running: boolean
@@ -84,13 +83,7 @@ onUnmounted(() => {
       >
     </header>
     <p class="text-xs leading-6 text-text-secondary">
-      {{
-        tr(
-          'CPU 按主机逻辑核心数归一化，只统计此实例的进程树；内存相对于实例分配上限。',
-          'CPU is normalized by host logical cores and measures only this instance process tree. Memory is relative to the instance allocation.',
-          'CPU はホストの論理コア数で正規化し、このインスタンスのプロセス群のみ計測。メモリは割当上限に対する割合です。',
-        )
-      }}
+      {{ t('msg_cpu_is_normalized_by_host_logical_cores_and_') }}
     </p>
     <p v-if="error" role="alert" class="text-sm text-red-400">{{ error }}</p>
     <div class="grid gap-4 md:grid-cols-2">
@@ -101,7 +94,7 @@ onUnmounted(() => {
         >
         <ResourceChart class="mt-5" :values="points.map((p) => p.cpu)" :label="t('monitorCpu')" />
         <p class="mt-3 font-mono text-[10px] text-text-secondary">
-          {{ tr('单核等效', 'SINGLE-CORE EQUIVALENT', '単一コア換算') }} {{ (reading?.cpu_percent || 0).toFixed(2) }}%
+          {{ t('msg_single_core_equivalent') }} {{ (reading?.cpu_percent || 0).toFixed(2) }}%
         </p>
       </AtmosphereCard>
       <AtmosphereCard :interactive="false">
@@ -129,22 +122,12 @@ onUnmounted(() => {
       >
     </div>
     <p class="font-mono text-xs leading-6 text-text-secondary">
-      {{ tr('累计读取 / 写入', 'TOTAL READ / WRITE', '累積読み取り / 書き込み') }} ·
-      {{ ((reading?.total_read_bytes || 0) / 1048576).toFixed(1) }} MB /
+      {{ t('msg_total_read_write') }} · {{ ((reading?.total_read_bytes || 0) / 1048576).toFixed(1) }} MB /
       {{ ((reading?.total_write_bytes || 0) / 1048576).toFixed(1) }} MB
-      <span v-if="reading?.io_available === false"
-        >·
-        {{
-          tr(
-            '此平台不提供进程磁盘统计',
-            'PROCESS DISK STATS UNAVAILABLE ON THIS PLATFORM',
-            'この環境ではプロセスのディスク統計を取得できません',
-          )
-        }}</span
-      >
+      <span v-if="reading?.io_available === false">· {{ t('msg_process_disk_stats_unavailable_on_this_platf') }}</span>
     </p>
     <p class="font-mono text-[10px] text-text-secondary">
-      {{ loading ? '读取监控数据……' : t('monitorSample') + ' · ' + points.length }}
+      {{ loading ? t('msg_loading_monitor_data') : t('monitorSample') + ' · ' + points.length }}
     </p>
   </section>
 </template>

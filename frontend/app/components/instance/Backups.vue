@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const props = defineProps<{ instanceId: string }>()
 const { instanceRequest, getErrorMessage } = useInstanceApi(() => props.instanceId)
 type Backup = { name: string; size: number; created_at: number }
@@ -14,10 +15,10 @@ async function create() {
   message.value = ''
   try {
     const result = await instanceRequest<{ name: string }>('/backups', { method: 'POST' })
-    message.value = '已创建：' + result.name
+    message.value = t('msg_created') + result.name
     await load()
   } catch (error: unknown) {
-    message.value = getErrorMessage(error, '备份失败')
+    message.value = getErrorMessage(error, t('msg_backup_failed'))
   } finally {
     loading.value = false
   }
@@ -29,7 +30,9 @@ onMounted(load)
     <header class="flex items-center justify-between border-b border-border pb-5">
       <div>
         <p class="font-mono text-[10px] tracking-[0.18em] text-text-secondary">BACKUP ARCHIVE</p>
-        <h2 class="mt-2 font-serif text-2xl text-text-primary">备份与恢复</h2>
+        <h2 class="mt-2 font-serif text-2xl text-text-primary">
+          {{ t('msg_backups_restore') }}
+        </h2>
       </div>
       <button
         type="button"
@@ -37,11 +40,13 @@ onMounted(load)
         :disabled="loading"
         @click="create"
       >
-        {{ loading ? '处理中…' : '一键备份' }}
+        {{ loading ? t('msg_working') : t('msg_create_backup') }}
       </button>
     </header>
     <p v-if="message" class="mt-4 font-mono text-xs text-data-live">{{ message }}</p>
-    <div v-if="!items.length" class="py-16 text-center font-mono text-xs text-text-secondary">暂无备份记录</div>
+    <div v-if="!items.length" class="py-16 text-center font-mono text-xs text-text-secondary">
+      {{ t('msg_no_backups_yet') }}
+    </div>
     <div v-else class="mt-5 divide-y divide-border">
       <div v-for="item in items" :key="item.name" class="flex items-center justify-between py-4 font-mono text-xs">
         <span class="text-text-primary">{{ item.name }}</span

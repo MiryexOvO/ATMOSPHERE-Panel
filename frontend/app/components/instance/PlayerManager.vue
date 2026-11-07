@@ -1,20 +1,20 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const props = defineProps<{ instanceId: string }>()
-const tr = usePanelText(),
-  { instanceRequest, path, getErrorMessage } = useInstanceApi(() => props.instanceId)
+const { instanceRequest, path, getErrorMessage } = useInstanceApi(() => props.instanceId)
 const names = ref<string[]>([]),
   selected = ref<string[]>([]),
   message = ref(''),
   busy = ref(false),
   action = ref('kick')
 const actions = computed(() => [
-  { value: 'op', label: tr('授予 OP', 'GRANT OP', 'OP を付与') },
-  { value: 'deop', label: tr('取消 OP', 'REVOKE OP', 'OP を解除') },
-  { value: 'kick', label: tr('踢出', 'KICK', 'キック') },
-  { value: 'ban', label: tr('封禁', 'BAN', 'BAN') },
-  { value: 'pardon', label: tr('解封', 'PARDON', 'BAN 解除') },
-  { value: 'whitelist-add', label: tr('加入白名单', 'ADD TO WHITELIST', 'ホワイトリスト追加') },
-  { value: 'whitelist-remove', label: tr('移出白名单', 'REMOVE FROM WHITELIST', 'ホワイトリスト削除') },
+  { value: 'op', label: t('msg_grant_op') },
+  { value: 'deop', label: t('msg_revoke_op') },
+  { value: 'kick', label: t('msg_kick') },
+  { value: 'ban', label: t('msg_ban') },
+  { value: 'pardon', label: t('msg_pardon') },
+  { value: 'whitelist-add', label: t('msg_add_to_whitelist') },
+  { value: 'whitelist-remove', label: t('msg_remove_from_whitelist') },
 ])
 let timer: ReturnType<typeof setInterval> | undefined
 async function load() {
@@ -63,11 +63,11 @@ onUnmounted(() => {
       <div>
         <p class="font-mono text-xs tracking-widest text-brand">/ ONLINE ROSTER</p>
         <h2 class="mt-3 font-serif text-2xl">
-          {{ tr('在线玩家', 'ONLINE PLAYERS', 'オンラインプレイヤー') }}
+          {{ t('msg_online_players') }}
           <small class="ml-2 font-mono text-sm text-text-secondary">{{ names.length }}</small>
         </h2>
       </div>
-      <button class="text-xs text-brand" @click="load">{{ tr('刷新', 'REFRESH', '更新') }}</button>
+      <button class="text-xs text-brand" @click="load">{{ t('msg_refresh') }}</button>
     </header>
     <p v-if="message" role="status" class="mt-5 text-sm whitespace-pre-wrap text-brand">{{ message }}</p>
     <div class="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -86,22 +86,18 @@ onUnmounted(() => {
       >
     </div>
     <p v-if="!names.length && !message" class="py-10 text-sm text-text-secondary">
-      {{ tr('目前没有在线玩家', 'NO ONLINE PLAYERS', 'オンラインプレイヤーはいません') }}
+      {{ t('msg_no_online_players') }}
     </p>
     <div class="mt-7 flex flex-wrap items-center gap-4 border-t border-border pt-6">
       <div class="w-64">
-        <AtmosphereSelect
-          v-model="action"
-          :options="actions"
-          :label="tr('玩家操作', 'PLAYER ACTION', 'プレイヤー操作')"
-        />
+        <AtmosphereSelect v-model="action" :options="actions" :label="t('msg_player_action')" />
       </div>
       <button
         :disabled="busy || !selected.length"
         class="border border-brand px-5 py-3 text-sm text-brand disabled:opacity-30"
         @click="apply"
       >
-        {{ tr('执行选中操作', 'APPLY TO SELECTED', '選択した操作を実行') }} · {{ selected.length }}
+        {{ t('msg_apply_to_selected') }} · {{ selected.length }}
       </button>
     </div></AtmosphereCard
   >

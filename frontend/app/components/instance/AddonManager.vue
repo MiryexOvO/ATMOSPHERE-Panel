@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import MechanicalSwitch from '~/components/ui/MechanicalSwitch.vue'
+const { t } = useI18n()
 const props = defineProps<{ instanceId: string; kind: 'mods' | 'plugins' }>()
-const tr = usePanelText(),
-  { instanceRequest, getErrorMessage } = useInstanceApi(() => props.instanceId)
+const { instanceRequest, getErrorMessage } = useInstanceApi(() => props.instanceId)
 type Addon = {
   file: string
   name: string
@@ -69,7 +69,7 @@ async function toggle(item?: Addon) {
       method: 'POST',
       body: item ? { file: item.file, enabled: !item.enabled } : { auto_client: true },
     })
-    message.value = tr('已更新 ', 'UPDATED ', '更新済み ') + data.changed.length
+    message.value = t('msg_updated') + data.changed.length
     await load()
   } catch (error) {
     message.value = getErrorMessage(error)
@@ -97,50 +97,36 @@ onMounted(load)
       <div>
         <p class="font-mono text-xs tracking-widest text-brand">/ {{ kind.toUpperCase() }} REGISTRY</p>
         <h2 class="mt-3 font-serif text-2xl">
-          {{
-            kind === 'mods' ? tr('模组列表', 'MOD LIST', 'MOD 一覧') : tr('插件列表', 'PLUGIN LIST', 'プラグイン一覧')
-          }}
+          {{ kind === 'mods' ? t('msg_mod_list') : t('msg_plugin_list') }}
         </h2>
       </div>
       <div class="flex gap-4 text-xs text-brand">
         <button v-if="kind === 'mods'" :disabled="loading || running || busy" @click="toggle()">
-          {{ tr('关闭客户端模组', 'DISABLE CLIENT MODS', 'クライアント MOD を無効化') }}</button
-        ><button @click="load">{{ tr('刷新', 'REFRESH', '更新') }}</button>
+          {{ t('msg_disable_client_mods') }}</button
+        ><button @click="load">{{ t('msg_refresh') }}</button>
       </div>
     </header>
     <p class="mt-5 text-xs leading-6 text-text-secondary">
-      {{
-        tr(
-          '启停需先停止实例。自动检测仅关闭元数据明确标记为客户端专用的模组，未知项目保持原样。',
-          'Stop the server before changing add-ons. Auto-detection only disables explicitly marked client-only mods.',
-          '変更前に停止してください。自動検出は明示的にクライアント専用とされた MOD のみ無効化します。',
-        )
-      }}
+      {{ t('msg_stop_the_server_before_changing_add_ons_auto') }}
     </p>
     <p v-if="message" role="status" class="mt-4 text-sm text-brand">{{ message }}</p>
     <input
       v-model="search"
-      :placeholder="tr('搜索名称或文件', 'SEARCH NAME OR FILE', '名前・ファイルを検索')"
+      :placeholder="t('msg_search_name_or_file')"
       class="mt-6 w-full border border-border bg-transparent p-3 text-sm outline-none focus:border-brand"
     />
     <div ref="listStart" class="scroll-mt-24" />
     <div v-if="loading" class="addon-loading mt-5 space-y-4" role="status">
-      <p class="text-xs text-text-secondary">{{ tr('正在读取扩展列表…', 'LOADING ADD-ONS…', '一覧を読み込み中…') }}</p>
+      <p class="text-xs text-text-secondary">{{ t('msg_loading_add_ons') }}</p>
       <div v-for="row in 5" :key="row" class="border-b border-border py-5">
         <span class="addon-skeleton block h-3 w-2/5" /><span class="addon-skeleton mt-4 block h-2 w-3/5" />
       </div>
     </div>
     <p v-else-if="kind === 'plugins' && !supported && !items.length" class="py-8 text-sm text-text-secondary">
-      {{
-        tr(
-          '该核心不支持插件或未检测到插件列表。',
-          'This core does not support plugins, or no plugins were detected.',
-          'プラグイン非対応、または一覧が検出されませんでした。',
-        )
-      }}
+      {{ t('msg_this_core_does_not_support_plugins_or_no_plu') }}
     </p>
     <p v-else-if="!filtered.length" class="py-8 text-sm text-text-secondary">
-      {{ tr('未检测到文件', 'NO FILES DETECTED', 'ファイルがありません') }}
+      {{ t('msg_no_files_detected') }}
     </p>
     <div
       v-for="item in loading ? [] : pageItems"
@@ -165,12 +151,12 @@ onMounted(load)
     </div>
     <nav
       v-if="!loading && filtered.length"
-      :aria-label="tr('扩展分页', 'ADD-ON PAGES', 'ページ切替')"
+      :aria-label="t('msg_add_on_pages')"
       class="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-5 text-xs"
     >
       <span class="font-mono text-text-secondary"
         >{{ (page - 1) * pageSize + 1 }}–{{ Math.min(page * pageSize, filtered.length) }} / {{ filtered.length }} ·
-        {{ tr('每页20项', '20 PER PAGE', '20 件/ページ') }}</span
+        {{ t('msg_20_per_page') }}</span
       >
       <div class="flex items-center gap-4">
         <button
@@ -179,7 +165,7 @@ onMounted(load)
           class="text-brand disabled:opacity-30"
           @click="changePage(page - 1)"
         >
-          {{ tr('上一页', 'PREV', '前へ') }}</button
+          {{ t('msg_prev') }}</button
         ><span class="font-mono">{{ page }} / {{ pageCount }}</span
         ><button
           type="button"
@@ -187,7 +173,7 @@ onMounted(load)
           class="text-brand disabled:opacity-30"
           @click="changePage(page + 1)"
         >
-          {{ tr('下一页', 'NEXT', '次へ') }}
+          {{ t('msg_next') }}
         </button>
       </div>
     </nav></AtmosphereCard

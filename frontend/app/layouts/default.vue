@@ -60,8 +60,12 @@ onMounted(() => {
     .request<{ settings: Record<string, unknown> }>('/api/panel/settings')
     .then((result) => {
       preferences.value = result.settings
-      if (!localStorage.getItem('preferred-language'))
-        locale.value = String(result.settings.default_locale || 'zh') as 'zh' | 'en' | 'ja'
+      if (!localStorage.getItem('preferred-language')) {
+        const value = String(result.settings.default_locale || 'zh')
+        locale.value = value as 'zh' | 'en' | 'ja'
+        // 记住面板默认语言，下次打开登录页时沿用。
+        localStorage.setItem('preferred-language', value)
+      }
     })
     .catch(() => {})
   timer = setInterval(() => {

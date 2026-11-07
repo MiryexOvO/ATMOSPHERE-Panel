@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const tr = usePanelText(),
-  { request } = useApi()
+const { t } = useI18n()
+const { request } = useApi()
 const alert = ref<{ id: number; ip: string; created_at: number } | null>(null)
 // 已确认的提醒保存在当前浏览器，其他设备仍可查看。
 function dismiss() {
@@ -21,16 +21,10 @@ onMounted(async () => {
   <AtmosphereCard v-if="alert" :interactive="false" class="mb-6"
     ><div class="flex items-center justify-between gap-4">
       <p class="text-sm text-amber-300">
-        {{
-          tr(
-            '检测到新网络登录，请检查是否为本人操作：',
-            'New-network sign-in detected. Verify this activity:',
-            '新しいネットワークからのログインを確認してください：',
-          )
-        }}
+        {{ t('msg_new_network_sign_in_detected_verify_this_act') }}
         {{ alert.ip }} · {{ new Date(alert.created_at * 1000).toLocaleString() }}
       </p>
-      <button class="shrink-0 text-xs text-brand" @click="dismiss">{{ tr('已知晓', 'DISMISS', '確認済み') }}</button>
+      <button class="shrink-0 text-xs text-brand" @click="dismiss">{{ t('msg_dismiss') }}</button>
     </div></AtmosphereCard
   >
 </template>

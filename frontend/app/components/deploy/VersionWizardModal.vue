@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import LocalScrollRuler from '~/components/ui/LocalScrollRuler.vue'
+const { t } = useI18n()
 const versionViewport = ref<HTMLElement | null>(null)
 const buildViewport = ref<HTMLElement | null>(null)
 type Core = { id: string; name: string }
@@ -67,13 +68,14 @@ function chooseBuild(build: string) {
               / DEPLOYMENT WIZARD / 0{{ step }}
             </p>
             <h2 class="font-mono text-lg font-bold text-text-primary">
-              [ {{ core?.name }} ] {{ step === 1 ? '选择游戏版本' : '选择构建版本' }}
+              [ {{ core?.name }} ]
+              {{ step === 1 ? t('deploy_choose_game_version') : t('deploy_choose_build') }}
             </h2>
           </div>
           <button
             type="button"
             class="font-mono text-xl text-text-secondary hover:text-text-primary"
-            aria-label="关闭"
+            :aria-label="t('deploy_close')"
             @click="emit('close')"
           >
             ×
@@ -81,10 +83,16 @@ function chooseBuild(build: string) {
         </header>
 
         <div v-if="step === 1">
-          <p class="mb-4 text-xs text-text-secondary">选择一个 Minecraft 游戏版本以继续。</p>
-          <p v-if="loading" class="py-8 text-center text-xs text-text-secondary">正在获取最新版本数据...</p>
+          <p class="mb-4 text-xs text-text-secondary">
+            {{ t('deploy_choose_a_minecraft_game_version_to_continue') }}
+          </p>
+          <p v-if="loading" class="py-8 text-center text-xs text-text-secondary">
+            {{ t('deploy_loading_latest_version_data') }}
+          </p>
           <p v-else-if="error" class="py-4 text-center text-xs text-red-300">! {{ error }}</p>
-          <p v-else-if="!versions.length" class="py-8 text-center text-xs text-text-secondary">暂无可用版本</p>
+          <p v-else-if="!versions.length" class="py-8 text-center text-xs text-text-secondary">
+            {{ t('deploy_no_versions_available') }}
+          </p>
           <!-- 宽列表使用小刻度尺，保留紧凑选择布局。 -->
           <div class="relative">
             <div ref="versionViewport" class="grid max-h-96 grid-cols-3 gap-2 overflow-y-auto pr-6 sm:grid-cols-4">
@@ -109,9 +117,9 @@ function chooseBuild(build: string) {
             class="mb-5 font-mono text-[11px] text-text-secondary hover:text-text-primary"
             @click="step = 1"
           >
-            ← 返回游戏版本
+            ← {{ t('deploy_back_to_versions') }}
           </button>
-          <p class="mb-4 text-xs text-text-secondary">{{ selectedVersion }} 的可用构建版本。</p>
+          <p class="mb-4 text-xs text-text-secondary">{{ selectedVersion }} {{ t('deploy_available_builds') }}</p>
           <div class="relative">
             <div ref="buildViewport" class="max-h-96 space-y-2 overflow-y-auto pr-6">
               <button
