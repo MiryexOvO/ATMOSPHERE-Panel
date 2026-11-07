@@ -53,16 +53,64 @@ function closePopovers(event: MouseEvent) {
     paletteOpen.value = false
 }
 let timer: ReturnType<typeof setInterval> | undefined
+let healthTimer: ReturnType<typeof setTimeout> | undefined
+let healthBusy = false
+let disposed = false
+
+// 登录页常驻后端检测
+// 在线20秒一次
+// 离线5秒一次
+const HEALTH_INTERVAL_ONLINE = 20000
+const HEALTH_INTERVAL_OFFLINE = 5000
+
+async function probeHealth() {
+  if (disposed || healthBusy) return
+  healthBusy = true
+  try {
+    await request('/api/health', { timeout: 3000 })
+    apiOnline.value = true
+  } catch {
+    apiOnline.value = false
+  } finally {
+    healthBusy = false
+    if (!disposed) scheduleHealth()
+  }
+}
+
+function scheduleHealth() {
+  if (disposed) return
+  if (healthTimer) clearTimeout(healthTimer)
+  healthTimer = undefined
+  // 标签页不可见时不探测
+  if (typeof document !== 'undefined' && document.hidden) return
+  const delay = apiOnline.value ? HEALTH_INTERVAL_ONLINE : HEALTH_INTERVAL_OFFLINE
+  healthTimer = setTimeout(probeHealth, delay)
+}
+
+// 回到页面发送一次请求
+function onVisibility() {
+  if (document.hidden) {
+    if (healthTimer) clearTimeout(healthTimer)
+    healthTimer = undefined
+    return
+  }
+  probeHealth()
+}
 
 onMounted(() => {
   timer = setInterval(() => {
     now.value = new Date()
   }, 1000)
   document.addEventListener('click', closePopovers)
+  document.addEventListener('visibilitychange', onVisibility)
+  probeHealth()
 })
 onUnmounted(() => {
+  disposed = true
   if (timer) clearInterval(timer)
+  if (healthTimer) clearTimeout(healthTimer)
   document.removeEventListener('click', closePopovers)
+  document.removeEventListener('visibilitychange', onVisibility)
 })
 
 const authTransition = useState('auth-transition', () => 'idle')
@@ -317,7 +365,7 @@ async function login() {
                     :placeholder="t('placeholderCredentials')"
                   /><button
                     type="button"
-                    class="absolute top-[26px] right-1 text-text-secondary hover:text-brand"
+                    class="absolute top-6.5 right-1 text-text-secondary hover:text-brand"
                     @click="showPassword = !showPassword"
                   >
                     <Icon :icon="showPassword ? 'line-md:sunny-filled-loop' : 'line-md:moon-filled-loop'" width="18" />
