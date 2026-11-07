@@ -19,7 +19,7 @@ const showPassword = ref(false)
 const paletteOpen = ref(false)
 const now = ref(new Date())
 const colorMode = useColorMode()
-const { request, getErrorMessage } = useApi()
+const { request } = useApi()
 // 复用全站共享的颜色
 const { colors: customColors, fields: colorFields, themeOptions, selectTheme, applyColor } = usePanelTheme()
 const { t, locale, setLocale } = useI18n()
@@ -117,19 +117,58 @@ const authTransition = useState('auth-transition', () => 'idle')
 const isRouteTransitioning = useState('route-transitioning', () => false)
 const seam = useRouteSeam()
 
+// 将后端/网络错误翻译成登录页提示，尽量使用当前语言。
+function describeLoginError(cause: unknown): string {
+  const err = cause as { status?: number; statusCode?: number; data?: { totp_required?: boolean } }
+  const status = err.status ?? err.statusCode
+  // 没有响应体也没有状态码，说明请求根本没到后端
+  if (!err.data && !status) return t('loginBackendOffline')
+  // 二步验证：已填过验证码说明是输错，没填说明还需要输入
+  if (err.data?.totp_required) return verificationCode.value ? t('loginTotpInvalid') : t('loginTotpRequired')
+  if (status === 429) return t('loginRateLimited')
+  if (status && status >= 500) return t('loginServerError')
+  if (status === 401 || status === 403) {
+    // 已进入二步验证阶段却仍返回 401，通常是验证码已被使用
+    return totpRequired.value ? t('loginTotpUsed') : t('loginBadPassword')
+  }
+  return t('loginFailed')
+}
+
 async function login() {
   if (loading.value || authTransition.value !== 'idle') return
-  loading.value = true
   error.value = ''
+  // 前端先拦空值，避免发出无意义的登录请求
+  if (!username.value.trim()) {
+    error.value = t('loginEmptyUsername')
+    return
+  }
+  if (!password.value) {
+    error.value = t('loginEmptyPassword')
+    return
+  }
+  // 已进入二步验证时，验证码不能为空
+  if (totpRequired.value && !verificationCode.value) {
+    error.value = t('loginTotpRequired')
+    document.getElementById('login-totp')?.focus()
+    return
+  }
+  loading.value = true
   const timeout = setTimeout(() => {
     if (loading.value) {
       loading.value = false
-      error.value = '后端连接超时，请确认 27777 服务已启动'
+      error.value = t('loginTimeout')
     }
   }, 8000)
   try {
-    await request('/api/health', { timeout: 3000 })
-    apiOnline.value = true
+    // 先确认后端在线，失败时直接给出离线提示，不进入登录请求
+    try {
+      await request('/api/health', { timeout: 3000 })
+      apiOnline.value = true
+    } catch {
+      apiOnline.value = false
+      error.value = t('loginBackendOffline')
+      return
+    }
     await request('/api/login', {
       method: 'POST',
       timeout: 8000,
@@ -172,11 +211,14 @@ async function login() {
       seam.value.phase = 'idle'
     }
   } catch (cause: unknown) {
-    const err = cause as { data?: { message?: string; totp_required?: boolean }; message?: string }
+    const err = cause as { status?: number; statusCode?: number; data?: { totp_required?: boolean } }
+    // 网络失败时同步离线状态，让顶部指示器尽快反映
+    if (!err.data && !(err.status ?? err.statusCode)) apiOnline.value = false
     // 密码验证通过后才展示二步验证，避免公开账户安全设置。
     if (err.data?.totp_required) {
+      const message = describeLoginError(cause)
       totpRequired.value = true
-      error.value = getErrorMessage(cause)
+      error.value = message
       await nextTick()
       document.getElementById('login-totp')?.focus()
       return
@@ -194,7 +236,7 @@ async function login() {
       authTransition.value = 'idle'
       await new Promise((resolve) => setTimeout(resolve, 60))
     }
-    error.value = apiOnline.value ? getErrorMessage(cause, '密码错误，请检查账号和密码') : '后端未连接，请启动后端服务'
+    error.value = describeLoginError(cause)
     authTransition.value = 'idle'
     isRouteTransitioning.value = false
     document.getElementById('route-card-handoff')?.replaceChildren()
@@ -352,8 +394,9 @@ async function login() {
                 >{{ t('labelUsername')
                 }}<input
                   v-model="username"
+                  autocomplete="username"
                   class="mt-3 w-full border-0 border-b border-border bg-transparent px-0 py-3 font-mono text-text-primary outline-none focus:border-brand"
-                  placeholder="Atmo7"
+                  :placeholder="t('placeholderUsername')"
               /></label>
               <label class="mt-7 block text-text-secondary"
                 >{{ t('labelPassword') }}
@@ -373,7 +416,7 @@ async function login() {
               ></label>
               <!-- 已启用二步验证的账户填写一次性验证码。 -->
               <label v-if="totpRequired" class="mt-6 block text-xs text-text-secondary"
-                >TOTP · {{ locale === 'zh' ? '验证码' : locale === 'ja' ? '認証コード' : 'VERIFICATION CODE'
+                >TOTP · {{ t('totpLabel')
                 }}<input
                   id="login-totp"
                   v-model="verificationCode"
@@ -402,7 +445,7 @@ async function login() {
                 ><span v-else class="h-4 w-4 animate-spin rounded-full border border-brand border-t-transparent" />
               </button>
               <p class="mt-6 font-mono text-[9px] leading-5 text-text-secondary">
-                SESSION / HTTPONLY · SAME-SITE LAX<br />默认会话有效期 24 小时
+                {{ t('sessionInfo') }}<br />{{ t('sessionDesc') }}
               </p>
             </form>
           </div>

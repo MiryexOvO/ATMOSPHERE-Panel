@@ -80,6 +80,71 @@ export const i18nMessages = {
     en: () => 'Default session validity: 24 hours',
     ja: () => 'セッション有効期間：24時間',
   },
+  totpLabel: {
+    zh: () => '验证码',
+    en: () => 'VERIFICATION CODE',
+    ja: () => '認証コード',
+  },
+  placeholderUsername: {
+    zh: () => '请输入管理员账号',
+    en: () => 'ENTER ADMIN ACCOUNT',
+    ja: () => '管理者アカウントを入力',
+  },
+  loginEmptyUsername: {
+    zh: () => '请输入管理员账号',
+    en: () => 'Enter the administrator account.',
+    ja: () => '管理者アカウントを入力してください。',
+  },
+  loginEmptyPassword: {
+    zh: () => '请输入凭据',
+    en: () => 'Enter credentials.',
+    ja: () => '認証情報を入力してください。',
+  },
+  loginTimeout: {
+    zh: () => '后端连接超时，请确认 27777 服务已启动',
+    en: () => 'Backend connection timed out. Make sure the 27777 service is running.',
+    ja: () => 'バックエンド接続がタイムアウトしました。27777 サービスが起動しているか確認してください。',
+  },
+  loginBadPassword: {
+    zh: () => '用户名或密码错误',
+    en: () => 'Wrong username or password.',
+    ja: () => 'ユーザー名またはパスワードが違います。',
+  },
+  loginBackendOffline: {
+    zh: () => '后端未连接，请启动后端服务',
+    en: () => 'Backend offline. Start the backend service.',
+    ja: () => 'バックエンドに接続できません。サービスを起動してください。',
+  },
+  loginTotpRequired: {
+    zh: () => '请输入验证器中的六位验证码',
+    en: () => 'Enter the six-digit code from your authenticator.',
+    ja: () => '認証アプリの 6 桁コードを入力してください。',
+  },
+  loginTotpInvalid: {
+    zh: () => '验证码错误，请重新输入',
+    en: () => 'Invalid code. Try again.',
+    ja: () => 'コードが正しくありません。もう一度入力してください。',
+  },
+  loginTotpUsed: {
+    zh: () => '验证码已使用，请等待下一个验证码',
+    en: () => 'This code was already used. Wait for the next one.',
+    ja: () => 'このコードは使用済みです。次のコードを待ってください。',
+  },
+  loginRateLimited: {
+    zh: () => '登录尝试过多，请稍后重试',
+    en: () => 'Too many attempts. Try again later.',
+    ja: () => '試行回数が多すぎます。しばらくしてから再試行してください。',
+  },
+  loginServerError: {
+    zh: () => '面板服务异常，请稍后重试',
+    en: () => 'Panel service error. Try again later.',
+    ja: () => 'パネルサービスでエラーが発生しました。後でもう一度お試しください。',
+  },
+  loginFailed: {
+    zh: () => '登录失败，请重试',
+    en: () => 'Login failed. Please try again.',
+    ja: () => 'ログインに失敗しました。もう一度お試しください。',
+  },
   backToControlRoom: {
     zh: () => '返回控制台',
     en: () => 'BACK TO CONTROL ROOM',
