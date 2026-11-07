@@ -190,7 +190,7 @@ async function login() {
         seam.value.phase = 'away'
         await new Promise((resolve) => setTimeout(resolve, 800))
       }
-      authTransition.value = 'navigating'
+      authTransition.value = 'expanded'
     }
     await navigateTo('/dashboard')
     await nextTick()
@@ -351,6 +351,7 @@ async function login() {
           :class="{
             'is-splitting':
               authTransition === 'expanding' ||
+              authTransition === 'expanded' ||
               authTransition === 'failed' ||
               authTransition === 'failed-stuck' ||
               authTransition === 'restoring' ||
@@ -362,7 +363,7 @@ async function login() {
         <div
           class="login-transition-outer"
           :class="{
-            'is-expanding': authTransition === 'expanding',
+            'is-expanding': authTransition === 'expanding' || authTransition === 'expanded',
             'is-failing': authTransition === 'failed' || authTransition === 'failed-stuck',
             'is-stuck': authTransition === 'failed-stuck',
             'is-returning': authTransition === 'failed-return',
@@ -376,7 +377,10 @@ async function login() {
           class="login-transition-inner"
           :class="{
             'is-dissolving':
-              authTransition === 'expanding' || authTransition === 'failed' || authTransition === 'failed-stuck',
+              authTransition === 'expanding' ||
+              authTransition === 'expanded' ||
+              authTransition === 'failed' ||
+              authTransition === 'failed-stuck',
             'is-stuck': authTransition === 'failed-stuck',
             'is-returning': authTransition === 'failed-return',
             'is-dissolved': authTransition === 'restoring',

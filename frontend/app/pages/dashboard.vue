@@ -86,8 +86,6 @@ async function loadInstances() {
   }
 }
 
-await loadInstances()
-
 async function loadHostMetrics() {
   try {
     host.value = await request('/api/instances/system/metrics')

@@ -120,12 +120,12 @@ onMounted(load)
           <div
             v-for="event in events"
             :key="event.id"
-            class="flex flex-wrap justify-between gap-3 border-b border-border py-3 font-mono text-xs"
+            class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem] items-center gap-3 border-b border-border py-3 font-mono text-xs"
           >
-            <span>{{ new Date(event.created_at * 1000).toLocaleString() }}</span
-            ><span>{{ event.ip }}</span
-            ><span
-              class="pr-6"
+            <span class="truncate">{{ new Date(event.created_at * 1000).toLocaleString() }}</span>
+            <span class="truncate pl-[80px]">{{ event.ip }}</span>
+            <span
+              class="text-right"
               :class="event.unusual ? 'text-amber-300' : event.success ? 'text-text-secondary' : 'text-red-400'"
               >{{
                 event.unusual ? tr('新网络登录', 'NEW NETWORK', '新しいネットワーク') : event.success ? 'OK' : 'FAILED'

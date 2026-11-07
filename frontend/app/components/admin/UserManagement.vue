@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AccountSecurity from './AccountSecurity.vue'
 import LoginSecurity from './LoginSecurity.vue'
+import HologramLight from '~/components/ui/HologramLight.vue'
 import LocalScrollRuler from '~/components/ui/LocalScrollRuler.vue'
 const auditViewport = ref<HTMLElement | null>(null)
 const { t } = useI18n()
@@ -170,7 +171,12 @@ onMounted(load)
                 }}</span
                 >{{ user.nickname || user.username }}
                 <small class="ml-2 text-text-secondary">{{ user.username }}</small>
-                <span v-if="user.id === currentId" class="text-brand">●</span>
+                <HologramLight
+                  v-if="user.id === currentId"
+                  :active="true"
+                  class="ml-3 align-middle"
+                  :title="tr('当前账户', 'CURRENT ACCOUNT', '現在のアカウント')"
+                />
               </td>
               <td>{{ roles.find((role) => role.value === user.role)?.label }}</td>
               <td>{{ t(user.enabled ? 'settingsOn' : 'settingsOff') }}</td>
