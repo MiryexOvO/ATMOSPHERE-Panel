@@ -124,17 +124,52 @@ if [[ "$version" == latest ]]; then
   version=$(resolve_version) || fail 'Could not resolve the latest release (GitHub unreachable). Retry later, set ATMOSPHERE_GH_PROXY=https://gh-proxy.com, or pin --version v0.3.0'
 fi
 name="atmosphere-panel-$version-linux-$arch.tar.gz"
-base=$(gh_url "https://github.com/$repo/releases/download/$version")
+base="https://github.com/$repo/releases/download/$version"
 step 2 'Download binary / no Node.js or Python installation'
-# 发布包走 GitHub CDN，遇到 504 时给出可操作的代理提示。
-download_asset(){
-  local desc=$1; shift
-  if ! download "$@"; then
-    fail "$desc failed (GitHub CDN returned an error). Retry later, or use a proxy: ATMOSPHERE_GH_PROXY=https://gh-proxy.com"
-  fi
+# 通过 Release API 查资产 ID
+# API 的下载路径与网页 CDN 不同
+# 直连 504 时往往仍可用
+api_asset_id(){
+  local asset=$1 json
+  json=$(download --silent --retry 1 --max-time 20 "https://api.github.com/repos/$repo/releases/tags/$version" 2>/dev/null || true)
+  printf '%s\n' "$json" | awk -v want="$asset" '
+    /"assets": *\[/ { a=1 }
+    a && match($0, /"id": *[0-9]+/) { l=substr($0,RSTART,RLENGTH); gsub(/[^0-9]/,"",l); id=l }
+    a && match($0, /"name": *"[^"]*"/) { s=substr($0,RSTART,RLENGTH); sub(/.*"name": *"/,"",s); sub(/"$/,"",s); if (s==want) { print id; exit } }
+  '
 }
-download_asset 'Release asset download' --progress-bar "$base/$name" -o "$work/$name"
-download_asset 'Checksum download' --silent "$base/$name.sha256" -o "$work/checksum"
+# 用户代理
+# 直连
+# GitHub API
+# 公共镜像
+# SHA256 仍会校验完整性。
+download_asset(){
+  local desc=$1 asset=$2 out=$3 mode=${4:---progress-bar} mirror id
+  if [[ -n "$gh_proxy" ]]; then
+    if download "$mode" --retry 1 --max-time 180 "$(gh_url "$base/$asset")" -o "$out"; then
+      printf '  %s via %s\n' "$desc" "$gh_proxy"
+      return 0
+    fi
+    printf '  %s proxy failed, trying next source...\n' "$desc"
+  fi
+  if download "$mode" --retry 1 --max-time 180 "$base/$asset" -o "$out"; then return 0; fi
+  printf '  %s direct failed, trying GitHub API...\n' "$desc"
+  id=$(api_asset_id "$asset")
+  if [[ -n "$id" ]] && download "$mode" --retry 1 --max-time 300 -H 'Accept: application/octet-stream' "https://api.github.com/repos/$repo/releases/assets/$id" -o "$out"; then
+    printf '  %s via GitHub API\n' "$desc"
+    return 0
+  fi
+  printf '  %s API failed, trying mirrors...\n' "$desc"
+  for mirror in 'https://gh-proxy.com' 'https://ghfast.top'; do
+    if download "$mode" --retry 1 --max-time 180 "${mirror%/}/$base/$asset" -o "$out"; then
+      printf '  %s via %s\n' "$desc" "$mirror"
+      return 0
+    fi
+  done
+  fail "$desc failed on all sources (direct, GitHub API and mirrors). Retry later."
+}
+download_asset 'Release asset download' "$name" "$work/$name" --progress-bar
+download_asset 'Checksum download' "$name.sha256" "$work/checksum" --silent
 step 3 'Verify SHA256 and unpack'
 expected=$(awk 'NR==1 {print $1}' "$work/checksum")
 [[ "$expected" =~ ^[a-fA-F0-9]{64}$ ]] || fail 'Invalid checksum'
