@@ -98,7 +98,14 @@ systemctl restart atmosphere-panel
 step 5 'Check HTTP readiness'
 for attempt in {1..60}; do
   if curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/api/health" >/dev/null && curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/" >/dev/null; then
-    printf '\n  ONLINE / http://<server>:%s\n  Logs: sudo journalctl -u atmosphere-panel -f\n  Initial password: first-start service logs\n  Data: /opt/mc-panel (preserved across updates)\n' "$port"
+    printf '\n  ✓ ATMOSPHERE 安装完成 / INSTALLATION COMPLETE\n\n'
+    printf '  面板入口  / PANEL ENTRY   http://<server>:%s\n' "$port"
+    printf '  运行日志  / LOGS          sudo journalctl -u atmosphere-panel -f\n'
+    printf '  初始密码  / PASSWORD      first-start service logs\n'
+    printf '  数据目录  / DATA          /opt/mc-panel (preserved across updates)\n'
+    printf '\n  在浏览器中粘贴上方入口地址 把 <server> 换成这台服务器的公网 IP 或域名\n'
+    printf '  Paste the panel address above into your browser, replacing <server> with this server public IP or domain.\n'
+    printf '\n  首次账号与密码见首次启动日志 / Initial credentials appear in the first-start logs.\n\n'
     exit 0
   fi
   sleep 1

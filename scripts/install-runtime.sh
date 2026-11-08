@@ -259,7 +259,12 @@ installer_run() {
   run_step '07 / 08  ATMOSPHERE 管理命令' install_cli
   run_step '08 / 08  面板健康检查' verify_install
   box 'ATMOSPHERE  /  ONLINE'
-  printf '  面板入口  %bhttp://%s:%s%b\n' "$GREEN" "$PUBLIC_IP" "$FRONTEND_PORT" "$RESET"
-  printf '  管理命令  atmosphere status / logs / restart / stop\n  安装日志  %s\n  实例数据  %s\n' "$INSTALL_LOG" "$DATA_PATH"
-  printf '  初始账号与密码仅在首次初始化日志中出现：\n  sudo journalctl -u atmosphere-panel --no-pager | grep -A 4 "INITIAL ACCESS"\n\n'
+  printf '  面板入口  / PANEL     %bhttp://%s:%s%b\n' "$GREEN" "$PUBLIC_IP" "$FRONTEND_PORT" "$RESET"
+  printf '  管理命令  / CLI       atmosphere status / logs / restart / stop\n'
+  printf '  安装日志  / LOG       %s\n' "$INSTALL_LOG"
+  printf '  实例数据  / DATA      %s\n' "$DATA_PATH"
+  printf '\n  在浏览器中粘贴上方入口地址访问面板 如使用域名 请把 IP 换成域名\n'
+  printf '  Paste the address above into your browser, replace the IP with your domain if needed.\n'
+  printf '\n  初始账号与密码仅在首次初始化日志中出现 / Initial credentials appear in the first-start logs:\n'
+  printf '  sudo journalctl -u atmosphere-panel --no-pager | grep -A 4 "INITIAL ACCESS"\n\n'
 }
