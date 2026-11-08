@@ -37,6 +37,27 @@ detect_public_ip(){
   done
   printf '%s' "$ip"
 }
+# 解析最新版本：依次尝试直连网页、直连 API、代理网页、代理 API。
+resolve_version(){
+  local url json tag
+  local -a urls=("https://github.com/$repo/releases/latest" "https://api.github.com/repos/$repo/releases/latest")
+  if [[ -n "$gh_proxy" ]]; then
+    urls+=("$(gh_url "https://github.com/$repo/releases/latest")" "$(gh_url "https://api.github.com/repos/$repo/releases/latest")")
+  fi
+  for url in "${urls[@]}"; do
+    if [[ "$url" == *api.github.com* ]]; then
+      json=$(download --silent --retry 1 --max-time 10 "$url" 2>/dev/null || true)
+      tag=$(printf '%s' "$json" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1)
+      [[ -n "$tag" ]] && { printf '%s' "$tag"; return 0; }
+    else
+      json=$(download --silent --retry 1 --max-time 10 -o /dev/null -w '%{url_effective}' "$url" 2>/dev/null || true)
+      tag=${json##*/}
+      [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]] && { printf '%s' "$tag"; return 0; }
+    fi
+  done
+  return 1
+}
+
 while (($#)); do
   case "$1" in
     --help|-h) printf 'ATMOSPHERE / RELEASE INSTALLER\n  --yes --plan --no-color --dir PATH --port PORT --version vX.Y.Z\n  Env: ATMOSPHERE_GH_PROXY=https://your-github-proxy\nData: /opt/mc-panel; requires Linux + systemd + curl + tar + sha256sum.\n'; exit 0;;
@@ -75,15 +96,7 @@ work=$(mktemp -d)
 trap 'status=$?; if [[ ${BASHPID:-$$} -eq $$ ]]; then rm -rf -- "$work"; if ((status != 0)) && [[ -z ${failed:-} ]]; then printf "\n  Installation failed; previous releases and data retained.\n" >&2; fi; fi' EXIT
 step 1 'Resolve official release'
 if [[ "$version" == latest ]]; then
-  if ! effective=$(download --silent -o /dev/null -w '%{url_effective}' "$(gh_url "https://github.com/$repo/releases/latest")" 2>/dev/null); then
-    # releases/latest 偶发 504，改用 API 再查一次。
-    release_json=$(download --silent "$(gh_url "https://api.github.com/repos/$repo/releases/latest")" 2>/dev/null || true)
-    version=$(printf '%s' "$release_json" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1)
-    [[ -n "$version" ]] || fail 'Could not resolve the latest release (GitHub returned an error). Retry later, or pin a version: --version v0.3.0'
-  else
-    version=${effective##*/}
-  fi
-  [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-\.][a-zA-Z0-9.-]+)?$ ]] || fail 'No published release found'
+  version=$(resolve_version) || fail 'Could not resolve the latest release (GitHub unreachable). Retry later, set ATMOSPHERE_GH_PROXY=https://gh-proxy.com, or pin --version v0.3.0'
 fi
 name="atmosphere-panel-$version-linux-$arch.tar.gz"
 base=$(gh_url "https://github.com/$repo/releases/download/$version")
