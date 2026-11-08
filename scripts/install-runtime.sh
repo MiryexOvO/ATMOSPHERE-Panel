@@ -200,15 +200,28 @@ NGINX
 }
 
 install_cli() {
-  cat > /usr/local/bin/atmosphere <<'CLI'
+  # 面板服务以专用账号运行，命令行也用它执行，避免改动数据文件属主。
+  local service_user=atmosphere
+  [[ $(stat -c '%U' "$DATA_PATH" 2>/dev/null) == mcserver ]] && service_user=mcserver
+  cat > /usr/local/bin/atmosphere <<CLI
 #!/usr/bin/env bash
 set -euo pipefail
-case "${1:-status}" in
+run(){ runuser -u $service_user -- env PYTHONPATH=$INSTALL_PATH/backend ATMOSPHERE_DATA_DIR=$DATA_PATH ATMOSPHERE_BACKEND_PORT=$BACKEND_PORT $INSTALL_PATH/backend/.venv/bin/python -m app.launcher "\$@"; }
+case "\${1:-status}" in
  status) systemctl --no-pager status atmosphere-panel atmosphere-frontend;;
  logs) journalctl -u atmosphere-panel -f --no-hostname;;
  restart) systemctl restart atmosphere-panel atmosphere-frontend;;
  stop) systemctl stop atmosphere-panel atmosphere-frontend;;
- *) printf 'ATMOSPHERE · atmosphere [status|logs|restart|stop]\n';exit 2;;
+ password|credentials) ((EUID==0)) || { printf '请使用 sudo atmosphere password\n' >&2; exit 1; }; run --show-password;;
+ reset-password)
+   ((EUID==0)) || { printf '请使用 sudo atmosphere reset-password\n' >&2; exit 1; }
+   shift
+   systemctl stop atmosphere-panel || true
+   status=0
+   run --reset-password "\$@" || status=\$?
+   systemctl start atmosphere-panel || true
+   exit "\$status";;
+ *) printf 'ATMOSPHERE · atmosphere [status|logs|restart|stop|password|reset-password]\n';exit 2;;
 esac
 CLI
   chmod 0755 /usr/local/bin/atmosphere
@@ -260,11 +273,26 @@ installer_run() {
   run_step '08 / 08  面板健康检查' verify_install
   box 'ATMOSPHERE  /  ONLINE'
   printf '  面板入口  / PANEL     %bhttp://%s:%s%b\n' "$GREEN" "$PUBLIC_IP" "$FRONTEND_PORT" "$RESET"
-  printf '  管理命令  / CLI       atmosphere status / logs / restart / stop\n'
+  printf '  管理命令  / CLI       atmosphere status / logs / restart / stop / password / reset-password\n'
   printf '  安装日志  / LOG       %s\n' "$INSTALL_LOG"
   printf '  实例数据  / DATA      %s\n' "$DATA_PATH"
+  # 凭据文件存在才显示密码；修改密码后文件会被后端删除。
+  creds=$DATA_PATH/initial-password.txt
+  cred_user=$(sed -n 's/^user: //p' "$creds" 2>/dev/null | head -n1)
+  cred_pass=$(sed -n 's/^password: //p' "$creds" 2>/dev/null | head -n1)
+  if [[ -n "$cred_pass" ]]; then
+    printf '  账号      / USER      %b%s%b\n' "$GREEN" "$cred_user" "$RESET"
+    if [[ -t 1 ]]; then
+      printf '  密码      / PASSWORD  %b%s%b\n' "$GREEN" "$cred_pass" "$RESET"
+    else
+      printf '  密码      / PASSWORD  见凭据文件 / see credentials file\n'
+    fi
+    printf '  凭据文件  / FILE      %s （修改密码后自动删除）\n' "$creds"
+  else
+    printf '  初始凭据  / FILE      未找到 / not found: %s\n' "$creds"
+    printf '  重置密码  / RESET     sudo atmosphere reset-password\n'
+  fi
   printf '\n  在浏览器中粘贴上方入口地址访问面板 如使用域名 请把 IP 换成域名\n'
   printf '  Paste the address above into your browser, replace the IP with your domain if needed.\n'
-  printf '\n  初始账号与密码仅在首次初始化日志中出现 / Initial credentials appear in the first-start logs:\n'
-  printf '  sudo journalctl -u atmosphere-panel --no-pager | grep -A 4 "INITIAL ACCESS"\n\n'
+  printf '\n  首次登录后请立即修改密码 / Change the password after the first login.\n\n'
 }

@@ -1,6 +1,7 @@
 """终端品牌输出；日志文件与 systemd 自动去掉颜色。"""
 import logging, os, platform, sys
 from loguru import logger
+from .core.config import CREDENTIALS_PATH
 
 
 def colors():
@@ -24,6 +25,9 @@ def show_banner():
     print('\n'+accent+'┌'+'─'*62+'┐'+reset,file=sys.stderr)
     for index,line in enumerate(lines): print(accent+'│  '+(accent if index==0 else dim)+line.ljust(59)+accent+' │'+reset,file=sys.stderr)
     print(accent+'└'+'─'*62+'┘'+reset+'\n',file=sys.stderr,flush=True)
+    # 初始密码未被替换时提示凭据文件位置，方便重新查看。
+    if CREDENTIALS_PATH.exists():
+        print('  初始凭据 / CREDENTIALS  '+str(CREDENTIALS_PATH)+'\n',file=sys.stderr,flush=True)
 
 
 class TerminalFormatter(logging.Formatter):

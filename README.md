@@ -108,7 +108,10 @@ curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/ins
 
 **首次使用**
 
-- 初始密码只在首次启动日志中出现：`sudo journalctl -u atmosphere-panel -f`
+- 初始账号 `Atmo7` 与随机密码会在安装结束时直接打印，并保存为 `/opt/mc-panel/initial-password.txt`（权限 0600）
+- 凭据文件存在时可随时查看：`sudo atmosphere password`
+- 忘记密码或需要重置：`sudo atmosphere reset-password`
+- 修改密码后凭据文件会自动删除，旧密码无法再查看
 - 数据保存在 `/opt/mc-panel`；更新会保留数据，升级前请先备份
 - 安装器适用于全新安装，以及由它自己创建的目录
 - 旧版源码安装需先备份、迁移数据库，并停用旧前端与 Nginx 服务
@@ -118,8 +121,12 @@ curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/ins
 常用命令：
 
 ```bash
-# 跟踪面板日志（首次密码也会出现在这里）
+# 跟踪面板日志
 sudo journalctl -u atmosphere-panel -f
+# 查看初始凭据（文件存在时）
+sudo atmosphere password
+# 重置密码并重新生成凭据文件
+sudo atmosphere reset-password
 # 重启面板服务
 sudo systemctl restart atmosphere-panel
 ```
@@ -177,7 +184,7 @@ pnpm build
 pnpm preview
 ```
 
-访问 `http://127.0.0.1:5173` 首次启动时，终端只打印一次 20 位初始密码
+访问 `http://127.0.0.1:5173` 首次启动时，终端会打印 20 位初始密码，并写入数据目录下的 `initial-password.txt`
 
 <a id="backend-dev"></a>
 
@@ -228,6 +235,10 @@ sudo atmosphere logs
 sudo atmosphere restart
 # 停止面板服务
 sudo atmosphere stop
+# 查看初始凭据（凭据文件存在时）
+sudo atmosphere password
+# 重置密码并重新生成凭据文件
+sudo atmosphere reset-password
 ```
 
 ## 开发检查

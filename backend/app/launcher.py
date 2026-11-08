@@ -15,8 +15,17 @@ def main():
     parser.add_argument('--host',default=os.getenv('ATMOSPHERE_BIND','0.0.0.0'))
     parser.add_argument('--port',type=int,default=int(os.getenv('ATMOSPHERE_BACKEND_PORT','27777')))
     parser.add_argument('--no-access-log',action='store_true')
+    parser.add_argument('--show-password',action='store_true',help='显示初始凭据文件后退出')
+    parser.add_argument('--reset-password',action='store_true',help='生成新密码并写入凭据文件后退出')
+    parser.add_argument('--password',default='',help='与 --reset-password 配合，指定新密码')
+    parser.add_argument('--user',default='',help='与 --reset-password 配合，指定账号')
     args=parser.parse_args()
     if not 1<=args.port<=65535: parser.error('port must be between 1 and 65535')
+    # 维护命令不启动 Web 服务，只操作数据库与凭据文件。
+    if args.show_password or args.reset_password:
+        from .cli import reset_password, show_credentials
+        code = show_credentials() if args.show_password else reset_password(args.user, args.password)
+        raise SystemExit(code)
     os.environ['ATMOSPHERE_BACKEND_PORT']=str(args.port);os.environ['ATMOSPHERE_BIND']=args.host
     # 统一 Uvicorn 启动、访问与异常日志的终端格式。
     # Explicit imports let the freezer discover both logging and application code.

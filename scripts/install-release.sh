@@ -3,6 +3,7 @@ set -Eeuo pipefail
 repo=MiryexOvO/ATMOSPHERE-Panel
 version=latest
 install_dir=/opt/atmosphere-panel
+data_dir=/opt/mc-panel
 port=27777
 plan=0
 yes=0
@@ -168,6 +169,36 @@ download_asset(){
   done
   fail "$desc failed on all sources (direct, GitHub API and mirrors). Retry later."
 }
+# 统一管理命令；password 仅在凭据文件存在时可查看。
+install_cli(){
+  cat > /usr/local/bin/atmosphere <<CLI
+#!/usr/bin/env bash
+set -euo pipefail
+bin=$install_dir/current/atmosphere-panel
+export ATMOSPHERE_DATA_DIR=$data_dir
+export ATMOSPHERE_DB_PATH=$data_dir/panel.sqlite3
+# 旧 Release 的可执行文件没有凭据命令，先检查再调用。
+require_credentials(){ "\$bin" --help 2>&1 | grep -q -- '--show-password' || { printf '当前安装的版本不支持凭据命令，请安装最新 Release。\n' >&2; exit 1; }; }
+case "\${1:-status}" in
+  status) systemctl --no-pager status atmosphere-panel;;
+  logs) journalctl -u atmosphere-panel -f --no-hostname;;
+  restart) systemctl restart atmosphere-panel;;
+  stop) systemctl stop atmosphere-panel;;
+  password|credentials) ((EUID==0)) || { printf '请使用 sudo atmosphere password\n' >&2; exit 1; }; require_credentials; exec "\$bin" --show-password;;
+  reset-password)
+    ((EUID==0)) || { printf '请使用 sudo atmosphere reset-password\n' >&2; exit 1; }
+    require_credentials
+    shift
+    systemctl stop atmosphere-panel || true
+    status=0
+    "\$bin" --reset-password "\$@" || status=\$?
+    systemctl start atmosphere-panel || true
+    exit "\$status";;
+  *) printf 'ATMOSPHERE · atmosphere [status|logs|restart|stop|password|reset-password]\n'; exit 2;;
+esac
+CLI
+  chmod 0755 /usr/local/bin/atmosphere
+}
 download_asset 'Release asset download' "$name" "$work/$name" --progress-bar
 download_asset 'Checksum download' "$name.sha256" "$work/checksum" --silent
 step 3 'Verify SHA256 and unpack'
@@ -183,8 +214,8 @@ step 4 'Register single systemd service'
 # The existing instance manager requires privileged systemd operations.
 # mc-panel owns game instance files; the control plane runs as root.
 id mc-panel >/dev/null 2>&1 || useradd --system --home-dir /opt/mc-panel --shell /usr/sbin/nologin mc-panel
-mkdir -p "$install_dir/releases" /opt/mc-panel/servers /opt/mc-panel/backups /opt/mc-panel/java
-chown mc-panel:mc-panel /opt/mc-panel/servers /opt/mc-panel/backups /opt/mc-panel/java
+mkdir -p "$install_dir/releases" "$data_dir/servers" "$data_dir/backups" "$data_dir/java"
+chown mc-panel:mc-panel "$data_dir/servers" "$data_dir/backups" "$data_dir/java"
 # Keep the old target for rollback if health verification fails.
 previous=$(readlink "$install_dir/current" || true)
 # Re-running the same version should reinstall it instead of failing.
@@ -206,8 +237,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=$install_dir
-Environment=ATMOSPHERE_DATA_DIR=/opt/mc-panel
-Environment=ATMOSPHERE_DB_PATH=/opt/mc-panel/panel.sqlite3
+Environment=ATMOSPHERE_DATA_DIR=$data_dir
+Environment=ATMOSPHERE_DB_PATH=$data_dir/panel.sqlite3
 Environment=ATMOSPHERE_FRONTEND_PORT=$port
 ExecStart=$install_dir/current/atmosphere-panel --host 0.0.0.0 --port $port
 Restart=on-failure
@@ -217,6 +248,7 @@ WantedBy=multi-user.target
 UNIT
 systemctl daemon-reload
 systemctl enable atmosphere-panel
+install_cli
 systemctl restart atmosphere-panel
 step 5 'Check HTTP readiness'
 for attempt in {1..60}; do
@@ -232,8 +264,28 @@ for attempt in {1..60}; do
       printf '\n'
     fi
     printf '  运行日志  / LOGS          %bsudo journalctl -u atmosphere-panel -f%b\n' "$color" "$reset"
-    printf '  初始密码  / PASSWORD      %bfirst-start service logs%b\n' "$color" "$reset"
-    printf '  数据目录  / DATA          %b/opt/mc-panel%b (preserved across updates)\n' "$color" "$reset"
+    # 凭据文件存在就显示账号密码；文件被删除说明密码已修改，不再提供找回。
+    creds=$data_dir/initial-password.txt
+    cred_user=''; cred_pass=''
+    if [[ -r "$creds" ]]; then
+      cred_user=$(sed -n 's/^user: //p' "$creds" | head -n1)
+      cred_pass=$(sed -n 's/^password: //p' "$creds" | head -n1)
+    fi
+    if [[ -n "$cred_pass" ]]; then
+      printf '  账号      / USER          %b%s%b\n' "$color" "$cred_user" "$reset"
+      if [[ -t 1 ]]; then
+        printf '  密码      / PASSWORD      %b%s%b\n' "$color" "$cred_pass" "$reset"
+      else
+        printf '  密码      / PASSWORD      见凭据文件 / see credentials file\n'
+      fi
+      printf '  凭据文件  / CREDENTIALS   %b%s%b\n' "$color" "$creds" "$reset"
+      printf '                            修改密码后自动删除 / removed once the password is changed\n'
+    else
+      printf '  初始凭据  / CREDENTIALS   未找到 / not found (已有数据 existing data)\n'
+      printf '                            重置密码 / reset: %bsudo atmosphere reset-password%b\n' "$color" "$reset"
+    fi
+    printf '  管理命令  / CLI           %batmosphere password / reset-password%b\n' "$color" "$reset"
+    printf '  数据目录  / DATA          %b%s%b (preserved across updates)\n' "$color" "$data_dir" "$reset"
     if ((ip_is_public)); then
       printf '\n  上方就是公网地址，可直接粘贴到浏览器 也可把 %b%s%b 换成你的域名\n' "$color" "$server_ip" "$reset"
       printf '  The address above is public, paste it into your browser, or replace %b%s%b with your domain.\n' "$color" "$server_ip" "$reset"
@@ -247,7 +299,7 @@ for attempt in {1..60}; do
       printf '\n  在浏览器中粘贴上方入口地址 或把 %b%s%b 换成本机域名（外网访问请用公网 IP）\n' "$color" "$server_ip" "$reset"
       printf '  Paste the address above into your browser, or replace %b%s%b with your own domain (use the public IP for external access).\n' "$color" "$server_ip" "$reset"
     fi
-    printf '\n  首次账号与密码见首次启动日志 / Initial credentials appear in the first-start logs.\n\n'
+    printf '\n  首次登录后请立即修改密码 / Change the password after the first login.\n\n'
     exit 0
   fi
   sleep 1

@@ -100,7 +100,10 @@ curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/ins
 
 **初回利用**
 
-- 初期パスワードは初回起動ログにのみ表示されます：`sudo journalctl -u atmosphere-panel -f`
+- 初期アカウント `Atmo7` とランダムパスワードはインストール終了時に表示され、`/opt/mc-panel/initial-password.txt`（パーミッション 0600）に保存されます
+- このファイルが存在する間はいつでも確認できます：`sudo atmosphere password`
+- パスワードを忘れた場合や再設定する場合：`sudo atmosphere reset-password`
+- パスワードを変更すると認証情報ファイルは自動的に削除され、以前のパスワードは表示できなくなります
 - データは `/opt/mc-panel` に保存されます。更新時も保持されますが、アップグレード前にバックアップしてください
 - インストーラーは新規インストールと、このインストーラーが作成したディレクトリに対応しています
 - 旧ソースインストールから移行する場合は、バックアップ、データベースの移行、旧フロントエンドと Nginx サービスの停止が必要です
@@ -110,8 +113,12 @@ curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/ins
 よく使うコマンド：
 
 ```bash
-# パネルのログを追跡（初期パスワードもここに表示されます）
+# パネルのログを追跡
 sudo journalctl -u atmosphere-panel -f
+# 初期認証情報を表示（ファイルが存在する間）
+sudo atmosphere password
+# パスワードを再設定し、認証情報ファイルを書き直す
+sudo atmosphere reset-password
 # パネルサービスを再起動
 sudo systemctl restart atmosphere-panel
 ```
@@ -170,7 +177,7 @@ pnpm build
 pnpm preview
 ```
 
-`http://127.0.0.1:5173` にアクセスします。初回起動時、ターミナルには 20 文字の初期パスワードが一度だけ表示されます。
+`http://127.0.0.1:5173` にアクセスします。初回起動時、ターミナルに 20 文字の初期パスワードが表示され、データディレクトリの `initial-password.txt` にも書き込まれます。
 
 <a id="backend-dev"></a>
 
@@ -224,6 +231,10 @@ sudo atmosphere logs
 sudo atmosphere restart
 # パネルサービスを停止
 sudo atmosphere stop
+# 初期認証情報を表示（認証情報ファイルが存在する間）
+sudo atmosphere password
+# パスワードを再設定し、認証情報ファイルを書き直す
+sudo atmosphere reset-password
 ```
 
 <a id="dev-checks"></a>

@@ -100,7 +100,10 @@ The installer downloads the matching architecture bundle from GitHub Releases, v
 
 **First use**
 
-- The initial password only appears in the first-start logs: `sudo journalctl -u atmosphere-panel -f`
+- The initial account `Atmo7` and its random password are printed at the end of installation and saved to `/opt/mc-panel/initial-password.txt` (mode 0600)
+- While that file exists, view the credentials at any time: `sudo atmosphere password`
+- Forgot the password or need to reset it: `sudo atmosphere reset-password`
+- Changing the password deletes the credentials file automatically; the old password can no longer be shown
 - Data is stored in `/opt/mc-panel`; updates preserve it — back up before upgrading
 - The installer supports fresh installs and directories created by this installer
 - Legacy source installs must be backed up, have their database migrated, and have the old frontend and Nginx services stopped
@@ -110,8 +113,12 @@ The installer downloads the matching architecture bundle from GitHub Releases, v
 Common commands:
 
 ```bash
-# Follow panel logs (the initial password appears here too)
+# Follow panel logs
 sudo journalctl -u atmosphere-panel -f
+# Show the initial credentials (while the file exists)
+sudo atmosphere password
+# Reset the password and rewrite the credentials file
+sudo atmosphere reset-password
 # Restart the panel service
 sudo systemctl restart atmosphere-panel
 ```
@@ -170,7 +177,7 @@ pnpm build
 pnpm preview
 ```
 
-Visit `http://127.0.0.1:5173`. On first startup, the terminal prints the 20-character initial password only once.
+Visit `http://127.0.0.1:5173`. On first startup, the terminal prints the 20-character initial password and writes it to `initial-password.txt` in the data directory.
 
 <a id="backend-dev"></a>
 
@@ -224,6 +231,10 @@ sudo atmosphere logs
 sudo atmosphere restart
 # Stop the panel service
 sudo atmosphere stop
+# Show the initial credentials (while the credentials file exists)
+sudo atmosphere password
+# Reset the password and rewrite the credentials file
+sudo atmosphere reset-password
 ```
 
 <a id="dev-checks"></a>

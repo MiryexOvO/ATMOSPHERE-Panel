@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from ..core.database import connect
 from ..core.security import current_user, require_admin
 from ..services.panel_settings import read_settings, audit
+from .auth import clear_credentials
 
 router = APIRouter(prefix='/api', tags=['administration'])
 
@@ -86,6 +87,8 @@ def change_password(request: Request, payload: PasswordPayload):
         conn.execute('UPDATE users SET password_hash=? WHERE id=?',(bcrypt.hashpw(payload.new_password.encode(),bcrypt.gensalt()).decode(),user['id']))
         token_hash=hashlib.sha256((request.cookies.get('mc_panel_session') or '').encode()).hexdigest()
         conn.execute('DELETE FROM sessions WHERE user_id=? AND token_hash<>?',(user['id'],token_hash));conn.commit()
+    # 密码已由用户自己替换，初始凭据文件不再需要。
+    clear_credentials(user['id'])
     audit(user['id'],'account.password')
     return {'ok':True}
 
@@ -140,6 +143,9 @@ def update_user(request: Request, user_id: int, payload: UserPayload):
         else:
             conn.execute('DELETE FROM sessions WHERE user_id=?',(user_id,))
         conn.commit()
+    if payload.password:
+        # 数据库写入成功后再丢弃初始凭据，避免回滚后密码仍为初始值却看不到。
+        clear_credentials(user_id)
     audit(user['id'],'user.update',str(user_id))
     return {'ok':True}
 
@@ -150,6 +156,7 @@ def delete_user(request: Request, user_id: int):
     if user_id == user['id']: return JSONResponse({'message':'不能删除当前账户'},status_code=409)
     with closing(connect()) as conn:
         conn.execute('DELETE FROM sessions WHERE user_id=?',(user_id,));conn.execute('DELETE FROM user_access WHERE user_id=?',(user_id,));conn.execute('DELETE FROM users WHERE id=?',(user_id,));conn.commit()
+    clear_credentials(user_id)
     audit(user['id'],'user.delete',str(user_id))
     return {'ok':True}
 
