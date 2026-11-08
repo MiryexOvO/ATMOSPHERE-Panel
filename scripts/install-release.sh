@@ -6,11 +6,19 @@ install_dir=/opt/atmosphere-panel
 port=27777
 plan=0
 yes=0
+failed=''
+# 可选 GitHub 代理，例如 ATMOSPHERE_GH_PROXY=https://ghfast.top
+gh_proxy=${ATMOSPHERE_GH_PROXY:-}
 color=''; green=''; reset=''
 if [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-dumb} != dumb ]]; then color='\033[1;36m'; green='\033[1;32m'; reset='\033[0m'; fi
 step(){ printf '\n%b  [%s/5] %s%b\n' "$color" "$1" "$2" "$reset"; }
-download(){ curl --proto '=https' --tlsv1.2 --fail --show-error --location --retry 3 --connect-timeout 15 --max-time 600 "$@"; }
-fail(){ printf '\n  FAILED · %s\n' "$*" >&2; exit 1; }
+# 老版本 curl 不支持 --retry-all-errors，按能力追加。
+retry_opts=(--retry 3 --retry-delay 2)
+curl --help 2>/dev/null | grep -q -- '--retry-all-errors' && retry_opts+=(--retry-all-errors)
+download(){ curl --proto '=https' --tlsv1.2 --fail --show-error --location "${retry_opts[@]}" --connect-timeout 15 --max-time 600 "$@"; }
+# 配置代理后，GitHub 地址统一加上代理前缀。
+gh_url(){ if [[ -n "$gh_proxy" ]]; then printf '%s/%s' "${gh_proxy%/}" "$1"; else printf '%s' "$1"; fi; }
+fail(){ failed=1; printf '\n  FAILED · %s\n' "$*" >&2; exit 1; }
 # 读取本机用于访问面板的 IPv4：优先默认路由出口，其次主机名与全局网卡。
 detect_ip(){
   local ip=''
@@ -31,7 +39,7 @@ detect_public_ip(){
 }
 while (($#)); do
   case "$1" in
-    --help|-h) printf 'ATMOSPHERE / RELEASE INSTALLER\n  --yes --plan --no-color --dir PATH --port PORT --version vX.Y.Z\nData: /opt/mc-panel; requires Linux + systemd + curl + tar + sha256sum.\n'; exit 0;;
+    --help|-h) printf 'ATMOSPHERE / RELEASE INSTALLER\n  --yes --plan --no-color --dir PATH --port PORT --version vX.Y.Z\n  Env: ATMOSPHERE_GH_PROXY=https://your-github-proxy\nData: /opt/mc-panel; requires Linux + systemd + curl + tar + sha256sum.\n'; exit 0;;
     --yes) yes=1; shift;;
     --plan) plan=1; yes=1; shift;;
     --no-color) color=''; reset=''; shift;;
@@ -63,16 +71,22 @@ printf '\n  TARGET  %s / linux-%s\n  HOME    %s\n  ENTRY   http://%s:%s\n' "$ver
 ((EUID==0)) || fail 'Run with sudo bash'
 for tool in curl tar sha256sum systemctl; do command -v "$tool" >/dev/null || fail "Install required tool: $tool"; done
 work=$(mktemp -d)
-trap 'rm -rf -- "$work"' EXIT
-trap 'printf "\n  Installation failed; previous releases and data retained.\n" >&2' ERR
+# 只在主 shell 打印一次失败提示，避免 set -E 让子 shell 重复输出。
+trap 'status=$?; if [[ ${BASHPID:-$$} -eq $$ ]]; then rm -rf -- "$work"; if ((status != 0)) && [[ -z ${failed:-} ]]; then printf "\n  Installation failed; previous releases and data retained.\n" >&2; fi; fi' EXIT
 step 1 'Resolve official release'
 if [[ "$version" == latest ]]; then
-  effective=$(download --silent -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest")
-  version=${effective##*/}
+  if ! effective=$(download --silent -o /dev/null -w '%{url_effective}' "$(gh_url "https://github.com/$repo/releases/latest")" 2>/dev/null); then
+    # releases/latest 偶发 504，改用 API 再查一次。
+    release_json=$(download --silent "$(gh_url "https://api.github.com/repos/$repo/releases/latest")" 2>/dev/null || true)
+    version=$(printf '%s' "$release_json" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1)
+    [[ -n "$version" ]] || fail 'Could not resolve the latest release (GitHub returned an error). Retry later, or pin a version: --version v0.3.0'
+  else
+    version=${effective##*/}
+  fi
   [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-\.][a-zA-Z0-9.-]+)?$ ]] || fail 'No published release found'
 fi
 name="atmosphere-panel-$version-linux-$arch.tar.gz"
-base="https://github.com/$repo/releases/download/$version"
+base=$(gh_url "https://github.com/$repo/releases/download/$version")
 step 2 'Download binary / no Node.js or Python installation'
 download --progress-bar "$base/$name" -o "$work/$name"
 download --silent "$base/$name.sha256" -o "$work/checksum"
