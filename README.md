@@ -88,6 +88,13 @@ curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/ins
 bash <(curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh)
 ```
 
+> 下载发布包时如果遇到 GitHub 504 或超时，可让下载走 GitHub 代理（不影响其它流量）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh \
+  | ATMOSPHERE_GH_PROXY=https://gh-proxy.com bash -s -- --yes --port 27777
+```
+
 默认入口：`http://<服务器地址>:27777`  
   
 | 参数 | 作用 |

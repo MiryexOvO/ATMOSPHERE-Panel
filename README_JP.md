@@ -80,6 +80,13 @@ curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/ins
 bash <(curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh)
 ```
 
+> リリースのダウンロードが GitHub の 504 やタイムアウトで失敗する場合は、GitHub プロキシ経由で取得できます（このコマンドのみに適用）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh \
+  | ATMOSPHERE_GH_PROXY=https://gh-proxy.com bash -s -- --yes --port 27777
+```
+
 既定の入口：`http://<サーバーアドレス>:27777`
 
 | パラメータ | 説明 |

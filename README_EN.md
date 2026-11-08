@@ -80,6 +80,13 @@ Interactive installation:
 bash <(curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh)
 ```
 
+> If the release download fails with a GitHub 504 or timeout, route it through a GitHub proxy (only affects this command):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh \
+  | ATMOSPHERE_GH_PROXY=https://gh-proxy.com bash -s -- --yes --port 27777
+```
+
 Default entry: `http://<server-address>:27777`
 
 | Parameter | Description |

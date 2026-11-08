@@ -21,6 +21,15 @@ gh_proxy=${ATMOSPHERE_GH_PROXY:-}
 color=''; green=''; reset=''
 if [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-dumb} != dumb ]]; then color='\033[1;36m'; green='\033[1;32m'; reset='\033[0m'; fi
 step(){ printf '\n%b  [%s/5] %s%b\n' "$color" "$1" "$2" "$reset"; }
+# 超链接
+link(){
+  local url=$1 text=${2:-$1}
+  if [[ -n "$color" ]]; then
+    printf '\033]8;;%s\033\\%b\033[4m%s\033[0m\033]8;;\033\\' "$url" "$color" "$text"
+  else
+    printf '%s' "$text"
+  fi
+}
 # 老版本 curl 不支持 --retry-all-errors，按能力追加。
 retry_opts=(--retry 3 --retry-delay 2)
 curl --help 2>/dev/null | grep -q -- '--retry-all-errors' && retry_opts+=(--retry-all-errors)
@@ -176,28 +185,32 @@ systemctl enable atmosphere-panel
 systemctl restart atmosphere-panel
 step 5 'Check HTTP readiness'
 for attempt in {1..60}; do
-  # 首次启动需要解压运行时，前几次连不上属正常，静默重试。
+  # 首次启动需要解压运行时，连不上则静默重试
   if curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/api/health" >/dev/null 2>&1 && curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/" >/dev/null 2>&1; then
     printf '\n  %b✓ ATMOSPHERE 安装完成 / INSTALLATION COMPLETE%b\n\n' "$green" "$reset"
-    printf '  面板入口  / PANEL ENTRY   http://%s:%s%s\n' "$server_ip" "$port" "$entry_tag"
+    printf '  面板入口  / PANEL ENTRY   '
+    link "http://$server_ip:$port"
+    printf '%s\n' "$entry_tag"
     if ((!ip_is_public)) && [[ -n "$public_ip" && "$public_ip" != "$server_ip" ]]; then
-      printf '  公网地址  / PUBLIC IP     http://%s:%s\n' "$public_ip" "$port"
+      printf '  公网地址  / PUBLIC IP     '
+      link "http://$public_ip:$port"
+      printf '\n'
     fi
-    printf '  运行日志  / LOGS          sudo journalctl -u atmosphere-panel -f\n'
-    printf '  初始密码  / PASSWORD      first-start service logs\n'
-    printf '  数据目录  / DATA          /opt/mc-panel (preserved across updates)\n'
+    printf '  运行日志  / LOGS          %bsudo journalctl -u atmosphere-panel -f%b\n' "$color" "$reset"
+    printf '  初始密码  / PASSWORD      %bfirst-start service logs%b\n' "$color" "$reset"
+    printf '  数据目录  / DATA          %b/opt/mc-panel%b (preserved across updates)\n' "$color" "$reset"
     if ((ip_is_public)); then
-      printf '\n  上方就是公网地址，可直接粘贴到浏览器；也可把 %s 换成你的域名\n' "$server_ip"
-      printf '  The address above is public; paste it into your browser, or replace %s with your domain.\n' "$server_ip"
+      printf '\n  上方就是公网地址，可直接粘贴到浏览器 也可把 %b%s%b 换成你的域名\n' "$color" "$server_ip" "$reset"
+      printf '  The address above is public, paste it into your browser, or replace %b%s%b with your domain.\n' "$color" "$server_ip" "$reset"
     elif [[ -n "$public_ip" && "$public_ip" != "$server_ip" ]]; then
-      printf '\n  在浏览器中粘贴上方入口地址：同一网络用内网地址，外网请用公网地址或你的域名\n'
-      printf '  Paste the address above into your browser: use the LAN address on the same network, or the public address or your domain from outside.\n'
+      printf '\n  在浏览器中粘贴上方入口地址 同一网络用内网地址 外网请用 %b%s%b 或你的域名\n' "$color" "$public_ip" "$reset"
+      printf '  Paste the address above into your browser  Use the LAN address on the same network, or %b%s%b or your domain from outside.\n' "$color" "$public_ip" "$reset"
     elif [[ "$server_ip" == '<server>' ]]; then
       printf '\n  在浏览器中粘贴上方入口地址 把 <server> 换成这台服务器的公网 IP 或域名\n'
       printf '  Paste the panel address above into your browser, replacing <server> with this server public IP or domain.\n'
     else
-      printf '\n  在浏览器中粘贴上方入口地址；或把 %s 换成本机域名（外网访问请用公网 IP）\n' "$server_ip"
-      printf '  Paste the address above into your browser, or replace %s with your own domain (use the public IP for external access).\n' "$server_ip"
+      printf '\n  在浏览器中粘贴上方入口地址 或把 %b%s%b 换成本机域名（外网访问请用公网 IP）\n' "$color" "$server_ip" "$reset"
+      printf '  Paste the address above into your browser, or replace %b%s%b with your own domain (use the public IP for external access).\n' "$color" "$server_ip" "$reset"
     fi
     printf '\n  首次账号与密码见首次启动日志 / Initial credentials appear in the first-start logs.\n\n'
     exit 0
