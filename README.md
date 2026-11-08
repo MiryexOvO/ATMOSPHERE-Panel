@@ -73,21 +73,19 @@ ATMOSPHERE-PANEL 是一个基于 Web 的 **Minecraft 服务器管理面板**。�
 
 ### Linux / systemd
 
+一行命令安装：
+
 ```bash
-# 开启严格模式
-bash -c 'set -euo pipefail
-# 创建安全的临时文件
-installer=$(mktemp -t atmosphere-install.XXXXXXXX.sh)
-cleanup() { rm -f -- "$installer"; }
-# 无论安装成功还是中途报错都删除临时脚本
-trap cleanup EXIT
-# 下载官方二进制安装器 install-release.sh
-curl --proto "=https" --tlsv1.2 --fail --show-error --location \
-  --retry 3 --connect-timeout 15 --max-time 120 \
-  https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/scripts/install-release.sh \
-  --output "$installer"
-# 以 root 运行安装器，末尾参数原样传入
-sudo bash "$installer" "$@"' -- --yes --port 27777
+# 拉取 install.sh 并执行，参数原样传给安装器（非 root 时自动提权）
+curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh \
+  | bash -s -- --yes --port 27777
+```
+
+交互式安装：
+
+```bash
+# 会询问端口，进程替换不占用 stdin
+bash <(curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh)
 ```
 
 默认入口：`http://<服务器地址>:27777`  
@@ -141,7 +139,7 @@ chmod +x ./atmosphere-panel
 
 - `scripts/install-release.sh`：二进制安装器，下载发布包、校验 SHA256、解压、注册 systemd、检查API
 - `install.sh`：兼容入口，默认转交给 `install-release.sh`加上 `--from-source` 进入旧版源码安装
-- 上方命令可直接获取 `install-release.sh`，减少一次网络跳转，也无需克隆源码或现场编译
+- 一行命令获取 `install.sh`，由它下载并运行 `install-release.sh`；无需克隆源码或现场编译
 
 ## 获取源码
 

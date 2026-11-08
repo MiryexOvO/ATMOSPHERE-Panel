@@ -65,21 +65,19 @@ ATMOSPHERE-PANEL は、Web ベースの Minecraft サーバー管理パネルで
 
 ### Linux / systemd
 
+一行コマンドでインストール：
+
 ```bash
-# 厳格モードを有効化
-bash -c 'set -euo pipefail
-# 安全な一時ファイルを作成
-installer=$(mktemp -t atmosphere-install.XXXXXXXX.sh)
-cleanup() { rm -f -- "$installer"; }
-# 成功・失敗にかかわらず一時スクリプトを削除
-trap cleanup EXIT
-# 公式バイナリインストーラー install-release.sh をダウンロード
-curl --proto "=https" --tlsv1.2 --fail --show-error --location \
-  --retry 3 --connect-timeout 15 --max-time 120 \
-  https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/scripts/install-release.sh \
-  --output "$installer"
-# root でインストーラーを実行し、末尾の引数をそのまま渡す
-sudo bash "$installer" "$@"' -- --yes --port 27777
+# install.sh を取得して実行し、引数をそのまま渡します（root 以外では自動で sudo を使用）
+curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh \
+  | bash -s -- --yes --port 27777
+```
+
+対話式インストール：
+
+```bash
+# ポートを質問します。プロセス置換により stdin を入力に使用できます
+bash <(curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh)
 ```
 
 既定の入口：`http://<サーバーアドレス>:27777`
@@ -132,7 +130,7 @@ chmod +x ./atmosphere-panel
 
 - `scripts/install-release.sh`：バイナリインストーラー。リリースのダウンロード、SHA256 の検証、展開、systemd への登録、Web/API の確認を行います
 - `install.sh`：互換用の入口。既定で `install-release.sh` に転送し、`--from-source` を付けた場合のみ旧ソースインストールに進みます
-- 上記のコマンドは `install-release.sh` を直接取得するため、ネットワークの往復が 1 回減り、ソースのクローンやビルドも不要です
+- 一行コマンドは `install.sh` を取得し、そこから `install-release.sh` をダウンロードして実行します。ソースのクローンやビルドは不要で、root でない場合は自動で sudo を使います
 
 <a id="source"></a>
 

@@ -65,21 +65,19 @@ The project consists of two parts:
 
 ### Linux / systemd
 
+One-line installation:
+
 ```bash
-# Enable strict mode
-bash -c 'set -euo pipefail
-# Create a secure temporary file
-installer=$(mktemp -t atmosphere-install.XXXXXXXX.sh)
-cleanup() { rm -f -- "$installer"; }
-# Remove the temporary script on success or failure
-trap cleanup EXIT
-# Download the official binary installer (install-release.sh)
-curl --proto "=https" --tlsv1.2 --fail --show-error --location \
-  --retry 3 --connect-timeout 15 --max-time 120 \
-  https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/scripts/install-release.sh \
-  --output "$installer"
-# Run the installer as root, passing the trailing arguments through
-sudo bash "$installer" "$@"' -- --yes --port 27777
+# Fetch and run install.sh, passing through arguments (automatically uses sudo when not root)
+curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh \
+  | bash -s -- --yes --port 27777
+```
+
+Interactive installation:
+
+```bash
+# Prompts for the port; process substitution keeps stdin available
+bash <(curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/install.sh)
 ```
 
 Default entry: `http://<server-address>:27777`
@@ -132,7 +130,7 @@ Open `http://127.0.0.1:27777`. Data is stored in `data/` next to the executable 
 
 - `scripts/install-release.sh`: the binary installer — downloads the release, verifies SHA256, extracts it, registers systemd and checks the web/API
 - `install.sh`: compatibility entry point that delegates to `install-release.sh` by default; only `--from-source` enters the legacy source install
-- The command above fetches `install-release.sh` directly, saving one network hop and requiring no source clone or local build
+- The one-line command fetches `install.sh`, which downloads and runs `install-release.sh`; no source clone or local build is needed, and it escalates with sudo automatically
 
 <a id="source"></a>
 

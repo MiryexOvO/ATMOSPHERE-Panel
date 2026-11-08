@@ -2,10 +2,15 @@
 set -Eeuo pipefail
 # Default: download the standalone release installer. Legacy source installation is opt-in.
 if [[ ${1:-} != --from-source ]]; then
-  installer=$(mktemp)
-  trap 'rm -f "$installer"' EXIT
+  installer=$(mktemp "${TMPDIR:-/tmp}/atmosphere-install.XXXXXX")
+  trap 'rm -f -- "$installer"' EXIT
   curl --proto '=https' --tlsv1.2 --fail --show-error --location --retry 3 --connect-timeout 15 --max-time 120 https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/scripts/install-release.sh -o "$installer"
-  bash "$installer" "$@"
+  # 非 root 时自动提权
+  if ((EUID == 0)); then
+    bash "$installer" "$@"
+  else
+    sudo bash "$installer" "$@"
+  fi
   exit $?
 fi
 shift
