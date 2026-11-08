@@ -69,10 +69,17 @@ step 4 'Register single systemd service'
 id mc-panel >/dev/null 2>&1 || useradd --system --home-dir /opt/mc-panel --shell /usr/sbin/nologin mc-panel
 mkdir -p "$install_dir/releases" /opt/mc-panel/servers /opt/mc-panel/backups /opt/mc-panel/java
 chown mc-panel:mc-panel /opt/mc-panel/servers /opt/mc-panel/backups /opt/mc-panel/java
-[[ ! -e "$install_dir/releases/$version" ]] || fail 'Version already installed; use systemctl restart atmosphere-panel'
-cp -a "$work/unpacked" "$install_dir/releases/$version"
 # Keep the old target for rollback if health verification fails.
 previous=$(readlink "$install_dir/current" || true)
+# Re-running the same version should reinstall it instead of failing.
+if [[ -e "$install_dir/releases/$version" ]]; then
+  printf '  Version %s already present; replacing it.\n' "$version"
+  systemctl stop atmosphere-panel 2>/dev/null || true
+  rm -rf "$install_dir/releases/$version"
+  # 覆盖的正是当前版本时，回滚目标已不存在。
+  if [[ -n "$previous" && "$previous" == "$install_dir/releases/$version" ]]; then previous=''; fi
+fi
+cp -a "$work/unpacked" "$install_dir/releases/$version"
 ln -s "$install_dir/releases/$version" "$install_dir/current.new"
 mv -Tf "$install_dir/current.new" "$install_dir/current"
 cat > /etc/systemd/system/atmosphere-panel.service <<UNIT
