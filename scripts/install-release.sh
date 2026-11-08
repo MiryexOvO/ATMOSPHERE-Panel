@@ -6,11 +6,29 @@ install_dir=/opt/atmosphere-panel
 port=27777
 plan=0
 yes=0
-color=''; reset=''
-if [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-dumb} != dumb ]]; then color='\033[1;36m'; reset='\033[0m'; fi
+color=''; green=''; reset=''
+if [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-dumb} != dumb ]]; then color='\033[1;36m'; green='\033[1;32m'; reset='\033[0m'; fi
 step(){ printf '\n%b  [%s/5] %s%b\n' "$color" "$1" "$2" "$reset"; }
 download(){ curl --proto '=https' --tlsv1.2 --fail --show-error --location --retry 3 --connect-timeout 15 --max-time 600 "$@"; }
 fail(){ printf '\n  FAILED · %s\n' "$*" >&2; exit 1; }
+# 读取本机用于访问面板的 IPv4：优先默认路由出口，其次主机名与全局网卡。
+detect_ip(){
+  local ip=''
+  ip=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')
+  [[ -n "$ip" ]] || ip=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+  [[ -n "$ip" ]] || ip=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4; exit}' | cut -d/ -f1)
+  printf '%s' "$ip"
+}
+# 查询公网出口 IP：只用于展示入口地址，失败时留空不影响安装。
+detect_public_ip(){
+  local ip='' url
+  for url in https://api.ipify.org https://ifconfig.me/ip https://icanhazip.com; do
+    ip=$(curl -fsS --proto '=https' --max-time 3 "$url" 2>/dev/null | tr -d '[:space:]')
+    if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then printf '%s' "$ip"; return; fi
+    ip=''
+  done
+  printf '%s' "$ip"
+}
 while (($#)); do
   case "$1" in
     --help|-h) printf 'ATMOSPHERE / RELEASE INSTALLER\n  --yes --plan --no-color --dir PATH --port PORT --version vX.Y.Z\nData: /opt/mc-panel; requires Linux + systemd + curl + tar + sha256sum.\n'; exit 0;;
@@ -35,7 +53,11 @@ fi
 port=$((10#$port))
 [[ "$version" == latest || "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-\.][a-zA-Z0-9.-]+)?$ ]] || fail 'Invalid version tag'
 case "$(uname -m)" in x86_64) arch=x64;; aarch64|arm64) arch=arm64;; *) fail 'Unsupported CPU';; esac
-printf '\n  TARGET  %s / linux-%s\n  HOME    %s\n  ENTRY   http://<server>:%s\n' "$version" "$arch" "$install_dir" "$port"
+server_ip=$(detect_ip)
+[[ -n "$server_ip" ]] || server_ip='<server>'
+public_ip=$(detect_public_ip)
+printf '\n  TARGET  %s / linux-%s\n  HOME    %s\n  ENTRY   http://%s:%s\n' "$version" "$arch" "$install_dir" "$server_ip" "$port"
+[[ -n "$public_ip" && "$public_ip" != "$server_ip" ]] && printf '  PUBLIC  http://%s:%s\n' "$public_ip" "$port"
 ((plan==0)) || exit 0
 [[ $(uname -s) == Linux && -d /run/systemd/system ]] || fail 'Linux with systemd required'
 ((EUID==0)) || fail 'Run with sudo bash'
@@ -105,13 +127,24 @@ systemctl restart atmosphere-panel
 step 5 'Check HTTP readiness'
 for attempt in {1..60}; do
   if curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/api/health" >/dev/null && curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/" >/dev/null; then
-    printf '\n  ✓ ATMOSPHERE 安装完成 / INSTALLATION COMPLETE\n\n'
-    printf '  面板入口  / PANEL ENTRY   http://<server>:%s\n' "$port"
+    printf '\n  %b✓ ATMOSPHERE 安装完成 / INSTALLATION COMPLETE%b\n\n' "$green" "$reset"
+    printf '  面板入口  / PANEL ENTRY   http://%s:%s\n' "$server_ip" "$port"
+    if [[ -n "$public_ip" && "$public_ip" != "$server_ip" ]]; then
+      printf '  公网地址  / PUBLIC IP     http://%s:%s\n' "$public_ip" "$port"
+    fi
     printf '  运行日志  / LOGS          sudo journalctl -u atmosphere-panel -f\n'
     printf '  初始密码  / PASSWORD      first-start service logs\n'
     printf '  数据目录  / DATA          /opt/mc-panel (preserved across updates)\n'
-    printf '\n  在浏览器中粘贴上方入口地址 把 <server> 换成这台服务器的公网 IP 或域名\n'
-    printf '  Paste the panel address above into your browser, replacing <server> with this server public IP or domain.\n'
+    if [[ -n "$public_ip" && "$public_ip" != "$server_ip" ]]; then
+      printf '\n  在浏览器中粘贴上方入口地址：同一网络用内网地址，外网请用公网地址或你的域名\n'
+      printf '  Paste the address above into your browser: use the LAN address on the same network, or the public address or your domain from outside.\n'
+    elif [[ "$server_ip" == '<server>' ]]; then
+      printf '\n  在浏览器中粘贴上方入口地址 把 <server> 换成这台服务器的公网 IP 或域名\n'
+      printf '  Paste the panel address above into your browser, replacing <server> with this server public IP or domain.\n'
+    else
+      printf '\n  在浏览器中粘贴上方入口地址；或把 %s 换成本机域名（外网访问请用公网 IP）\n' "$server_ip"
+      printf '  Paste the address above into your browser, or replace %s with your own domain (use the public IP for external access).\n' "$server_ip"
+    fi
     printf '\n  首次账号与密码见首次启动日志 / Initial credentials appear in the first-start logs.\n\n'
     exit 0
   fi
