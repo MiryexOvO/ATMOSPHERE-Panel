@@ -7,6 +7,15 @@ port=27777
 plan=0
 yes=0
 failed=''
+# 判断地址是否属于私有或保留网段。
+is_private_ip(){
+  case "$1" in
+    ''|'<server>') return 0 ;;
+    10.*|127.*|192.168.*|169.254.*) return 0 ;;
+    172.1[6-9].*|172.2[0-9].*|172.3[0-1].*) return 0 ;;
+  esac
+  return 1
+}
 # 可选 GitHub 代理，例如 ATMOSPHERE_GH_PROXY=https://ghfast.top
 gh_proxy=${ATMOSPHERE_GH_PROXY:-}
 color=''; green=''; reset=''
@@ -85,8 +94,15 @@ case "$(uname -m)" in x86_64) arch=x64;; aarch64|arm64) arch=arm64;; *) fail 'Un
 server_ip=$(detect_ip)
 [[ -n "$server_ip" ]] || server_ip='<server>'
 public_ip=$(detect_public_ip)
-printf '\n  TARGET  %s / linux-%s\n  HOME    %s\n  ENTRY   http://%s:%s\n' "$version" "$arch" "$install_dir" "$server_ip" "$port"
-[[ -n "$public_ip" && "$public_ip" != "$server_ip" ]] && printf '  PUBLIC  http://%s:%s\n' "$public_ip" "$port"
+# 本机 IP 本身就是公网地址时，直接标注为公网，不再重复一行。
+ip_is_public=0
+if [[ "$server_ip" != '<server>' ]] && ! is_private_ip "$server_ip"; then ip_is_public=1; fi
+entry_tag=''
+if ((ip_is_public)); then entry_tag='  (公网 / PUBLIC)'; fi
+printf '\n  TARGET  %s / linux-%s\n  HOME    %s\n  ENTRY   http://%s:%s%s\n' "$version" "$arch" "$install_dir" "$server_ip" "$port" "$entry_tag"
+if ((!ip_is_public)) && [[ -n "$public_ip" && "$public_ip" != "$server_ip" ]]; then
+  printf '  PUBLIC  http://%s:%s\n' "$public_ip" "$port"
+fi
 ((plan==0)) || exit 0
 [[ $(uname -s) == Linux && -d /run/systemd/system ]] || fail 'Linux with systemd required'
 ((EUID==0)) || fail 'Run with sudo bash'
@@ -153,16 +169,20 @@ systemctl enable atmosphere-panel
 systemctl restart atmosphere-panel
 step 5 'Check HTTP readiness'
 for attempt in {1..60}; do
-  if curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/api/health" >/dev/null && curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/" >/dev/null; then
+  # 首次启动需要解压运行时，前几次连不上属正常，静默重试。
+  if curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/api/health" >/dev/null 2>&1 && curl --noproxy '*' --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/" >/dev/null 2>&1; then
     printf '\n  %b✓ ATMOSPHERE 安装完成 / INSTALLATION COMPLETE%b\n\n' "$green" "$reset"
-    printf '  面板入口  / PANEL ENTRY   http://%s:%s\n' "$server_ip" "$port"
-    if [[ -n "$public_ip" && "$public_ip" != "$server_ip" ]]; then
+    printf '  面板入口  / PANEL ENTRY   http://%s:%s%s\n' "$server_ip" "$port" "$entry_tag"
+    if ((!ip_is_public)) && [[ -n "$public_ip" && "$public_ip" != "$server_ip" ]]; then
       printf '  公网地址  / PUBLIC IP     http://%s:%s\n' "$public_ip" "$port"
     fi
     printf '  运行日志  / LOGS          sudo journalctl -u atmosphere-panel -f\n'
     printf '  初始密码  / PASSWORD      first-start service logs\n'
     printf '  数据目录  / DATA          /opt/mc-panel (preserved across updates)\n'
-    if [[ -n "$public_ip" && "$public_ip" != "$server_ip" ]]; then
+    if ((ip_is_public)); then
+      printf '\n  上方就是公网地址，可直接粘贴到浏览器；也可把 %s 换成你的域名\n' "$server_ip"
+      printf '  The address above is public; paste it into your browser, or replace %s with your domain.\n' "$server_ip"
+    elif [[ -n "$public_ip" && "$public_ip" != "$server_ip" ]]; then
       printf '\n  在浏览器中粘贴上方入口地址：同一网络用内网地址，外网请用公网地址或你的域名\n'
       printf '  Paste the address above into your browser: use the LAN address on the same network, or the public address or your domain from outside.\n'
     elif [[ "$server_ip" == '<server>' ]]; then
@@ -182,4 +202,4 @@ if [[ -n "$previous" ]]; then
   mv -Tf "$install_dir/rollback.new" "$install_dir/current"
   systemctl restart atmosphere-panel
 fi
-fail 'Readiness failed; inspect journalctl -u atmosphere-panel'
+fail 'Readiness failed; check: systemctl status atmosphere-panel --no-pager; journalctl -u atmosphere-panel -n 80 --no-pager'
