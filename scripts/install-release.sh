@@ -117,8 +117,15 @@ fi
 name="atmosphere-panel-$version-linux-$arch.tar.gz"
 base=$(gh_url "https://github.com/$repo/releases/download/$version")
 step 2 'Download binary / no Node.js or Python installation'
-download --progress-bar "$base/$name" -o "$work/$name"
-download --silent "$base/$name.sha256" -o "$work/checksum"
+# 发布包走 GitHub CDN，遇到 504 时给出可操作的代理提示。
+download_asset(){
+  local desc=$1; shift
+  if ! download "$@"; then
+    fail "$desc failed (GitHub CDN returned an error). Retry later, or use a proxy: ATMOSPHERE_GH_PROXY=https://gh-proxy.com"
+  fi
+}
+download_asset 'Release asset download' --progress-bar "$base/$name" -o "$work/$name"
+download_asset 'Checksum download' --silent "$base/$name.sha256" -o "$work/checksum"
 step 3 'Verify SHA256 and unpack'
 expected=$(awk 'NR==1 {print $1}' "$work/checksum")
 [[ "$expected" =~ ^[a-fA-F0-9]{64}$ ]] || fail 'Invalid checksum'
