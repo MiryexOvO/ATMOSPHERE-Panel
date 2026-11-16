@@ -43,6 +43,7 @@ ATMOSPHERE-PANEL 是一个基于 Web 的 **Minecraft 服务器管理面板**。�
 ## 目录
 
 - [功能](#功能)
+- [截图展示](#截图展示)
 - [开箱即用（单进程部署）](#standalone)
 - [获取源码](#获取源码)
 - [前端开发](#frontend-dev)
@@ -62,6 +63,32 @@ ATMOSPHERE-PANEL 是一个基于 Web 的 **Minecraft 服务器管理面板**。�
 - 部署时的 Java 版本与 JVM 内存设置
 - 官方资源参考与镜像源设置
 - 基于 SQLite 的本地数据存储
+
+## 截图展示
+
+### 登录页
+
+![登录页](img/登陆页.png)
+
+### 仪表盘
+
+![仪表盘](img/仪表盘.png)
+
+### 开服模式
+
+![开服模式](img/开服模式.png)
+
+### 控制台
+
+![控制台](img/控制台.png)
+
+### 监控页
+
+![监控页](img/监控页.png)
+
+### 关于页
+
+![关于页](img/关于页.png)
 
 <a id="standalone"></a>
 
@@ -108,7 +135,7 @@ curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/ins
 
 **首次使用**
 
-- 初始账号 `Atmo7` 与随机密码会在安装结束时直接打印，并保存为 `/opt/mc-panel/initial-password.txt`（权限 0600）
+- 初始账号 `Administrator` 与随机密码会在安装结束时直接打印，并保存为 `/opt/mc-panel/initial-password.txt`（权限 0600）
 - 凭据文件存在时可随时查看：`sudo atmosphere password`
 - 忘记密码或需要重置：`sudo atmosphere reset-password`
 - 修改密码后凭据文件会自动删除，旧密码无法再查看

@@ -4,7 +4,7 @@ import DotField from '~/components/ui/DotField.vue'
 
 definePageMeta({ layout: 'auth' })
 
-const username = ref('Atmo7')
+const username = ref('Administrator')
 const password = ref('')
 const verificationCode = ref('')
 const totpRequired = ref(false)

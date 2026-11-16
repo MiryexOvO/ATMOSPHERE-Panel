@@ -33,6 +33,7 @@ The project consists of two parts:
 ## Contents
 
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Standalone (Single-Process Deployment)](#standalone)
 - [Getting the Source](#source)
 - [Frontend Development](#frontend-dev)
@@ -54,6 +55,34 @@ The project consists of two parts:
 - Java version and JVM memory settings during deployment
 - Official resource references and mirror settings
 - Local data storage based on SQLite
+
+<a id="screenshots"></a>
+
+## Screenshots
+
+### Login
+
+![Login](img/登陆页.png)
+
+### Dashboard
+
+![Dashboard](img/仪表盘.png)
+
+### Deployment Modes
+
+![Deployment Modes](img/开服模式.png)
+
+### Console
+
+![Console](img/控制台.png)
+
+### Monitoring
+
+![Monitoring](img/监控页.png)
+
+### About
+
+![About](img/关于页.png)
 
 <a id="standalone"></a>
 
@@ -100,7 +129,7 @@ The installer downloads the matching architecture bundle from GitHub Releases, v
 
 **First use**
 
-- The initial account `Atmo7` and its random password are printed at the end of installation and saved to `/opt/mc-panel/initial-password.txt` (mode 0600)
+- The initial account `Administrator` and its random password are printed at the end of installation and saved to `/opt/mc-panel/initial-password.txt` (mode 0600)
 - While that file exists, view the credentials at any time: `sudo atmosphere password`
 - Forgot the password or need to reset it: `sudo atmosphere reset-password`
 - Changing the password deletes the credentials file automatically; the old password can no longer be shown

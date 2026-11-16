@@ -33,6 +33,7 @@ ATMOSPHERE-PANEL は、Web ベースの Minecraft サーバー管理パネルで
 ## 目次
 
 - [機能](#features)
+- [スクリーンショット](#screenshots)
 - [すぐ使える（単一プロセス構成）](#standalone)
 - [ソースの取得](#source)
 - [フロントエンド開発](#frontend-dev)
@@ -54,6 +55,34 @@ ATMOSPHERE-PANEL は、Web ベースの Minecraft サーバー管理パネルで
 - デプロイ時の Java バージョンと JVM メモリ設定
 - 公式リソースの参照とミラー設定
 - SQLite によるローカルデータストレージ
+
+<a id="screenshots"></a>
+
+## スクリーンショット
+
+### ログイン
+
+![ログイン](img/登陆页.png)
+
+### ダッシュボード
+
+![ダッシュボード](img/仪表盘.png)
+
+### デプロイモード
+
+![デプロイモード](img/开服模式.png)
+
+### コンソール
+
+![コンソール](img/控制台.png)
+
+### モニタリング
+
+![モニタリング](img/监控页.png)
+
+### このパネルについて
+
+![このパネルについて](img/关于页.png)
 
 <a id="standalone"></a>
 
@@ -100,7 +129,7 @@ curl -fsSL https://raw.githubusercontent.com/MiryexOvO/ATMOSPHERE-Panel/main/ins
 
 **初回利用**
 
-- 初期アカウント `Atmo7` とランダムパスワードはインストール終了時に表示され、`/opt/mc-panel/initial-password.txt`（パーミッション 0600）に保存されます
+- 初期アカウント `Administrator` とランダムパスワードはインストール終了時に表示され、`/opt/mc-panel/initial-password.txt`（パーミッション 0600）に保存されます
 - このファイルが存在する間はいつでも確認できます：`sudo atmosphere password`
 - パスワードを忘れた場合や再設定する場合：`sudo atmosphere reset-password`
 - パスワードを変更すると認証情報ファイルは自動的に削除され、以前のパスワードは表示できなくなります

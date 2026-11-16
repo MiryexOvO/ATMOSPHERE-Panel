@@ -203,11 +203,10 @@ async function startDeploy() {
         </p>
         <label
           >{{ t('deploy_java_version')
-          }}<select class="atmo-input" v-model="formData.javaVersion">
-            <option>8</option>
-            <option>17</option>
-            <option>21</option>
-          </select></label
+          }}<AtmosphereSelect
+            v-model="formData.javaVersion"
+            :label="t('deploy_java_version')"
+            :options="['8', '17', '21'].map((value) => ({ value, label: 'Java ' + value }))" /></label
         ><label>{{ t('deploy_memory_2') }}<input class="atmo-input" v-model="formData.memory" /></label
         ><label class="switch-line"
           ><input type="checkbox" v-model="formData.useAikar" /> {{ t('deploy_use_aikar_s_flags') }}</label

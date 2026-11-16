@@ -61,15 +61,11 @@ def ensure_initial_user() -> None:
     if row:
         conn.close()
         return
-    legacy = conn.execute("SELECT id FROM users WHERE username='admin'").fetchone()
-    if legacy:
-        conn.execute("UPDATE users SET username='Atmo7' WHERE id=?", (legacy['id'],))
-        conn.commit(); conn.close(); return
     alphabet = string.ascii_letters + string.digits + '!@#$%^&*_-+=?'
     password = ''.join(secrets.choice(alphabet) for _ in range(20))
-    cursor = conn.execute('INSERT INTO users(username,password_hash,created_at) VALUES(?,?,?)', ('Atmo7', bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(), int(time.time())))
+    cursor = conn.execute('INSERT INTO users(username,password_hash,created_at) VALUES(?,?,?)', ('Administrator', bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(), int(time.time())))
     conn.commit(); conn.close()
-    write_credentials(cursor.lastrowid, 'Atmo7', password)
+    write_credentials(cursor.lastrowid, 'Administrator', password)
     print('\n' + '╔' + '═' * 70 + '╗')
     print('║' + ' ' * 18 + 'ATMOSPHERE / INITIAL ACCESS' + ' ' * 24 + '║')
     print('║  [INIT] 面板初始密码: ' + password + ' ' * max(0, 70 - 20 - len(password)) + '║')

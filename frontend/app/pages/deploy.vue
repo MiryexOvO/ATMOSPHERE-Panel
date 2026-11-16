@@ -545,20 +545,16 @@ function back() {
                 {{ t('deploy_found') }} {{ data.packageInfo?.core_candidates?.length || 0 }}
                 {{ t('deploy_candidate_cores') }}
               </p>
-              <select
+              <AtmosphereSelect
                 v-model="data.coreType"
-                class="mt-8 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm outline-none focus:border-brand"
-              >
-                <option
-                  v-for="candidate in data.packageInfo?.core_candidates?.filter(
-                    (item) => item.kind === 'jar' || item.kind === 'args',
-                  ) || []"
-                  :key="candidate.path"
-                  :value="candidate.path"
-                >
-                  {{ candidate.path }} · {{ candidate.kind }}
-                </option>
-              </select>
+                class="mt-8"
+                :label="t('deploy_core_detection')"
+                :options="
+                  (data.packageInfo?.core_candidates || [])
+                    .filter((item) => item.kind === 'jar' || item.kind === 'args')
+                    .map((candidate) => ({ value: candidate.path, label: `${candidate.path} · ${candidate.kind}` }))
+                "
+              />
             </section>
             <section
               v-else-if="step === environmentStep"
@@ -591,14 +587,11 @@ function back() {
               <div class="mt-8 space-y-5">
                 <label v-if="data.mode !== 'bedrock'" class="block text-xs text-text-secondary"
                   >{{ t('deploy_java_version')
-                  }}<select
+                  }}<AtmosphereSelect
                     v-model="data.javaVersion"
-                    class="mt-2 w-full border border-border bg-background/50 px-4 py-3 font-mono text-sm"
-                  >
-                    <option>8</option>
-                    <option>17</option>
-                    <option>21</option>
-                  </select></label
+                    class="mt-2"
+                    :label="t('deploy_java_version')"
+                    :options="['8', '17', '21'].map((value) => ({ value, label: 'Java ' + value }))" /></label
                 ><label class="block text-xs text-text-secondary"
                   >{{ t('deploy_memory_mb')
                   }}<input
