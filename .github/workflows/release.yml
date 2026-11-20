@@ -1,4 +1,6 @@
 name: Release binaries
+# 按实际构建版本显示运行标题。
+run-name: Release ${{ inputs.version || github.ref_name }}
 on:
   push:
     tags: ['v*']
@@ -14,14 +16,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2022, macos-14]
+        os: [ubuntu-22.04, windows-2022, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
       - run: corepack enable
@@ -31,7 +33,7 @@ jobs:
         run: python scripts/smoke-release.py
       - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: diagnostics-${{ matrix.os }}
           path: |
@@ -39,7 +41,7 @@ jobs:
             build/atmosphere-panel/warn-atmosphere-panel.txt
           if-no-files-found: ignore
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: release-${{ matrix.os }}
           path: release/*
@@ -50,7 +52,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: release-*
           merge-multiple: true
